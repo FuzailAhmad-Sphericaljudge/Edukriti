@@ -8,7 +8,7 @@ Most learning platforms offer either fixed videos or chat responses. Edukriti de
 
 1. Create a 20-minute beginner electricity lesson in Hinglish.
 2. Review the generated concepts, timings, checkpoints, visuals, and source status.
-3. Select **Enter AI classroom**, then **Start teaching** to authorize browser voice.
+3. Select **Enter AI classroom**. The visual class opens immediately; select **Start teacher voice** to authorize browser speech.
 4. At a checkpoint answer: `Current gets used up by the bulb.`
 5. Observe the diagnosed current-consumption misconception, constructive feedback, new water-pipe analogy, and alternate voice explanation.
 6. Complete the remaining checkpoint and final assessment.
