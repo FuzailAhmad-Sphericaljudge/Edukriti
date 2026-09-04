@@ -12,7 +12,7 @@ Enter `Teach me electricity using simple everyday examples`. Select beginner, Hi
 
 ## 1:00–1:50 — AI classroom
 
-Select **Enter AI classroom**, then the large **Start teaching** control. Let Aarohi speak while captions and the Ohm’s Law visual appear. Point out the lesson timeline and subject-aware visual selection.
+Select **Enter AI classroom**. The visual lesson starts immediately. Select **Start teacher voice**, then let Aarohi speak while captions and the Ohm’s Law visual appear. Point out the lesson timeline and subject-aware visual selection.
 
 ## 1:50–2:40 — Interaction and adaptation
 
