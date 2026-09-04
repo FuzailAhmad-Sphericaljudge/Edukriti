@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { LessonRequest } from '@edukriti/contracts';
-import { buildAdaptation, buildDeterministicLessonPlan, captionAt, evaluateCheckpoint, lessonMinutes, lessonProgress, speechLocale } from './index.ts';
+import { buildAdaptation, buildAssessment, buildDeterministicLessonPlan, buildLearningReport, captionAt, evaluateAssessmentAnswer, evaluateCheckpoint, lessonMinutes, lessonProgress, speechLocale } from './index.ts';
 
 const request: LessonRequest = {
   learnerId: 'demo-learner',
@@ -66,4 +66,25 @@ test('diagnoses a known misconception and changes the explanation', () => {
   assert.match(evaluation.misconception ?? '', /consum/i);
   assert.equal(adaptation?.strategy, 'new_analogy');
   assert.match(adaptation?.explanation ?? '', /water pipe/i);
+});
+
+test('builds a three-question mixed final assessment for the demo lesson', () => {
+  const plan = buildDeterministicLessonPlan(request, [], 'lesson', '2026-09-04T15:00:00Z');
+  const assessment = buildAssessment(plan);
+  assert.equal(assessment.length, 3);
+  assert.deepEqual(assessment.map((question) => question.type), ['mcq', 'mcq', 'short_answer']);
+});
+
+test('scores actual assessment responses and builds a learning report', () => {
+  const plan = buildDeterministicLessonPlan(request, [], 'lesson', '2026-09-04T15:00:00Z');
+  const questions = buildAssessment(plan);
+  const attempts = [
+    evaluateAssessmentAnswer(plan, questions[0]!, 'a', '550e8400-e29b-41d4-a716-446655440000', '2026-09-04T16:00:00Z'),
+    evaluateAssessmentAnswer(plan, questions[1]!, 'a', '550e8400-e29b-41d4-a716-446655440001', '2026-09-04T16:01:00Z'),
+    evaluateAssessmentAnswer(plan, questions[2]!, 'Current is the flow of charge around a circuit.', '550e8400-e29b-41d4-a716-446655440002', '2026-09-04T16:02:00Z'),
+  ];
+  const report = buildLearningReport(plan, attempts, '2026-09-04T16:03:00Z');
+  assert.equal(report.scorePercent, 67);
+  assert.ok(report.strongConcepts.length > 0);
+  assert.ok(report.weakConcepts.length > 0);
 });

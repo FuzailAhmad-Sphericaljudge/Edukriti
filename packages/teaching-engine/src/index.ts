@@ -1,4 +1,4 @@
-import { lessonAdaptationSchema, responseEvaluationSchema, lessonPlanSchema, type LessonAdaptation, type LessonPlan, type LessonRequest, type ResponseEvaluation } from '@edukriti/contracts';
+import { assessmentAttemptResponseSchema, assessmentQuestionSchema, learningReportSchema, lessonAdaptationSchema, responseEvaluationSchema, lessonPlanSchema, type AssessmentAttemptResponse, type AssessmentQuestion, type LearningReport, type LessonAdaptation, type LessonPlan, type LessonRequest, type ResponseEvaluation } from '@edukriti/contracts';
 
 export type LessonEvidence = {
   sourceId: string;
@@ -170,4 +170,63 @@ export function buildAdaptation(context: CheckpointContext, evaluation: Response
       ? `Chalo ek different analogy try karte hain. ${analogy} Ab cause, change aur result ko alag-alag identify karo.`
       : `Let’s switch to a different analogy. ${analogy} Now identify the cause, the change, and the result separately.`;
   return lessonAdaptationSchema.parse({ strategy: 'new_analogy', title: `${concept}, explained another way`, explanation, visualType: 'diagram', visualBrief: `Show a three-part cause → change → result diagram for ${concept}.` });
+}
+
+export type AssessmentQuestionDefinition = AssessmentQuestion & {
+  expectedAnswer: string;
+  targetConcept: string;
+};
+
+function assessmentPrompt(language: LessonPlan['language'], english: string, hinglish: string, hindi: string) {
+  return language === 'hindi' ? hindi : language === 'hinglish' ? hinglish : english;
+}
+
+export function buildAssessment(plan: LessonPlan): AssessmentQuestionDefinition[] {
+  const count = plan.durationMinutes === 60 ? 5 : 3;
+  const electricity = /electric|circuit|voltage|current|resistance|ohm/i.test(plan.title);
+  if (electricity) {
+    const definitions: AssessmentQuestionDefinition[] = [
+      { id: `${plan.id}-assessment-1`, type: 'mcq', prompt: assessmentPrompt(plan.language, 'What best describes voltage in a circuit?', 'Circuit mein voltage ko best kaise describe karenge?', 'परिपथ में वोल्टेज का सबसे अच्छा वर्णन क्या है?'), choices: [{ id: 'a', text: 'The push or potential difference that drives charge' }, { id: 'b', text: 'The amount of resistance in a wire' }, { id: 'c', text: 'The charge permanently stored in a bulb' }], expectedAnswer: 'a', targetConcept: 'Voltage as the driving force' },
+      { id: `${plan.id}-assessment-2`, type: 'mcq', prompt: assessmentPrompt(plan.language, 'If resistance increases while voltage stays constant, what happens to current?', 'Voltage same rahe aur resistance badhe, toh current ka kya hoga?', 'वोल्टेज समान रहे और प्रतिरोध बढ़े, तो धारा का क्या होगा?'), choices: [{ id: 'a', text: 'It increases' }, { id: 'b', text: 'It decreases' }, { id: 'c', text: 'It always becomes zero' }], expectedAnswer: 'b', targetConcept: 'Resistance and Ohm’s Law' },
+      { id: `${plan.id}-assessment-3`, type: 'short_answer', prompt: assessmentPrompt(plan.language, 'Explain electric current in your own words.', 'Electric current ko apne words mein explain karo.', 'विद्युत धारा को अपने शब्दों में समझाइए।'), expectedAnswer: 'flow charge circuit', targetConcept: 'Electric charge and current' },
+      { id: `${plan.id}-assessment-4`, type: 'mcq', prompt: 'Which equation represents Ohm’s Law?', choices: [{ id: 'a', text: 'V = I × R' }, { id: 'b', text: 'V = I + R' }, { id: 'c', text: 'R = V × I' }], expectedAnswer: 'a', targetConcept: 'Resistance and Ohm’s Law' },
+      { id: `${plan.id}-assessment-5`, type: 'short_answer', prompt: 'Give one everyday example of a complete electric circuit.', expectedAnswer: 'battery wire bulb switch circuit', targetConcept: 'Applying ideas to a simple circuit' },
+    ];
+    return definitions.slice(0, count).map((question) => ({ ...assessmentQuestionSchema.parse(question), expectedAnswer: question.expectedAnswer, targetConcept: question.targetConcept }));
+  }
+
+  return Array.from({ length: count }, (_, index) => {
+    const segment = plan.segments[index % plan.segments.length]!;
+    if (index === count - 1) return { id: `${plan.id}-assessment-${index + 1}`, type: 'short_answer' as const, prompt: `Explain ${segment.title} and give one practical example.`, expectedAnswer: segment.title, targetConcept: segment.title };
+    const distractors = plan.segments.filter((item) => item.id !== segment.id).slice(0, 2).map((item, choiceIndex) => ({ id: choiceIndex === 0 ? 'b' : 'c', text: item.objective }));
+    return { id: `${plan.id}-assessment-${index + 1}`, type: 'mcq' as const, prompt: `Which statement best explains ${segment.title}?`, choices: [{ id: 'a', text: segment.objective }, ...distractors], expectedAnswer: 'a', targetConcept: segment.title };
+  });
+}
+
+export function evaluateAssessmentAnswer(plan: LessonPlan, question: AssessmentQuestionDefinition, learnerResponse: string, attemptId: string, attemptedAt = new Date().toISOString()): AssessmentAttemptResponse {
+  const semanticEvaluation = question.type === 'short_answer' ? evaluateCheckpoint({ id: question.id, targetConcept: question.targetConcept, language: plan.language }, learnerResponse) : null;
+  const isCorrect = question.type === 'mcq' ? learnerResponse === question.expectedAnswer : Boolean(semanticEvaluation?.isCorrect);
+  const feedback = isCorrect
+    ? assessmentPrompt(plan.language, 'Correct — that shows a clear understanding.', 'Bilkul sahi — concept clear hai.', 'सही उत्तर — अवधारणा स्पष्ट है।')
+    : semanticEvaluation?.feedback ?? assessmentPrompt(plan.language, 'Not quite. Review this concept in the lesson report.', 'Not quite. Is concept ko report mein revise karein.', 'यह सही नहीं है। रिपोर्ट में इस अवधारणा को दोहराएँ।');
+  return assessmentAttemptResponseSchema.parse({ attemptId, questionId: question.id, isCorrect, feedback, understoodConcepts: isCorrect ? [question.targetConcept] : [], weakConcepts: isCorrect ? [] : [question.targetConcept], misconception: semanticEvaluation?.misconception ?? null, attemptedAt });
+}
+
+export function buildLearningReport(plan: LessonPlan, attempts: AssessmentAttemptResponse[], completedAt = new Date().toISOString()): LearningReport {
+  const correct = attempts.filter((attempt) => attempt.isCorrect).length;
+  const strongConcepts = [...new Set(attempts.flatMap((attempt) => attempt.understoodConcepts))];
+  const weakConcepts = [...new Set(attempts.flatMap((attempt) => attempt.weakConcepts))];
+  const misconceptions = [...new Set(attempts.flatMap((attempt) => attempt.misconception ? [attempt.misconception] : []))];
+  const topic = plan.title.split(':')[0]?.trim() || plan.title;
+  return learningReportSchema.parse({
+    lessonId: plan.id,
+    learnerId: plan.learnerId,
+    scorePercent: Math.round((correct / Math.max(attempts.length, 1)) * 100),
+    strongConcepts,
+    weakConcepts,
+    misconceptions,
+    revisionAdvice: weakConcepts.length ? weakConcepts.map((concept) => `Review ${concept} using the lesson visual, then explain it aloud without notes.`) : ['Try a harder application problem to deepen your understanding.'],
+    recommendedNextTopic: weakConcepts[0] ? `Practice: ${weakConcepts[0]}` : `Advanced applications of ${topic}`,
+    completedAt,
+  });
 }

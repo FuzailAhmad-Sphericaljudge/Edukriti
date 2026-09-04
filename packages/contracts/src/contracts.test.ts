@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { checkpointAttemptRequestSchema, lessonRequestSchema, retrievalRequestSchema, utcTimestampSchema } from './index.ts';
+import { assessmentAttemptRequestSchema, checkpointAttemptRequestSchema, lessonRequestSchema, retrievalRequestSchema, utcTimestampSchema } from './index.ts';
 
 const validRequest = {
   learnerId: 'learner-demo',
@@ -40,4 +40,9 @@ test('requires a durable idempotency key for checkpoint attempts', () => {
   const invalid = checkpointAttemptRequestSchema.safeParse({ lessonId: 'lesson', checkpointId: 'checkpoint', response: '', clientRequestId: 'retry-me' });
   assert.equal(valid.success, true);
   assert.equal(invalid.success, false);
+});
+
+test('rejects empty final assessment answers', () => {
+  const result = assessmentAttemptRequestSchema.safeParse({ lessonId: 'lesson', questionId: 'question', response: ' ', clientRequestId: '550e8400-e29b-41d4-a716-446655440000' });
+  assert.equal(result.success, false);
 });
