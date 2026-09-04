@@ -1,0 +1,19 @@
+{
+  "name": "edukriti",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @edukriti/web",
+    "build": "npm run build --workspace @edukriti/web",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspace @edukriti/web",
+    "verify": "npm run test && npm run lint && npm run build"
+  }
+}

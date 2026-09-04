@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.vinext/
+.wrangler/
+.env
+.env.local
+*.log
+*.tar.gz
+demo-reference.mp4
+output/
+apps/web/.site-git-backup/

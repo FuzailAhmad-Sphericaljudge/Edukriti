@@ -1,0 +1,1 @@
+Electric current is the rate at which electric charge flows through a conductor. Voltage is the potential difference that pushes charge through a circuit. Resistance opposes the flow of current. Ohm's law states that voltage equals current multiplied by resistance: V = I × R. When voltage remains constant and resistance increases, current decreases.
