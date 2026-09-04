@@ -30,7 +30,15 @@ async function generateWithOpenAI(request: LessonRequest, evidence: LessonEviden
   if (!response.ok) throw new Error(`OpenAI lesson generation failed with status ${response.status}.`);
   const body = await response.json() as OpenAIResponse;
   if (!body.output_text) throw new Error('OpenAI returned no structured lesson plan.');
-  return lessonPlanSchema.parse(JSON.parse(body.output_text));
+  const generated = lessonPlanSchema.parse(JSON.parse(body.output_text));
+  return lessonPlanSchema.parse({
+    ...generated,
+    id: lessonId,
+    learnerId: request.learnerId,
+    language: request.language,
+    durationMinutes: request.durationMinutes,
+    createdAt: new Date().toISOString(),
+  });
 }
 
 export async function generateLessonPlan(request: LessonRequest, evidence: LessonEvidence[], lessonId: string, config: { apiKey?: string; model?: string }): Promise<ProviderResult> {
