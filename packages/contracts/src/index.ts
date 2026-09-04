@@ -153,6 +153,43 @@ export const checkpointAttemptResponseSchema = z.object({
   attemptedAt: utcTimestampSchema,
 });
 
+export const assessmentChoiceSchema = z.object({
+  id: z.string().min(1).max(12),
+  text: z.string().min(1).max(500),
+});
+
+export const assessmentQuestionSchema = z.object({
+  id: identifierSchema,
+  prompt: z.string().min(1).max(1000),
+  type: z.enum(['mcq', 'short_answer']),
+  choices: z.array(assessmentChoiceSchema).min(2).max(6).optional(),
+});
+
+export const assessmentSchema = z.object({
+  lessonId: identifierSchema,
+  questions: z.array(assessmentQuestionSchema).min(3).max(5),
+});
+
+export const assessmentAttemptRequestSchema = z.object({
+  lessonId: identifierSchema,
+  questionId: identifierSchema,
+  response: z.string().trim().min(1).max(2000),
+  clientRequestId: z.uuid(),
+});
+
+export const assessmentAttemptResponseSchema = z.object({
+  attemptId: z.uuid(),
+  questionId: identifierSchema,
+  isCorrect: z.boolean(),
+  feedback: z.string().min(1),
+  understoodConcepts: z.array(z.string()),
+  weakConcepts: z.array(z.string()),
+  misconception: z.string().nullable(),
+  attemptedAt: utcTimestampSchema,
+});
+
+export const learningReportRequestSchema = z.object({ lessonId: identifierSchema });
+
 export const learningReportSchema = z.object({
   lessonId: identifierSchema,
   learnerId: identifierSchema,
@@ -185,4 +222,8 @@ export type ResponseEvaluation = z.infer<typeof responseEvaluationSchema>;
 export type CheckpointAttemptRequest = z.infer<typeof checkpointAttemptRequestSchema>;
 export type LessonAdaptation = z.infer<typeof lessonAdaptationSchema>;
 export type CheckpointAttemptResponse = z.infer<typeof checkpointAttemptResponseSchema>;
+export type AssessmentQuestion = z.infer<typeof assessmentQuestionSchema>;
+export type Assessment = z.infer<typeof assessmentSchema>;
+export type AssessmentAttemptRequest = z.infer<typeof assessmentAttemptRequestSchema>;
+export type AssessmentAttemptResponse = z.infer<typeof assessmentAttemptResponseSchema>;
 export type LearningReport = z.infer<typeof learningReportSchema>;

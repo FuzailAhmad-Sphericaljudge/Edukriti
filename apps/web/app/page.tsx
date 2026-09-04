@@ -10,30 +10,45 @@ import {
   Target,
   TrendingUp,
 } from 'lucide-react';
+import { env } from 'cloudflare:workers';
+import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { LessonEntryActions } from '@/components/lesson-entry-actions';
 
-const recentLessons = [
+const fallbackLessons = [
   {
+    id: 'demo-electricity',
     title: 'Electricity & Circuits',
     meta: 'Class 8 · Hinglish · 20 min',
     progress: 68,
     accent: 'bg-amber-100 text-amber-800',
     icon: BrainCircuit,
+    href: '/lessons/new',
   },
   {
+    id: 'demo-react',
     title: 'Introduction to React',
     meta: 'Beginner · English · 60 min',
     progress: 32,
     accent: 'bg-sky-100 text-sky-800',
     icon: BookOpen,
+    href: '/lessons/new',
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  let recentLessons = fallbackLessons;
+  if (env.DB) {
+    try {
+      const stored = await env.DB.prepare("SELECT l.id, l.title, l.language, l.duration_minutes AS durationMinutes, l.status, COALESCE(r.score_percent, 68) AS progress FROM lessons l LEFT JOIN learning_reports r ON r.lesson_id = l.id ORDER BY l.created_at DESC LIMIT 4").all<{ id: string; title: string; language: string; durationMinutes: number; status: string; progress: number }>();
+      if (stored.results.length) recentLessons = stored.results.map((lesson) => ({ id: lesson.id, title: lesson.title, meta: `${lesson.language} · ${lesson.durationMinutes} min · ${lesson.status}`, progress: lesson.progress, accent: lesson.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800', icon: lesson.status === 'completed' ? Target : BookOpen, href: `/lessons/${lesson.id}/${lesson.status === 'completed' ? 'report' : 'class'}` }));
+    } catch {
+      recentLessons = fallbackLessons;
+    }
+  }
   return (
     <main className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border/70 bg-background/90 backdrop-blur-xl">
@@ -66,7 +81,7 @@ export default function Home() {
               <h1 className="font-heading text-3xl font-bold tracking-[-0.04em] sm:text-4xl">Good evening, Fuzail.</h1>
               <p className="mt-2 max-w-xl text-muted-foreground">What would you like your personal AI teacher to help you understand today?</p>
             </div>
-            <Button size="lg" className="h-11 rounded-xl px-4 shadow-[0_10px_24px_rgb(29_78_216/20%)]">
+            <Button size="lg" className="h-11 rounded-xl px-4 shadow-[0_10px_24px_rgb(29_78_216/20%)]" render={<Link href="/lessons/new" />}>
               <Plus data-icon="inline-start" /> Create lesson
             </Button>
           </div>
@@ -114,11 +129,11 @@ export default function Home() {
               {recentLessons.map((lesson) => {
                 const Icon = lesson.icon;
                 return (
-                  <article key={lesson.title} className="rounded-2xl border bg-card p-5 shadow-[0_10px_32px_rgb(40_50_75/5%)] transition-transform hover:-translate-y-0.5">
+                  <article key={lesson.id} className="rounded-2xl border bg-card p-5 shadow-[0_10px_32px_rgb(40_50_75/5%)] transition-transform hover:-translate-y-0.5">
                     <div className="flex items-start gap-4">
                       <div className={`grid size-11 shrink-0 place-items-center rounded-2xl ${lesson.accent}`}><Icon className="size-5" /></div>
                       <div className="min-w-0 flex-1"><h3 className="font-heading font-bold tracking-[-0.02em]">{lesson.title}</h3><p className="mt-1 text-xs text-muted-foreground">{lesson.meta}</p></div>
-                      <Button variant="ghost" size="icon-sm" aria-label={`Continue ${lesson.title}`}><ArrowRight /></Button>
+                      <Button variant="ghost" size="icon-sm" aria-label={`Continue ${lesson.title}`} render={<Link href={lesson.href} />}><ArrowRight /></Button>
                     </div>
                     <div className="mt-5">
                       <div className="mb-2 flex justify-between text-xs font-medium"><span>Lesson progress</span><span className="text-muted-foreground">{lesson.progress}%</span></div>
