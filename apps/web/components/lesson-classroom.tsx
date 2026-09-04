@@ -1,0 +1,85 @@
+'use client';
+
+import type { LessonPlanGenerationResponse, LessonPlan } from '@edukriti/contracts';
+import { captionAt, lessonProgress, speechLocale } from '@edukriti/teaching-engine';
+import { ArrowLeft, ArrowRight, BookOpen, Captions, Check, CirclePause, CirclePlay, Code2, Lightbulb, RotateCcw, Sparkles, Volume2 } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+
+type Segment = LessonPlan['segments'][number];
+type PlayerState = 'idle' | 'speaking' | 'paused' | 'finished';
+
+function TeachingVisual({ segment }: { segment: Segment }) {
+  if (segment.visualType === 'equation') {
+    const isForce = /force|newton|motion/i.test(`${segment.title} ${segment.visualBrief}`);
+    const symbols = isForce ? ['F', 'm', 'a'] : ['V', 'I', 'R'];
+    const labels = isForce ? ['Force', 'Mass', 'Acceleration'] : ['Voltage', 'Current', 'Resistance'];
+    return <div className="grid h-full place-items-center p-6 text-center"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-300">Concept equation</p><div className="mt-5 flex items-center justify-center gap-3 font-heading text-4xl font-black sm:text-6xl"><span className="rounded-2xl bg-white/10 px-4 py-3">{symbols[0]}</span><span>=</span><span className="rounded-2xl bg-amber-300 px-4 py-3 text-slate-950">{symbols[1]}</span><span>×</span><span className="rounded-2xl bg-white/10 px-4 py-3">{symbols[2]}</span></div><div className="mt-5 grid grid-cols-3 gap-2 text-xs text-white/65">{labels.map((label) => <span key={label}>{label}</span>)}</div></div></div>;
+  }
+  if (segment.visualType === 'code') {
+    return <div className="m-5 rounded-2xl border border-white/10 bg-slate-950 p-5 font-mono text-sm leading-7 text-sky-200"><Code2 className="mb-3 size-5 text-amber-300" /><span className="text-fuchsia-300">function</span> learn(concept) {'{'}<br />&nbsp;&nbsp;<span className="text-emerald-300">return</span> explain(concept) + practice();<br />{'}'}</div>;
+  }
+  if (segment.visualType === 'graph') {
+    return <div className="grid h-full place-items-center p-6"><svg viewBox="0 0 420 220" role="img" aria-label="Rising concept graph" className="w-full max-w-lg"><path d="M42 18v164h344" fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="3" /><path d="M55 164 C125 150, 150 125, 206 130 S305 73, 375 42" fill="none" stroke="#fcd34d" strokeLinecap="round" strokeWidth="8" /><circle cx="206" cy="130" r="8" fill="#7dd3fc" /><circle cx="375" cy="42" r="8" fill="#7dd3fc" /></svg></div>;
+  }
+  const steps = segment.visualBrief.split(/[,.]/).filter(Boolean).slice(0, 3);
+  return <div className="grid h-full place-items-center p-6"><div className="w-full max-w-lg"><Lightbulb className="mx-auto size-10 text-amber-300" /><h3 className="mt-4 text-center font-heading text-2xl font-bold">{segment.title}</h3><div className="mt-6 grid gap-3 sm:grid-cols-3">{(steps.length > 1 ? steps : ['Understand the idea', 'Connect an example', 'Apply what you learned']).map((step, index) => <div key={step} className="rounded-2xl border border-white/10 bg-white/7 p-4 text-center text-sm leading-5"><span className="mx-auto mb-3 grid size-7 place-items-center rounded-full bg-sky-400 font-bold text-slate-950">{index + 1}</span>{step.trim()}</div>)}</div></div></div>;
+}
+
+export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationResponse }) {
+  const [segmentIndex, setSegmentIndex] = useState(0);
+  const [playerState, setPlayerState] = useState<PlayerState>('idle');
+  const [captionIndex, setCaptionIndex] = useState(0);
+  const [speechAvailable, setSpeechAvailable] = useState(true);
+  const segment = lesson.plan.segments[segmentIndex]!;
+  const progress = lessonProgress(segmentIndex, lesson.plan.segments.length);
+  const caption = useMemo(() => captionAt(segment.narration, captionIndex), [captionIndex, segment.narration]);
+  const stopSpeech = useCallback(() => { if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel(); }, []);
+
+  useEffect(() => {
+    setSpeechAvailable(typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window);
+    return stopSpeech;
+  }, [stopSpeech]);
+
+  const speak = useCallback(() => {
+    if (!speechAvailable) return;
+    if (playerState === 'paused') { window.speechSynthesis.resume(); setPlayerState('speaking'); return; }
+    stopSpeech();
+    setCaptionIndex(0);
+    const utterance = new SpeechSynthesisUtterance(segment.narration);
+    utterance.lang = speechLocale(lesson.plan.language);
+    utterance.rate = lesson.plan.language === 'hindi' ? 0.88 : 0.92;
+    const localePrefix = utterance.lang.slice(0, 2).toLowerCase();
+    utterance.voice = window.speechSynthesis.getVoices().find((voice) => voice.lang.toLowerCase().startsWith(localePrefix)) ?? null;
+    utterance.onboundary = (event) => setCaptionIndex(event.charIndex);
+    utterance.onend = () => setPlayerState('finished');
+    utterance.onerror = () => setPlayerState('idle');
+    window.speechSynthesis.speak(utterance);
+    setPlayerState('speaking');
+  }, [lesson.plan.language, playerState, segment.narration, speechAvailable, stopSpeech]);
+
+  const pause = () => { window.speechSynthesis.pause(); setPlayerState('paused'); };
+  const move = (nextIndex: number) => { stopSpeech(); setSegmentIndex(nextIndex); setCaptionIndex(0); setPlayerState('idle'); };
+
+  return <main className="min-h-screen bg-[#071126] text-white">
+    <header className="border-b border-white/10 bg-[#0b1730] px-4 py-3 sm:px-7"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><div className="flex min-w-0 items-center gap-3"><Button size="icon-sm" variant="ghost" className="text-white hover:bg-white/10 hover:text-white" render={<Link href={`/lessons/${lesson.plan.id}/plan`} aria-label="Back to lesson plan" />}><ArrowLeft /></Button><div className="min-w-0"><p className="truncate font-heading font-bold">{lesson.plan.title}</p><p className="text-xs text-white/50">Segment {segmentIndex + 1} of {lesson.plan.segments.length}</p></div></div><Badge className="shrink-0 bg-emerald-400/15 text-emerald-300"><span className="mr-1.5 size-1.5 rounded-full bg-emerald-300" />AI classroom</Badge></div></header>
+    <div className="h-1 bg-white/10"><div className="h-full bg-gradient-to-r from-sky-400 to-amber-300 transition-all" style={{ width: `${progress}%` }} /></div>
+    <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_330px] lg:p-6">
+      <section className="overflow-hidden rounded-[28px] border border-white/10 bg-[#0d1c38] shadow-2xl">
+        <div className="grid min-h-[520px] md:grid-cols-[40%_60%]">
+          <div className="relative min-h-[320px] overflow-hidden border-b border-white/10 bg-slate-900 md:border-r md:border-b-0"><Image src="/teacher-avatar.png" alt="Edukriti AI teacher" fill priority sizes="(max-width: 768px) 100vw, 40vw" className={`object-cover object-top transition-transform duration-700 ${playerState === 'speaking' ? 'scale-[1.025]' : 'scale-100'}`} /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#071126] via-[#071126]/60 to-transparent p-5 pt-20"><div className="flex items-center gap-2"><span className={`size-2.5 rounded-full ${playerState === 'speaking' ? 'animate-pulse bg-emerald-400' : 'bg-white/40'}`} /><span className="text-sm font-bold">Aarohi · AI Teacher</span></div><p className="mt-1 text-xs text-white/60">{playerState === 'speaking' ? 'Teaching now' : playerState === 'paused' ? 'Lesson paused' : 'Ready when you are'}</p></div></div>
+          <div className="relative min-h-[340px] bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,.15),transparent_35%)]"><TeachingVisual segment={segment} /><div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/10 bg-[#050b18]/90 px-4 py-3 text-center shadow-xl backdrop-blur"><div className="mb-1 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-300"><Captions className="size-3.5" /> Live captions</div><p className="text-sm leading-6 text-white sm:text-base">{caption}</p></div></div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#09152c] p-4"><div className="flex items-center gap-2"><Button size="icon" variant="ghost" disabled={segmentIndex === 0} onClick={() => move(segmentIndex - 1)} className="text-white hover:bg-white/10 hover:text-white"><ArrowLeft /></Button>{playerState === 'speaking' ? <Button onClick={pause} className="rounded-full bg-white px-6 text-slate-950 hover:bg-white/90"><CirclePause /> Pause</Button> : <Button onClick={speak} disabled={!speechAvailable} className="rounded-full bg-white px-6 text-slate-950 hover:bg-white/90">{playerState === 'finished' ? <RotateCcw /> : <CirclePlay />}{playerState === 'paused' ? 'Resume' : playerState === 'finished' ? 'Replay' : 'Play lesson'}</Button>}<Button size="icon" variant="ghost" disabled={segmentIndex === lesson.plan.segments.length - 1} onClick={() => move(segmentIndex + 1)} className="text-white hover:bg-white/10 hover:text-white"><ArrowRight /></Button></div><div className="flex items-center gap-2 text-xs text-white/55"><Volume2 className="size-4" /> {speechAvailable ? `${speechLocale(lesson.plan.language)} browser voice` : 'Voice unavailable; captions remain active'}</div></div>
+      </section>
+      <aside className="space-y-4"><section className="rounded-[24px] border border-white/10 bg-white/[0.055] p-5"><p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-300">Now teaching</p><h1 className="mt-2 font-heading text-2xl font-bold leading-tight">{segment.title}</h1><p className="mt-3 text-sm leading-6 text-white/60">{segment.objective}</p><div className="mt-4 flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-xs"><span>{segment.estimatedMinutes} min</span><span className="capitalize">{segment.visualType.replace('_', ' ')}</span></div></section>
+        {segment.checkpoint && <section className="rounded-[24px] border border-amber-300/20 bg-amber-300/10 p-5"><Sparkles className="size-5 text-amber-300" /><p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-amber-200">Reflection checkpoint</p><p className="mt-2 text-sm leading-6">{segment.checkpoint.prompt}</p><p className="mt-3 text-xs text-white/50">Interactive evaluation and adaptive re-teaching arrive in Phase 6.</p></section>}
+        <section className="rounded-[24px] border border-white/10 bg-white/[0.055] p-5"><div className="flex items-center gap-2"><BookOpen className="size-4 text-emerald-300" /><p className="text-xs font-bold uppercase tracking-[0.14em] text-white/60">Lesson path</p></div><ol className="mt-4 space-y-3">{lesson.plan.segments.map((item, index) => <li key={item.id}><button type="button" onClick={() => move(index)} className={`flex w-full items-center gap-3 rounded-xl p-2.5 text-left text-sm transition ${index === segmentIndex ? 'bg-sky-400/15 text-sky-200' : 'text-white/55 hover:bg-white/5 hover:text-white'}`}><span className={`grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${index < segmentIndex ? 'bg-emerald-400 text-slate-950' : index === segmentIndex ? 'bg-sky-300 text-slate-950' : 'bg-white/10'}`}>{index < segmentIndex ? <Check className="size-3.5" /> : index + 1}</span><span className="line-clamp-1">{item.title}</span></button></li>)}</ol></section>
+      </aside>
+    </div>
+  </main>;
+}

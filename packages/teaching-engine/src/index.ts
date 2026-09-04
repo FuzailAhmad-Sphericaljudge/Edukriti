@@ -1,0 +1,115 @@
+import { lessonPlanSchema, type LessonPlan, type LessonRequest } from '@edukriti/contracts';
+
+export type LessonEvidence = {
+  sourceId: string;
+  chunkId: string;
+  page: number;
+  text: string;
+};
+
+const topicSequences: Array<{ pattern: RegExp; concepts: string[] }> = [
+  { pattern: /electric|circuit|ohm|voltage|current|resistance/i, concepts: ['Electric charge and current', 'Voltage as the driving force', 'Resistance and Ohm’s Law', 'Applying ideas to a simple circuit', 'Practice and reflection', 'Challenge problem'] },
+  { pattern: /newton|force|motion/i, concepts: ['Motion and force', 'Newton’s First Law', 'Newton’s Second Law', 'Newton’s Third Law', 'Everyday applications', 'Challenge problem'] },
+  { pattern: /react|component|jsx/i, concepts: ['The component model', 'JSX and rendering', 'Props and data flow', 'State and interaction', 'Building a small feature', 'Interview practice'] },
+  { pattern: /artificial intelligence|machine learning|\bai\b/i, concepts: ['What makes a system intelligent', 'Data, models, and learning', 'Training and inference', 'Common AI applications', 'Limits and responsible use', 'Next learning steps'] },
+];
+
+function segmentCount(minutes: 5 | 20 | 60) {
+  return minutes === 5 ? 2 : minutes === 20 ? 4 : 6;
+}
+
+function visualFor(topic: string, concept: string) {
+  const text = `${topic} ${concept}`.toLocaleLowerCase();
+  if (/math|equation|ohm|voltage|current|resistance|force/.test(text)) return 'equation' as const;
+  if (/history|event|century/.test(text)) return 'timeline' as const;
+  if (/geography|country|river|location/.test(text)) return 'map' as const;
+  if (/react|javascript|python|code|program/.test(text)) return 'code' as const;
+  if (/data|trend|statistics/.test(text)) return 'graph' as const;
+  if (/biology|cell|organ|circuit|system|process/.test(text)) return 'diagram' as const;
+  return 'key_points' as const;
+}
+
+function conceptsFor(topic: string, evidence: LessonEvidence[], count: number) {
+  const sequence = topicSequences.find((entry) => entry.pattern.test(topic))?.concepts;
+  if (sequence) return sequence.slice(0, count);
+  const evidenceConcepts = evidence.map((item) => item.text.split(/[.!?\n]/)[0]?.trim()).filter((item): item is string => Boolean(item && item.length > 8));
+  const fallbacks = [`Foundations of ${topic}`, `How ${topic} works`, `${topic} in practice`, `Reviewing ${topic}`, `Applying ${topic}`, `Going further with ${topic}`];
+  return Array.from({ length: count }, (_, index) => evidenceConcepts[index] || fallbacks[index]);
+}
+
+function localizedNarration(language: LessonRequest['language'], level: LessonRequest['level'], concept: string, topic: string, evidence?: LessonEvidence) {
+  const sourceIdea = evidence?.text.slice(0, 420);
+  const depth = level === 'beginner' ? 'a simple everyday example' : level === 'intermediate' ? 'a practical example and the key technical terms' : 'the precise mechanism, assumptions, and a challenging application';
+  if (language === 'hindi') return `आज हम “${concept}” समझेंगे। पहले मूल विचार देखिए: ${sourceIdea || `${concept}, ${topic} का एक महत्वपूर्ण भाग है।`} अब इसे ${depth} के साथ चरण-दर-चरण जोड़ते हैं।`;
+  if (language === 'hinglish') return `Aaj hum “${concept}” ko step-by-step samjhenge. Core idea yeh hai: ${sourceIdea || `${concept} is an important part of ${topic}.`} Ab isse ${depth} ke through connect karte hain, taaki concept sirf yaad nahi balki clear ho.`;
+  return `Let’s understand “${concept}” step by step. The core idea is: ${sourceIdea || `${concept} is an important part of ${topic}.`} We will connect it using ${depth} so the learner can explain and apply it.`;
+}
+
+function checkpointPrompt(language: LessonRequest['language'], concept: string) {
+  if (language === 'hindi') return `अपने शब्दों में बताइए: “${concept}” का मुख्य विचार क्या है?`;
+  if (language === 'hinglish') return `Apne words mein batao: “${concept}” ka main idea kya hai?`;
+  return `Explain in your own words: what is the main idea behind “${concept}”?`;
+}
+
+export function buildDeterministicLessonPlan(request: LessonRequest, evidence: LessonEvidence[] = [], id = crypto.randomUUID(), now = new Date().toISOString()): LessonPlan {
+  const topic = request.topic?.trim() || evidence[0]?.text.split(/[.!?\n]/)[0]?.slice(0, 90) || 'Uploaded material';
+  const count = segmentCount(request.durationMinutes);
+  const concepts = conceptsFor(topic, evidence, count);
+  const minutesPerSegment = request.durationMinutes / count;
+
+  return lessonPlanSchema.parse({
+    id,
+    learnerId: request.learnerId,
+    title: `${topic}: a ${request.durationMinutes}-minute guided lesson`,
+    objectives: [
+      `Explain the essential ideas of ${topic}`,
+      `Apply ${topic} through an appropriate example`,
+      `Check understanding and identify misconceptions`,
+    ],
+    language: request.language,
+    durationMinutes: request.durationMinutes,
+    segments: concepts.map((concept, index) => {
+      const source = evidence[index % Math.max(evidence.length, 1)];
+      const hasCheckpoint = index > 0 && (index === count - 1 || index % 2 === 1);
+      return {
+        id: `${id}-segment-${index + 1}`,
+        title: concept,
+        objective: index === count - 1 ? `Use and verify the learner’s understanding of ${concept}` : `Build a clear mental model of ${concept}`,
+        estimatedMinutes: Number(minutesPerSegment.toFixed(1)),
+        narration: localizedNarration(request.language, request.level, concept, topic, source),
+        visualType: visualFor(topic, concept),
+        visualBrief: `Create a ${visualFor(topic, concept).replace('_', ' ')} that demonstrates ${concept} for a ${request.level} learner. Keep labels in ${request.language}.`,
+        citations: source ? [{ sourceId: source.sourceId, chunkId: source.chunkId, page: source.page, excerpt: source.text.slice(0, 500) }] : [],
+        checkpoint: hasCheckpoint ? {
+          id: `${id}-checkpoint-${index + 1}`,
+          prompt: checkpointPrompt(request.language, concept),
+          type: 'explain_in_own_words' as const,
+          targetConcept: concept,
+        } : undefined,
+      };
+    }),
+    createdAt: now,
+  });
+}
+
+export function lessonMinutes(plan: LessonPlan) {
+  return plan.segments.reduce((total, segment) => total + segment.estimatedMinutes, 0);
+}
+
+export function speechLocale(language: LessonPlan['language']) {
+  return language === 'hindi' ? 'hi-IN' : 'en-IN';
+}
+
+export function captionAt(text: string, characterIndex: number) {
+  const sentences = Array.from(text.matchAll(/[^.!?]+[.!?]?/g));
+  const current = sentences.find((match) => {
+    const start = match.index ?? 0;
+    return characterIndex >= start && characterIndex < start + match[0].length;
+  });
+  return (current?.[0] ?? sentences.at(-1)?.[0] ?? text).trim();
+}
+
+export function lessonProgress(segmentIndex: number, segmentCountValue: number) {
+  if (segmentCountValue <= 0) return 0;
+  return Math.min(100, Math.max(0, Math.round(((segmentIndex + 1) / segmentCountValue) * 100)));
+}

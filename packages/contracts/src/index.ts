@@ -113,6 +113,14 @@ export const lessonPlanSchema = z.object({
   createdAt: utcTimestampSchema,
 });
 
+export const lessonPlanGenerationResponseSchema = z.object({
+  plan: lessonPlanSchema,
+  grounded: z.boolean(),
+  provider: z.enum(['deterministic', 'openai']),
+});
+
+export const lessonPlanJsonSchema = z.toJSONSchema(lessonPlanSchema);
+
 export const responseEvaluationSchema = z.object({
   checkpointId: identifierSchema,
   isCorrect: z.boolean(),
@@ -150,5 +158,6 @@ export type RetrievalRequest = z.infer<typeof retrievalRequestSchema>;
 export type RetrievalResponse = z.infer<typeof retrievalResponseSchema>;
 export type LessonRequest = z.infer<typeof lessonRequestSchema>;
 export type LessonPlan = z.infer<typeof lessonPlanSchema>;
+export type LessonPlanGenerationResponse = z.infer<typeof lessonPlanGenerationResponseSchema>;
 export type ResponseEvaluation = z.infer<typeof responseEvaluationSchema>;
 export type LearningReport = z.infer<typeof learningReportSchema>;
