@@ -1,13 +1,13 @@
 'use client';
 
-import type { RetrievalResponse, SourceIngestionResponse } from '@edukriti/contracts';
+import type { LessonPlanGenerationResponse, RetrievalResponse, SourceIngestionResponse } from '@edukriti/contracts';
 import { BookOpen, Check, Clock3, FileSearch, Languages, LoaderCircle, Sparkles, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 
 type Mode = 'topic' | 'upload';
-type Status = 'idle' | 'uploading' | 'retrieving' | 'ready' | 'error';
+type Status = 'idle' | 'uploading' | 'retrieving' | 'planning' | 'ready' | 'error';
 
 export function LessonSetupForm({
   initialMode,
@@ -35,47 +35,58 @@ export function LessonSetupForm({
     const formElement = event.currentTarget;
     const data = new FormData(formElement);
 
-    if (mode === 'topic') {
-      setStatus('ready');
-      return;
-    }
-
-    const file = fileRef.current?.files?.[0];
-    if (!file) {
-      setError('Choose a PDF or text file first.');
-      setStatus('error');
-      return;
-    }
-
-    const upload = new FormData();
-    upload.set('file', file);
-    upload.set('learnerId', 'demo-learner');
-    setStatus('uploading');
-
     try {
-      const response = await fetch('/api/sources', { method: 'POST', body: upload });
-      const body = await response.json() as SourceIngestionResponse & { error?: { message?: string } };
-      if (!response.ok) throw new Error(body.error?.message || 'Material processing failed.');
-      setResult(body);
+      let sourceId: string | undefined;
+      if (mode === 'upload') {
+        const file = fileRef.current?.files?.[0];
+        if (!file) throw new Error('Choose a PDF or text file first.');
+        const upload = new FormData();
+        upload.set('file', file);
+        upload.set('learnerId', 'demo-learner');
+        setStatus('uploading');
+        const response = await fetch('/api/sources', { method: 'POST', body: upload });
+        const body = await response.json() as SourceIngestionResponse & { error?: { message?: string } };
+        if (!response.ok) throw new Error(body.error?.message || 'Material processing failed.');
+        setResult(body);
+        sourceId = body.source.id;
 
-      setStatus('retrieving');
-      const query = String(data.get('goal') || 'key concepts definitions examples');
-      const retrievalResponse = await fetch('/api/retrieval', {
+        setStatus('retrieving');
+        const retrievalResponse = await fetch('/api/retrieval', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ sourceId, query: String(data.get('goal')), limit: 3 }),
+        });
+        const retrievalBody = await retrievalResponse.json() as RetrievalResponse & { error?: { message?: string } };
+        if (!retrievalResponse.ok) throw new Error(retrievalBody.error?.message || 'Source retrieval failed.');
+        setRetrieval(retrievalBody);
+      }
+
+      setStatus('planning');
+      const lessonResponse = await fetch('/api/lessons', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ sourceId: body.source.id, query, limit: 3 }),
+        body: JSON.stringify({
+          learnerId: 'demo-learner',
+          topic: String(data.get('goal')),
+          sourceId,
+          level: String(data.get('level')),
+          language: String(data.get('language')),
+          durationMinutes: Number(data.get('duration')),
+          style: 'simple_examples',
+          goal: String(data.get('goal')),
+        }),
       });
-      const retrievalBody = await retrievalResponse.json() as RetrievalResponse & { error?: { message?: string } };
-      if (!retrievalResponse.ok) throw new Error(retrievalBody.error?.message || 'Source retrieval failed.');
-      setRetrieval(retrievalBody);
+      const lessonBody = await lessonResponse.json() as LessonPlanGenerationResponse & { error?: { message?: string } };
+      if (!lessonResponse.ok) throw new Error(lessonBody.error?.message || 'Lesson planning failed.');
       setStatus('ready');
+      window.location.assign(`/lessons/${lessonBody.plan.id}/plan`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Something went wrong while processing the material.');
       setStatus('error');
     }
   }
 
-  const busy = status === 'uploading' || status === 'retrieving';
+  const busy = status === 'uploading' || status === 'retrieving' || status === 'planning';
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -110,7 +121,7 @@ export function LessonSetupForm({
         <div className="flex justify-end border-t pt-5">
           <Button disabled={busy} type="submit" size="lg" className="h-11 rounded-xl px-5">
             {busy ? <LoaderCircle className="animate-spin" data-icon="inline-start" /> : <Sparkles data-icon="inline-start" />}
-            {status === 'uploading' ? 'Extracting material…' : status === 'retrieving' ? 'Grounding lesson…' : mode === 'upload' ? 'Process material' : 'Continue to lesson planning'}
+            {status === 'uploading' ? 'Extracting material…' : status === 'retrieving' ? 'Grounding lesson…' : status === 'planning' ? 'Building your lesson…' : 'Generate lesson plan'}
           </Button>
         </div>
       </form>
