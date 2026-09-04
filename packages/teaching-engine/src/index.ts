@@ -1,4 +1,4 @@
-import { lessonPlanSchema, type LessonPlan, type LessonRequest } from '@edukriti/contracts';
+import { lessonAdaptationSchema, responseEvaluationSchema, lessonPlanSchema, type LessonAdaptation, type LessonPlan, type LessonRequest, type ResponseEvaluation } from '@edukriti/contracts';
 
 export type LessonEvidence = {
   sourceId: string;
@@ -112,4 +112,62 @@ export function captionAt(text: string, characterIndex: number) {
 export function lessonProgress(segmentIndex: number, segmentCountValue: number) {
   if (segmentCountValue <= 0) return 0;
   return Math.min(100, Math.max(0, Math.round(((segmentIndex + 1) / segmentCountValue) * 100)));
+}
+
+type CheckpointContext = {
+  id: string;
+  targetConcept: string;
+  language: LessonPlan['language'];
+};
+
+const conceptSignals: Array<{ pattern: RegExp; signals: RegExp; misconception?: RegExp }> = [
+  { pattern: /voltage|driving force/i, signals: /push|pressure|potential|difference|drive|energy/i, misconception: /same as current|is current/i },
+  { pattern: /current|charge/i, signals: /flow|charge|electron|ampere|circuit/i, misconception: /used up|gets used|finish(?:es|ed)?/i },
+  { pattern: /resistance|ohm/i, signals: /oppose|restrict|slow|limit|current|ohm/i, misconception: /creates current|adds current/i },
+  { pattern: /newton|force|motion/i, signals: /force|mass|acceleration|motion|reaction|inertia/i },
+  { pattern: /component|jsx|react/i, signals: /component|render|props|state|interface|reuse/i },
+];
+
+function localizedFeedback(language: LessonPlan['language'], correct: boolean, concept: string) {
+  if (language === 'hindi') return correct ? `बहुत अच्छा — आपने ${concept} का मुख्य विचार सही समझाया।` : `अच्छी कोशिश। उत्तर में ${concept} का मुख्य संबंध अभी स्पष्ट नहीं है।`;
+  if (language === 'hinglish') return correct ? `Bilkul sahi — aapne ${concept} ka core idea clearly explain kiya.` : `Good try. ${concept} ka main connection abhi clear nahi hua, so ek nayi analogy se dekhte hain.`;
+  return correct ? `Exactly — you explained the core idea of ${concept}.` : `Good attempt. The key relationship in ${concept} is not clear yet, so let’s try a different analogy.`;
+}
+
+export function evaluateCheckpoint(context: CheckpointContext, learnerResponse: string): ResponseEvaluation {
+  const response = learnerResponse.trim();
+  const rule = conceptSignals.find((entry) => entry.pattern.test(context.targetConcept));
+  const currentIsConsumed = /current.{0,24}(used up|gets used|finish(?:es|ed)?)/i.test(response);
+  const misconceptionMatch = currentIsConsumed || (rule?.misconception?.test(response) ?? false);
+  const conceptWords = context.targetConcept.toLowerCase().match(/[a-z]{4,}/g) ?? [];
+  const semanticMatch = rule?.signals.test(response) ?? conceptWords.some((word) => response.toLowerCase().includes(word));
+  const developedAnswer = response.split(/\s+/).length >= 4;
+  const isCorrect = developedAnswer && semanticMatch && !misconceptionMatch;
+  const misconception = misconceptionMatch
+    ? currentIsConsumed ? 'The learner thinks electric current is consumed by a component instead of flowing around the complete circuit.' : `The learner treats ${context.targetConcept} as an interchangeable or consumable quantity.`
+    : isCorrect ? null : `The response does not yet connect the defining cause-and-effect relationship in ${context.targetConcept}.`;
+
+  return responseEvaluationSchema.parse({
+    checkpointId: context.id,
+    isCorrect,
+    confidence: misconceptionMatch ? 0.92 : semanticMatch ? 0.84 : 0.68,
+    understoodConcepts: isCorrect ? [context.targetConcept] : [],
+    misconception,
+    feedback: localizedFeedback(context.language, isCorrect, context.targetConcept),
+    nextAction: isCorrect ? 'continue' : 'new_analogy',
+  });
+}
+
+export function buildAdaptation(context: CheckpointContext, evaluation: ResponseEvaluation): LessonAdaptation | null {
+  if (evaluation.isCorrect) return null;
+  const concept = context.targetConcept;
+  const analogy = /voltage|current|resistance|electric/i.test(concept)
+    ? 'Imagine a water pipe: voltage is the push from the pump, current is the amount of water flowing, and resistance is the narrowness that limits the flow.'
+    : `Imagine ${concept} as a small system with an input, a rule, and an observable result. Change one part at a time and watch what happens.`;
+  const explanation = context.language === 'hindi'
+    ? `इसे एक नए उदाहरण से समझते हैं। ${analogy} अब कारण, बदलाव और परिणाम को अलग-अलग पहचानिए।`
+    : context.language === 'hinglish'
+      ? `Chalo ek different analogy try karte hain. ${analogy} Ab cause, change aur result ko alag-alag identify karo.`
+      : `Let’s switch to a different analogy. ${analogy} Now identify the cause, the change, and the result separately.`;
+  return lessonAdaptationSchema.parse({ strategy: 'new_analogy', title: `${concept}, explained another way`, explanation, visualType: 'diagram', visualBrief: `Show a three-part cause → change → result diagram for ${concept}.` });
 }
