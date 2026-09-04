@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { lessonRequestSchema, retrievalRequestSchema, utcTimestampSchema } from './index.ts';
+import { checkpointAttemptRequestSchema, lessonRequestSchema, retrievalRequestSchema, utcTimestampSchema } from './index.ts';
 
 const validRequest = {
   learnerId: 'learner-demo',
@@ -33,4 +33,11 @@ test('requires UTC timestamps with an explicit offset', () => {
 
 test('caps retrieval result requests', () => {
   assert.equal(retrievalRequestSchema.safeParse({ sourceId: 'source-1', query: 'current', limit: 11 }).success, false);
+});
+
+test('requires a durable idempotency key for checkpoint attempts', () => {
+  const valid = checkpointAttemptRequestSchema.safeParse({ lessonId: 'lesson', checkpointId: 'checkpoint', response: 'Voltage pushes current around a circuit.', clientRequestId: '550e8400-e29b-41d4-a716-446655440000' });
+  const invalid = checkpointAttemptRequestSchema.safeParse({ lessonId: 'lesson', checkpointId: 'checkpoint', response: '', clientRequestId: 'retry-me' });
+  assert.equal(valid.success, true);
+  assert.equal(invalid.success, false);
 });

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { LessonRequest } from '@edukriti/contracts';
-import { buildDeterministicLessonPlan, captionAt, lessonMinutes, lessonProgress, speechLocale } from './index.ts';
+import { buildAdaptation, buildDeterministicLessonPlan, captionAt, evaluateCheckpoint, lessonMinutes, lessonProgress, speechLocale } from './index.ts';
 
 const request: LessonRequest = {
   learnerId: 'demo-learner',
@@ -50,4 +50,20 @@ test('selects active captions and clamps classroom progress', () => {
   assert.equal(lessonProgress(1, 4), 50);
   assert.equal(lessonProgress(10, 4), 100);
   assert.equal(lessonProgress(0, 0), 0);
+});
+
+test('evaluates checkpoint meaning instead of exact wording', () => {
+  const evaluation = evaluateCheckpoint({ id: 'cp', targetConcept: 'Voltage as the driving force', language: 'hinglish' }, 'It is like pressure that pushes charges through the circuit.');
+  assert.equal(evaluation.isCorrect, true);
+  assert.equal(evaluation.nextAction, 'continue');
+});
+
+test('diagnoses a known misconception and changes the explanation', () => {
+  const context = { id: 'cp', targetConcept: 'Electric charge and current', language: 'english' } as const;
+  const evaluation = evaluateCheckpoint(context, 'Current gets used up by the bulb.');
+  const adaptation = buildAdaptation(context, evaluation);
+  assert.equal(evaluation.isCorrect, false);
+  assert.match(evaluation.misconception ?? '', /consum/i);
+  assert.equal(adaptation?.strategy, 'new_analogy');
+  assert.match(adaptation?.explanation ?? '', /water pipe/i);
 });

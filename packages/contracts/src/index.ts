@@ -131,6 +131,28 @@ export const responseEvaluationSchema = z.object({
   nextAction: z.enum(['continue', 'simplify', 'new_analogy', 'new_example', 'change_visual', 'change_difficulty']),
 });
 
+export const checkpointAttemptRequestSchema = z.object({
+  lessonId: identifierSchema,
+  checkpointId: identifierSchema,
+  response: z.string().trim().min(2).max(2000),
+  clientRequestId: z.uuid(),
+});
+
+export const lessonAdaptationSchema = z.object({
+  strategy: z.enum(['simplify', 'new_analogy', 'new_example', 'change_visual', 'change_difficulty']),
+  title: z.string().min(1),
+  explanation: z.string().min(1),
+  visualType: lessonSegmentSchema.shape.visualType,
+  visualBrief: z.string().min(1),
+});
+
+export const checkpointAttemptResponseSchema = z.object({
+  attemptId: z.uuid(),
+  evaluation: responseEvaluationSchema,
+  adaptation: lessonAdaptationSchema.nullable(),
+  attemptedAt: utcTimestampSchema,
+});
+
 export const learningReportSchema = z.object({
   lessonId: identifierSchema,
   learnerId: identifierSchema,
@@ -160,4 +182,7 @@ export type LessonRequest = z.infer<typeof lessonRequestSchema>;
 export type LessonPlan = z.infer<typeof lessonPlanSchema>;
 export type LessonPlanGenerationResponse = z.infer<typeof lessonPlanGenerationResponseSchema>;
 export type ResponseEvaluation = z.infer<typeof responseEvaluationSchema>;
+export type CheckpointAttemptRequest = z.infer<typeof checkpointAttemptRequestSchema>;
+export type LessonAdaptation = z.infer<typeof lessonAdaptationSchema>;
+export type CheckpointAttemptResponse = z.infer<typeof checkpointAttemptResponseSchema>;
 export type LearningReport = z.infer<typeof learningReportSchema>;

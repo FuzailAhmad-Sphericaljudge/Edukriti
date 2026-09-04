@@ -1,14 +1,15 @@
 'use client';
 
-import type { LessonPlanGenerationResponse, LessonPlan } from '@edukriti/contracts';
+import { checkpointAttemptResponseSchema, type CheckpointAttemptResponse, type LessonPlanGenerationResponse, type LessonPlan } from '@edukriti/contracts';
 import { captionAt, lessonProgress, speechLocale } from '@edukriti/teaching-engine';
 import { ArrowLeft, ArrowRight, BookOpen, Captions, Check, CirclePause, CirclePlay, Code2, Lightbulb, RotateCcw, Sparkles, Volume2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
 type Segment = LessonPlan['segments'][number];
 type PlayerState = 'idle' | 'speaking' | 'paused' | 'finished';
@@ -35,9 +36,16 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
   const [playerState, setPlayerState] = useState<PlayerState>('idle');
   const [captionIndex, setCaptionIndex] = useState(0);
   const [speechAvailable, setSpeechAvailable] = useState(true);
+  const [spokenText, setSpokenText] = useState(lesson.plan.segments[0]!.narration);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [attempts, setAttempts] = useState<Record<string, CheckpointAttemptResponse>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [checkpointError, setCheckpointError] = useState('');
+  const requestIds = useRef<Record<string, string>>({});
   const segment = lesson.plan.segments[segmentIndex]!;
   const progress = lessonProgress(segmentIndex, lesson.plan.segments.length);
-  const caption = useMemo(() => captionAt(segment.narration, captionIndex), [captionIndex, segment.narration]);
+  const caption = useMemo(() => captionAt(spokenText, captionIndex), [captionIndex, spokenText]);
+  const checkpointResult = segment.checkpoint ? attempts[segment.checkpoint.id] : undefined;
   const stopSpeech = useCallback(() => { if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel(); }, []);
 
   useEffect(() => {
@@ -45,12 +53,12 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
     return stopSpeech;
   }, [stopSpeech]);
 
-  const speak = useCallback(() => {
+  const speakText = useCallback((text: string) => {
     if (!speechAvailable) return;
-    if (playerState === 'paused') { window.speechSynthesis.resume(); setPlayerState('speaking'); return; }
     stopSpeech();
+    setSpokenText(text);
     setCaptionIndex(0);
-    const utterance = new SpeechSynthesisUtterance(segment.narration);
+    const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = speechLocale(lesson.plan.language);
     utterance.rate = lesson.plan.language === 'hindi' ? 0.88 : 0.92;
     const localePrefix = utterance.lang.slice(0, 2).toLowerCase();
@@ -60,10 +68,51 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
     utterance.onerror = () => setPlayerState('idle');
     window.speechSynthesis.speak(utterance);
     setPlayerState('speaking');
-  }, [lesson.plan.language, playerState, segment.narration, speechAvailable, stopSpeech]);
+  }, [lesson.plan.language, speechAvailable, stopSpeech]);
+
+  const speak = useCallback(() => {
+    if (playerState === 'paused') { window.speechSynthesis.resume(); setPlayerState('speaking'); return; }
+    speakText(segment.narration);
+  }, [playerState, segment.narration, speakText]);
 
   const pause = () => { window.speechSynthesis.pause(); setPlayerState('paused'); };
-  const move = (nextIndex: number) => { stopSpeech(); setSegmentIndex(nextIndex); setCaptionIndex(0); setPlayerState('idle'); };
+  const canMoveTo = (nextIndex: number) => !lesson.plan.segments.slice(0, nextIndex).some((item) => item.checkpoint && !attempts[item.checkpoint.id]);
+  const move = (nextIndex: number) => {
+    if (!canMoveTo(nextIndex)) return;
+    stopSpeech();
+    setSegmentIndex(nextIndex);
+    setSpokenText(lesson.plan.segments[nextIndex]!.narration);
+    setCaptionIndex(0);
+    setPlayerState('idle');
+    setCheckpointError('');
+  };
+
+  const changeAnswer = (checkpointId: string, value: string) => {
+    setAnswers((current) => ({ ...current, [checkpointId]: value }));
+    if (attempts[checkpointId]) setAttempts((current) => { const next = { ...current }; delete next[checkpointId]; return next; });
+    delete requestIds.current[checkpointId];
+    setCheckpointError('');
+  };
+
+  const submitCheckpoint = async () => {
+    if (!segment.checkpoint) return;
+    const answer = answers[segment.checkpoint.id]?.trim() ?? '';
+    if (answer.length < 2) { setCheckpointError('Write a short answer first.'); return; }
+    const clientRequestId = requestIds.current[segment.checkpoint.id] ?? crypto.randomUUID();
+    requestIds.current[segment.checkpoint.id] = clientRequestId;
+    setSubmitting(true);
+    setCheckpointError('');
+    try {
+      const response = await fetch('/api/checkpoints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonId: lesson.plan.id, checkpointId: segment.checkpoint.id, response: answer, clientRequestId }) });
+      if (!response.ok) throw new Error('Your answer could not be evaluated. Please try again.');
+      const result = checkpointAttemptResponseSchema.parse(await response.json());
+      setAttempts((current) => ({ ...current, [segment.checkpoint!.id]: result }));
+    } catch (error) {
+      setCheckpointError(error instanceof Error ? error.message : 'Your answer could not be evaluated.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return <main className="min-h-screen bg-[#071126] text-white">
     <header className="border-b border-white/10 bg-[#0b1730] px-4 py-3 sm:px-7"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><div className="flex min-w-0 items-center gap-3"><Button size="icon-sm" variant="ghost" className="text-white hover:bg-white/10 hover:text-white" render={<Link href={`/lessons/${lesson.plan.id}/plan`} aria-label="Back to lesson plan" />}><ArrowLeft /></Button><div className="min-w-0"><p className="truncate font-heading font-bold">{lesson.plan.title}</p><p className="text-xs text-white/50">Segment {segmentIndex + 1} of {lesson.plan.segments.length}</p></div></div><Badge className="shrink-0 bg-emerald-400/15 text-emerald-300"><span className="mr-1.5 size-1.5 rounded-full bg-emerald-300" />AI classroom</Badge></div></header>
@@ -74,11 +123,13 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
           <div className="relative min-h-[320px] overflow-hidden border-b border-white/10 bg-slate-900 md:border-r md:border-b-0"><Image src="/teacher-avatar.png" alt="Edukriti AI teacher" fill priority sizes="(max-width: 768px) 100vw, 40vw" className={`object-cover object-top transition-transform duration-700 ${playerState === 'speaking' ? 'scale-[1.025]' : 'scale-100'}`} /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#071126] via-[#071126]/60 to-transparent p-5 pt-20"><div className="flex items-center gap-2"><span className={`size-2.5 rounded-full ${playerState === 'speaking' ? 'animate-pulse bg-emerald-400' : 'bg-white/40'}`} /><span className="text-sm font-bold">Aarohi · AI Teacher</span></div><p className="mt-1 text-xs text-white/60">{playerState === 'speaking' ? 'Teaching now' : playerState === 'paused' ? 'Lesson paused' : 'Ready when you are'}</p></div></div>
           <div className="relative min-h-[340px] bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,.15),transparent_35%)]"><TeachingVisual segment={segment} /><div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/10 bg-[#050b18]/90 px-4 py-3 text-center shadow-xl backdrop-blur"><div className="mb-1 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-300"><Captions className="size-3.5" /> Live captions</div><p className="text-sm leading-6 text-white sm:text-base">{caption}</p></div></div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#09152c] p-4"><div className="flex items-center gap-2"><Button size="icon" variant="ghost" disabled={segmentIndex === 0} onClick={() => move(segmentIndex - 1)} className="text-white hover:bg-white/10 hover:text-white"><ArrowLeft /></Button>{playerState === 'speaking' ? <Button onClick={pause} className="rounded-full bg-white px-6 text-slate-950 hover:bg-white/90"><CirclePause /> Pause</Button> : <Button onClick={speak} disabled={!speechAvailable} className="rounded-full bg-white px-6 text-slate-950 hover:bg-white/90">{playerState === 'finished' ? <RotateCcw /> : <CirclePlay />}{playerState === 'paused' ? 'Resume' : playerState === 'finished' ? 'Replay' : 'Play lesson'}</Button>}<Button size="icon" variant="ghost" disabled={segmentIndex === lesson.plan.segments.length - 1} onClick={() => move(segmentIndex + 1)} className="text-white hover:bg-white/10 hover:text-white"><ArrowRight /></Button></div><div className="flex items-center gap-2 text-xs text-white/55"><Volume2 className="size-4" /> {speechAvailable ? `${speechLocale(lesson.plan.language)} browser voice` : 'Voice unavailable; captions remain active'}</div></div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#09152c] p-4"><div className="flex items-center gap-2"><Button size="icon" variant="ghost" disabled={segmentIndex === 0} onClick={() => move(segmentIndex - 1)} className="text-white hover:bg-white/10 hover:text-white"><ArrowLeft /></Button>{playerState === 'speaking' ? <Button onClick={pause} className="rounded-full bg-white px-6 text-slate-950 hover:bg-white/90"><CirclePause /> Pause</Button> : <Button onClick={speak} disabled={!speechAvailable} className="rounded-full bg-white px-6 text-slate-950 hover:bg-white/90">{playerState === 'finished' ? <RotateCcw /> : <CirclePlay />}{playerState === 'paused' ? 'Resume' : playerState === 'finished' ? 'Replay' : 'Play lesson'}</Button>}<Button size="icon" variant="ghost" disabled={segmentIndex === lesson.plan.segments.length - 1 || Boolean(segment.checkpoint && !checkpointResult)} onClick={() => move(segmentIndex + 1)} className="text-white hover:bg-white/10 hover:text-white" aria-label={segment.checkpoint && !checkpointResult ? 'Answer the checkpoint to continue' : 'Next segment'}><ArrowRight /></Button></div><div className="flex items-center gap-2 text-xs text-white/55"><Volume2 className="size-4" /> {speechAvailable ? `${speechLocale(lesson.plan.language)} browser voice` : 'Voice unavailable; captions remain active'}</div></div>
       </section>
       <aside className="space-y-4"><section className="rounded-[24px] border border-white/10 bg-white/[0.055] p-5"><p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-300">Now teaching</p><h1 className="mt-2 font-heading text-2xl font-bold leading-tight">{segment.title}</h1><p className="mt-3 text-sm leading-6 text-white/60">{segment.objective}</p><div className="mt-4 flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-xs"><span>{segment.estimatedMinutes} min</span><span className="capitalize">{segment.visualType.replace('_', ' ')}</span></div></section>
-        {segment.checkpoint && <section className="rounded-[24px] border border-amber-300/20 bg-amber-300/10 p-5"><Sparkles className="size-5 text-amber-300" /><p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-amber-200">Reflection checkpoint</p><p className="mt-2 text-sm leading-6">{segment.checkpoint.prompt}</p><p className="mt-3 text-xs text-white/50">Interactive evaluation and adaptive re-teaching arrive in Phase 6.</p></section>}
-        <section className="rounded-[24px] border border-white/10 bg-white/[0.055] p-5"><div className="flex items-center gap-2"><BookOpen className="size-4 text-emerald-300" /><p className="text-xs font-bold uppercase tracking-[0.14em] text-white/60">Lesson path</p></div><ol className="mt-4 space-y-3">{lesson.plan.segments.map((item, index) => <li key={item.id}><button type="button" onClick={() => move(index)} className={`flex w-full items-center gap-3 rounded-xl p-2.5 text-left text-sm transition ${index === segmentIndex ? 'bg-sky-400/15 text-sky-200' : 'text-white/55 hover:bg-white/5 hover:text-white'}`}><span className={`grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${index < segmentIndex ? 'bg-emerald-400 text-slate-950' : index === segmentIndex ? 'bg-sky-300 text-slate-950' : 'bg-white/10'}`}>{index < segmentIndex ? <Check className="size-3.5" /> : index + 1}</span><span className="line-clamp-1">{item.title}</span></button></li>)}</ol></section>
+        {segment.checkpoint && <section className="rounded-[24px] border border-amber-300/20 bg-amber-300/10 p-5"><Sparkles className="size-5 text-amber-300" /><p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-amber-200">Understanding checkpoint</p><p className="mt-2 text-sm leading-6">{segment.checkpoint.prompt}</p><Textarea value={answers[segment.checkpoint.id] ?? ''} onChange={(event) => changeAnswer(segment.checkpoint!.id, event.target.value)} disabled={submitting} placeholder="Explain it in your own words…" className="mt-4 min-h-24 border-white/15 bg-slate-950/40 text-white placeholder:text-white/35" />{checkpointError && <p role="alert" className="mt-2 text-xs text-red-300">{checkpointError}</p>}<Button onClick={submitCheckpoint} disabled={submitting || Boolean(checkpointResult)} className="mt-3 w-full bg-amber-300 text-slate-950 hover:bg-amber-200">{submitting ? 'Checking meaning…' : checkpointResult ? 'Answer evaluated' : 'Check my answer'}</Button>
+          {checkpointResult && <div className={`mt-4 rounded-2xl border p-4 ${checkpointResult.evaluation.isCorrect ? 'border-emerald-300/25 bg-emerald-400/10' : 'border-orange-300/25 bg-orange-400/10'}`}><p className="flex items-center gap-2 text-sm font-bold">{checkpointResult.evaluation.isCorrect ? <Check className="size-4 text-emerald-300" /> : <Lightbulb className="size-4 text-orange-300" />}{checkpointResult.evaluation.isCorrect ? 'Concept understood' : 'Let’s clear this up'}</p><p className="mt-2 text-sm leading-6 text-white/75">{checkpointResult.evaluation.feedback}</p>{checkpointResult.adaptation && <div className="mt-3 border-t border-white/10 pt-3"><p className="text-xs font-bold text-orange-200">{checkpointResult.adaptation.title}</p><p className="mt-2 text-sm leading-6 text-white/80">{checkpointResult.adaptation.explanation}</p><Button size="sm" variant="outline" onClick={() => speakText(checkpointResult.adaptation!.explanation)} disabled={!speechAvailable} className="mt-3 border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"><Volume2 /> Hear new explanation</Button></div>}</div>}
+        </section>}
+        <section className="rounded-[24px] border border-white/10 bg-white/[0.055] p-5"><div className="flex items-center gap-2"><BookOpen className="size-4 text-emerald-300" /><p className="text-xs font-bold uppercase tracking-[0.14em] text-white/60">Lesson path</p></div><ol className="mt-4 space-y-3">{lesson.plan.segments.map((item, index) => { const unlocked = canMoveTo(index); return <li key={item.id}><button type="button" disabled={!unlocked} onClick={() => move(index)} className={`flex w-full items-center gap-3 rounded-xl p-2.5 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-35 ${index === segmentIndex ? 'bg-sky-400/15 text-sky-200' : 'text-white/55 hover:bg-white/5 hover:text-white'}`}><span className={`grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${index < segmentIndex ? 'bg-emerald-400 text-slate-950' : index === segmentIndex ? 'bg-sky-300 text-slate-950' : 'bg-white/10'}`}>{index < segmentIndex ? <Check className="size-3.5" /> : index + 1}</span><span className="line-clamp-1">{item.title}</span></button></li>; })}</ol></section>
       </aside>
     </div>
   </main>;
