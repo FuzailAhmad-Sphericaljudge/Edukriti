@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { ShareLessonButton } from '@/components/share-lesson-button';
 
 type Segment = LessonPlan['segments'][number];
 type PlayerState = 'idle' | 'speaking' | 'paused' | 'finished';
@@ -177,7 +178,7 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
   };
 
   return <main className="min-h-screen bg-[#071126] text-white">
-    <header className="border-b border-white/10 bg-[#0b1730] px-4 py-3 sm:px-7"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><div className="flex min-w-0 items-center gap-3"><a href={`/lessons/${lesson.plan.id}/plan`} aria-label="Back to lesson plan" className="grid size-9 shrink-0 place-items-center rounded-lg text-white transition hover:bg-white/10"><ArrowLeft className="size-4" /></a><div className="min-w-0"><p className="truncate font-heading font-bold">{lesson.plan.title}</p><p className="text-xs text-white/50">Segment {segmentIndex + 1} of {lesson.plan.segments.length}</p></div></div><Badge className="shrink-0 bg-emerald-400/15 text-emerald-300"><span className="mr-1.5 size-1.5 rounded-full bg-emerald-300" />AI classroom</Badge></div></header>
+    <header className="border-b border-white/10 bg-[#0b1730] px-4 py-3 sm:px-7"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><div className="flex min-w-0 items-center gap-3"><a href={`/lessons/${lesson.plan.id}/plan`} aria-label="Back to lesson plan" className="grid size-9 shrink-0 place-items-center rounded-lg text-white transition hover:bg-white/10"><ArrowLeft className="size-4" /></a><div className="min-w-0"><p className="truncate font-heading font-bold">{lesson.plan.title}</p><p className="text-xs text-white/50">Segment {segmentIndex + 1} of {lesson.plan.segments.length}</p></div></div><div className="flex shrink-0 items-center gap-2"><div className="hidden sm:block"><ShareLessonButton title={lesson.plan.title} dark /></div><Badge className="bg-emerald-400/15 text-emerald-300"><span className="mr-1.5 size-1.5 rounded-full bg-emerald-300" />AI classroom</Badge></div></div></header>
     <div className="h-1 bg-white/10"><div className="h-full bg-gradient-to-r from-sky-400 to-amber-300 transition-all" style={{ width: `${progress}%` }} /></div>
     <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_330px] lg:p-6">
       <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#0d1c38] shadow-2xl">
