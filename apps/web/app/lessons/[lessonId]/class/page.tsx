@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { LessonClassroom } from '@/components/lesson-classroom';
 import { Button } from '@/components/ui/button';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function LessonClassroomPage({ params }: { params: Promise<{ lessonId: string }> }) {
   const { lessonId } = await params;
   const row = env.DB ? await env.DB.prepare('SELECT plan_json AS planJson FROM lessons WHERE id = ? LIMIT 1').bind(lessonId).first<{ planJson: string }>() : null;

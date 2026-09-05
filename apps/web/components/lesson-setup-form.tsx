@@ -14,15 +14,19 @@ export function LessonSetupForm({
   initialLevel,
   initialLanguage,
   initialDuration,
+  initialGoal,
+  initialError,
 }: {
   initialMode: Mode;
   initialLevel: string;
   initialLanguage: string;
   initialDuration: string;
+  initialGoal: string;
+  initialError: string;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [status, setStatus] = useState<Status>('idle');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError);
   const [result, setResult] = useState<SourceIngestionResponse | null>(null);
   const [retrieval, setRetrieval] = useState<RetrievalResponse | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -90,7 +94,8 @@ export function LessonSetupForm({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-      <form onSubmit={submit} className="space-y-6 rounded-[28px] border bg-card p-6 shadow-[0_18px_50px_rgb(40_50_75/7%)] sm:p-8">
+      <form action="/api/lessons/form" method="post" encType="multipart/form-data" onSubmit={submit} className="space-y-6 rounded-[28px] border bg-card p-6 shadow-[0_18px_50px_rgb(40_50_75/7%)] sm:p-8">
+        <input type="hidden" name="mode" value={mode} />
         <fieldset>
           <legend className="mb-3 text-sm font-bold">How should we begin?</legend>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -108,7 +113,7 @@ export function LessonSetupForm({
           </label>
         )}
 
-        <label className="block"><span className="mb-2 block text-sm font-bold">Topic or learning goal</span><textarea name="goal" required rows={3} className="w-full rounded-2xl border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary/15" placeholder="Example: Teach me electricity using simple everyday examples" /></label>
+        <label className="block"><span className="mb-2 block text-sm font-bold">Topic or learning goal</span><textarea name="goal" required rows={3} defaultValue={initialGoal} className="w-full rounded-2xl border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary/15" placeholder="Example: Teach me electricity using simple everyday examples" /></label>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <label><span className="mb-2 flex items-center gap-2 text-sm font-bold"><BookOpen className="size-4 text-primary" /> Level</span><select name="level" defaultValue={initialLevel} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label>

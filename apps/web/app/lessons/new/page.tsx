@@ -24,6 +24,8 @@ export default async function NewLesson({ searchParams }: { searchParams: Search
           initialLevel={valueOf(params.level, 'beginner')}
           initialLanguage={valueOf(params.language, 'hinglish')}
           initialDuration={valueOf(params.duration, '20')}
+          initialGoal={valueOf(params.goal, '')}
+          initialError={valueOf(params.error, '')}
         />
       </div>
     </main>

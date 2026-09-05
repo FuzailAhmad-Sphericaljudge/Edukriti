@@ -14,7 +14,6 @@ import { env } from 'cloudflare:workers';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { LessonEntryActions } from '@/components/lesson-entry-actions';
 
@@ -38,6 +37,9 @@ const fallbackLessons = [
     href: '/lessons/new',
   },
 ];
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function Home() {
   let recentLessons = fallbackLessons;
@@ -69,7 +71,7 @@ export default async function Home() {
             <a className="transition-colors hover:text-foreground" href="#progress">Progress</a>
           </nav>
 
-          <button className="grid size-10 place-items-center rounded-full bg-[#efe7d5] text-sm font-bold text-[#765524]" aria-label="Open learner profile">FJ</button>
+          <a href="#progress" className="grid size-10 place-items-center rounded-full bg-[#efe7d5] text-sm font-bold text-[#765524]" aria-label="View learner progress">FJ</a>
         </div>
       </header>
 
@@ -81,9 +83,9 @@ export default async function Home() {
               <h1 className="font-heading text-3xl font-bold tracking-[-0.04em] sm:text-4xl">Good evening, Fuzail.</h1>
               <p className="mt-2 max-w-xl text-muted-foreground">What would you like your personal AI teacher to help you understand today?</p>
             </div>
-            <Button size="lg" className="h-11 rounded-xl px-4 shadow-[0_10px_24px_rgb(29_78_216/20%)]" render={<Link href="/lessons/new" />}>
+            <Link href="/lessons/new" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_10px_24px_rgb(29_78_216/20%)] transition hover:bg-primary/80">
               <Plus data-icon="inline-start" /> Create lesson
-            </Button>
+            </Link>
           </div>
 
           <section className="relative overflow-hidden rounded-[28px] border border-primary/15 bg-[#eef4ff] p-6 sm:p-8" aria-labelledby="create-heading">
@@ -123,23 +125,23 @@ export default async function Home() {
                 <h2 id="recent-heading" className="font-heading text-xl font-bold tracking-[-0.025em]">Continue learning</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Your recent personalized lessons</p>
               </div>
-              <Button variant="ghost">View all <ArrowRight data-icon="inline-end" /></Button>
+              <Link href="/lessons" className="inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition hover:bg-muted">View all <ArrowRight className="size-4" /></Link>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {recentLessons.map((lesson) => {
                 const Icon = lesson.icon;
                 return (
-                  <article key={lesson.id} className="rounded-2xl border bg-card p-5 shadow-[0_10px_32px_rgb(40_50_75/5%)] transition-transform hover:-translate-y-0.5">
+                  <Link key={lesson.id} href={lesson.href} className="block rounded-2xl border bg-card p-5 shadow-[0_10px_32px_rgb(40_50_75/5%)] transition-transform hover:-translate-y-0.5 hover:border-primary/30 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/20">
                     <div className="flex items-start gap-4">
                       <div className={`grid size-11 shrink-0 place-items-center rounded-2xl ${lesson.accent}`}><Icon className="size-5" /></div>
                       <div className="min-w-0 flex-1"><h3 className="font-heading font-bold tracking-[-0.02em]">{lesson.title}</h3><p className="mt-1 text-xs text-muted-foreground">{lesson.meta}</p></div>
-                      <Button variant="ghost" size="icon-sm" aria-label={`Continue ${lesson.title}`} render={<Link href={lesson.href} />}><ArrowRight /></Button>
+                      <span className="grid size-7 place-items-center rounded-lg text-muted-foreground" aria-label={`Continue ${lesson.title}`}><ArrowRight className="size-4" /></span>
                     </div>
                     <div className="mt-5">
                       <div className="mb-2 flex justify-between text-xs font-medium"><span>Lesson progress</span><span className="text-muted-foreground">{lesson.progress}%</span></div>
                       <Progress value={lesson.progress} className="[&_[data-slot=progress-track]]:h-1.5" />
                     </div>
-                  </article>
+                  </Link>
                 );
               })}
             </div>
@@ -160,14 +162,14 @@ export default async function Home() {
             <div className="flex items-center justify-between"><Badge className="bg-white/10 text-white">Recommended next</Badge><Clock3 className="size-4 text-white/55" /></div>
             <h2 className="mt-5 font-heading text-xl font-bold tracking-[-0.025em]">Ohm&apos;s Law in action</h2>
             <p className="mt-2 text-sm leading-6 text-white/65">Strengthen the relationship between voltage, current, and resistance with a visual 12-minute lesson.</p>
-            <Button variant="secondary" className="mt-5 w-full rounded-xl bg-white text-[#15223f] hover:bg-white/90">Begin lesson <ArrowRight data-icon="inline-end" /></Button>
+            <Link href="/lessons/new?mode=topic&level=beginner&language=hinglish&duration=20&goal=Teach%20me%20Ohm%27s%20Law%20with%20simple%20visual%20examples" className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#15223f] transition hover:bg-sky-50">Begin lesson <ArrowRight className="size-4" /></Link>
           </section>
 
-          <section className="rounded-[24px] border bg-card p-6">
+          <Link href="/lessons/new?mode=topic&level=beginner&language=hinglish&duration=20&goal=Help%20me%20practice%20electrical%20resistance" className="block rounded-[24px] border bg-card p-6 transition hover:border-primary/30 hover:shadow-sm">
             <div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><Target className="size-5" /></div><div><p className="text-xs text-muted-foreground">Strong area</p><p className="font-heading font-bold">Current & voltage</p></div></div>
             <div className="my-4 h-px bg-border" />
             <div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-2xl bg-amber-100 text-amber-700"><BrainCircuit className="size-5" /></div><div><p className="text-xs text-muted-foreground">Needs practice</p><p className="font-heading font-bold">Resistance</p></div></div>
-          </section>
+          </Link>
         </aside>
       </div>
     </main>

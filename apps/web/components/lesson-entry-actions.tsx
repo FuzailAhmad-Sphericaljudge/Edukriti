@@ -3,8 +3,6 @@
 import { ArrowRight, FileText } from 'lucide-react';
 import { useEffect } from 'react';
 
-import { Button } from '@/components/ui/button';
-
 declare global {
   interface Document {
     modelContext?: {
@@ -81,12 +79,12 @@ export function LessonEntryActions() {
 
   return (
     <div className="mt-6 flex flex-wrap gap-3">
-      <Button size="lg" className="h-11 rounded-xl px-4" onClick={() => openSetup('topic')}>
+      <a href="/lessons/new?mode=topic&level=beginner&language=hinglish&duration=20" className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/80 active:translate-y-px">
         Start with a topic <ArrowRight data-icon="inline-end" />
-      </Button>
-      <Button size="lg" variant="outline" className="h-11 rounded-xl border-primary/20 bg-white/75 px-4" onClick={() => openSetup('upload')}>
+      </a>
+      <a href="/lessons/new?mode=upload&level=beginner&language=hinglish&duration=20" className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-primary/20 bg-white/75 px-4 text-sm font-medium text-foreground transition hover:bg-white active:translate-y-px">
         <FileText data-icon="inline-start" /> Upload material
-      </Button>
+      </a>
     </div>
   );
 }

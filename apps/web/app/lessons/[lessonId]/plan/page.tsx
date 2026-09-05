@@ -17,6 +17,9 @@ const visualIcons = {
   key_points: FileText,
 } satisfies Record<LessonPlan['segments'][number]['visualType'], typeof Sparkles>;
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function LessonPlanPage({ params }: { params: Promise<{ lessonId: string }> }) {
   const { lessonId } = await params;
   const row = env.DB
@@ -69,7 +72,7 @@ export default async function LessonPlanPage({ params }: { params: Promise<{ les
 
           <aside className="space-y-5">
             <section className="rounded-[22px] border bg-card p-5"><p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Learning outcomes</p><ul className="mt-4 space-y-3">{plan.objectives.map((objective) => <li key={objective} className="flex gap-2 text-sm leading-5"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />{objective}</li>)}</ul></section>
-            <section className="sticky top-6 rounded-[22px] bg-[#15223f] p-5 text-white shadow-[0_16px_42px_rgb(21_34_63/18%)]"><Sparkles className="size-5 text-amber-300" /><h2 className="mt-4 font-heading text-xl font-bold">Ready for class</h2><p className="mt-2 text-sm leading-6 text-white/65">The teaching sequence, visuals, questions, and source evidence are prepared.</p><Link href={`/lessons/${lessonId}/classroom`} className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#15223f] transition hover:bg-sky-50">Enter AI classroom <Sparkles className="size-4" /></Link></section>
+            <section className="sticky top-6 rounded-[22px] bg-[#15223f] p-5 text-white shadow-[0_16px_42px_rgb(21_34_63/18%)]"><Sparkles className="size-5 text-amber-300" /><h2 className="mt-4 font-heading text-xl font-bold">Ready for class</h2><p className="mt-2 text-sm leading-6 text-white/65">The teaching sequence, visuals, questions, and source evidence are prepared.</p><a href={`/lessons/${lessonId}/classroom?start=${lessonId}`} className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#15223f] transition hover:bg-sky-50">Enter AI classroom <Sparkles className="size-4" /></a></section>
           </aside>
         </div>
       </div>
