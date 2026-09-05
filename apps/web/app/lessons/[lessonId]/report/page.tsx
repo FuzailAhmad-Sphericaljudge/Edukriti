@@ -1,6 +1,6 @@
 import { learningReportSchema } from '@edukriti/contracts';
 import { env } from 'cloudflare:workers';
-import { ArrowRight, Award, BrainCircuit, CheckCircle2, Home, RefreshCcw, Sparkles, Target } from 'lucide-react';
+import { ArrowRight, Award, BookOpen, BrainCircuit, CheckCircle2, Home, RefreshCcw, Sparkles, Target } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 
@@ -25,6 +25,6 @@ export default async function LearningReportPage({ params }: { params: Promise<{
       <aside className="rounded-[24px] bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white"><Target className="size-6 text-amber-300" /><p className="mt-5 text-xs font-bold uppercase tracking-[0.14em] text-white/55">Recommended next</p><h2 className="mt-2 font-heading text-2xl font-bold">{report.recommendedNextTopic}</h2><p className={`mt-5 text-sm font-bold ${scoreTone === 'text-emerald-600' ? 'text-emerald-200' : 'text-amber-200'}`}>Your score: {report.scorePercent}%</p><a href={`/lessons/new?mode=topic&goal=${encodeURIComponent(report.recommendedNextTopic)}`} className="mt-6 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50">Create next lesson <ArrowRight className="size-4" /></a></aside>
     </div>
 
-    <div className="mt-6 flex flex-wrap justify-center gap-3"><a href={`/lessons/${lessonId}/classroom?replay=1`} className="inline-flex h-10 items-center gap-2 rounded-xl border bg-white px-4 text-sm font-semibold transition hover:bg-slate-50"><RefreshCcw className="size-4" /> Replay lesson</a><a href="/" className="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition hover:bg-slate-100"><Home className="size-4" /> Dashboard</a></div>
+    <div className="mt-6 flex flex-wrap justify-center gap-3"><a href={`/lessons/${lessonId}/revision`} className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700"><BookOpen className="size-4" /> Revision studio</a><a href={`/lessons/${lessonId}/classroom?replay=1`} className="inline-flex h-10 items-center gap-2 rounded-xl border bg-white px-4 text-sm font-semibold transition hover:bg-slate-50"><RefreshCcw className="size-4" /> Replay lesson</a><a href="/" className="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition hover:bg-slate-100"><Home className="size-4" /> Dashboard</a></div>
   </div></main>;
 }
