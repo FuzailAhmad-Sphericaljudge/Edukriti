@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { LessonRequest } from '@edukriti/contracts';
-import { buildAdaptation, buildAssessment, buildDeterministicLessonPlan, buildLearningReport, captionAt, evaluateAssessmentAnswer, evaluateCheckpoint, lessonMinutes, lessonProgress, speechLocale } from './index.ts';
+import { buildAdaptation, buildAssessment, buildDeterministicLessonPlan, buildLearningReport, captionAt, evaluateAssessmentAnswer, evaluateCheckpoint, lessonMinutes, lessonProgress, speechChunks, speechLocale, teachingVoiceScore } from './index.ts';
 
 const request: LessonRequest = {
   learnerId: 'demo-learner',
@@ -43,6 +43,12 @@ test('maps supported lesson languages to safe browser speech locales', () => {
   assert.equal(speechLocale('hindi'), 'hi-IN');
   assert.equal(speechLocale('hinglish'), 'en-IN');
   assert.equal(speechLocale('english'), 'en-IN');
+});
+
+test('splits narration into natural speaking phrases and prefers neural regional voices', () => {
+  assert.deepEqual(speechChunks('First idea. Why does it work? Try it now!'), ['First idea.', 'Why does it work?', 'Try it now!']);
+  assert.ok(teachingVoiceScore('Microsoft Neerja Online (Natural)', 'en-IN', 'english') > teachingVoiceScore('Generic English', 'en-US', 'english'));
+  assert.ok(teachingVoiceScore('Microsoft Swara Online (Natural)', 'hi-IN', 'hindi') > teachingVoiceScore('Generic Hindi', 'hi-IN', 'hindi'));
 });
 
 test('selects active captions and clamps classroom progress', () => {

@@ -4,7 +4,6 @@ import type { LessonPlanGenerationResponse, RetrievalResponse, SourceIngestionRe
 import { BookOpen, Check, Clock3, FileSearch, Languages, LoaderCircle, Sparkles, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
 
 type Mode = 'topic' | 'upload';
 type Status = 'idle' | 'uploading' | 'retrieving' | 'planning' | 'ready' | 'error';
@@ -124,10 +123,10 @@ export function LessonSetupForm({
         {error && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
 
         <div className="flex justify-end border-t pt-5">
-          <Button disabled={busy} type="submit" size="lg" className="h-11 rounded-xl px-5">
+          <button disabled={busy} type="submit" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/80 disabled:cursor-not-allowed disabled:opacity-50">
             {busy ? <LoaderCircle className="animate-spin" data-icon="inline-start" /> : <Sparkles data-icon="inline-start" />}
             {status === 'uploading' ? 'Extracting material…' : status === 'retrieving' ? 'Grounding lesson…' : status === 'planning' ? 'Building your lesson…' : 'Generate lesson plan'}
-          </Button>
+          </button>
         </div>
       </form>
 

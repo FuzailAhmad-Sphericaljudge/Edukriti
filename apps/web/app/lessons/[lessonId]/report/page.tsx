@@ -1,16 +1,14 @@
 import { learningReportSchema } from '@edukriti/contracts';
 import { env } from 'cloudflare:workers';
 import { ArrowRight, Award, BrainCircuit, CheckCircle2, Home, RefreshCcw, Sparkles, Target } from 'lucide-react';
-import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
 export default async function LearningReportPage({ params }: { params: Promise<{ lessonId: string }> }) {
   const { lessonId } = await params;
   const row = env.DB ? await env.DB.prepare('SELECT report_json AS reportJson FROM learning_reports WHERE lesson_id = ? LIMIT 1').bind(lessonId).first<{ reportJson: string }>() : null;
   const parsed = row ? learningReportSchema.safeParse(JSON.parse(row.reportJson)) : null;
-  if (!parsed?.success) return <main className="grid min-h-screen place-items-center bg-background p-6"><div className="max-w-md rounded-3xl border bg-card p-8 text-center"><Award className="mx-auto size-8 text-primary" /><h1 className="mt-4 text-2xl font-bold">Report not ready</h1><p className="mt-2 text-sm text-muted-foreground">Finish the final assessment to generate your learning report.</p><Button className="mt-6" render={<Link href={`/lessons/${lessonId}/assessment`} />}>Open assessment</Button></div></main>;
+  if (!parsed?.success) return <main className="grid min-h-screen place-items-center bg-background p-6"><div className="max-w-md rounded-3xl border bg-card p-8 text-center"><Award className="mx-auto size-8 text-primary" /><h1 className="mt-4 text-2xl font-bold">Report not ready</h1><p className="mt-2 text-sm text-muted-foreground">Finish the final assessment to generate your learning report.</p><a href={`/lessons/${lessonId}/assessment`} className="mt-6 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">Open assessment</a></div></main>;
   const report = parsed.data;
   const scoreTone = report.scorePercent >= 75 ? 'text-emerald-600' : report.scorePercent >= 50 ? 'text-amber-600' : 'text-orange-600';
 
@@ -24,9 +22,9 @@ export default async function LearningReportPage({ params }: { params: Promise<{
 
     <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
       <section className="rounded-[24px] border bg-white p-6"><p className="text-xs font-bold uppercase tracking-[0.12em] text-indigo-600">Personal revision plan</p><h2 className="mt-1 font-heading text-xl font-bold">What to do next</h2><ol className="mt-5 space-y-4">{report.revisionAdvice.map((advice, index) => <li key={advice} className="flex gap-3 text-sm leading-6"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">{index + 1}</span>{advice}</li>)}</ol>{report.misconceptions.length > 0 && <div className="mt-6 rounded-2xl bg-orange-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-orange-700">Misconception to watch</p><p className="mt-2 text-sm leading-6 text-orange-950">{report.misconceptions[0]}</p></div>}</section>
-      <aside className="rounded-[24px] bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white"><Target className="size-6 text-amber-300" /><p className="mt-5 text-xs font-bold uppercase tracking-[0.14em] text-white/55">Recommended next</p><h2 className="mt-2 font-heading text-2xl font-bold">{report.recommendedNextTopic}</h2><p className={`mt-5 text-sm font-bold ${scoreTone === 'text-emerald-600' ? 'text-emerald-200' : 'text-amber-200'}`}>Your score: {report.scorePercent}%</p><Button className="mt-6 w-full bg-white text-indigo-700 hover:bg-white/90" render={<Link href="/lessons/new" />}>Create next lesson <ArrowRight /></Button></aside>
+      <aside className="rounded-[24px] bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white"><Target className="size-6 text-amber-300" /><p className="mt-5 text-xs font-bold uppercase tracking-[0.14em] text-white/55">Recommended next</p><h2 className="mt-2 font-heading text-2xl font-bold">{report.recommendedNextTopic}</h2><p className={`mt-5 text-sm font-bold ${scoreTone === 'text-emerald-600' ? 'text-emerald-200' : 'text-amber-200'}`}>Your score: {report.scorePercent}%</p><a href={`/lessons/new?mode=topic&goal=${encodeURIComponent(report.recommendedNextTopic)}`} className="mt-6 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50">Create next lesson <ArrowRight className="size-4" /></a></aside>
     </div>
 
-    <div className="mt-6 flex flex-wrap justify-center gap-3"><Button variant="outline" render={<Link href={`/lessons/${lessonId}/classroom`} />}><RefreshCcw /> Replay lesson</Button><Button variant="ghost" render={<Link href="/" />}><Home /> Dashboard</Button></div>
+    <div className="mt-6 flex flex-wrap justify-center gap-3"><a href={`/lessons/${lessonId}/classroom?replay=1`} className="inline-flex h-10 items-center gap-2 rounded-xl border bg-white px-4 text-sm font-semibold transition hover:bg-slate-50"><RefreshCcw className="size-4" /> Replay lesson</a><a href="/" className="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition hover:bg-slate-100"><Home className="size-4" /> Dashboard</a></div>
   </div></main>;
 }

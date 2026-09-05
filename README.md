@@ -112,5 +112,6 @@ The web application expects Cloudflare bindings `DB` for D1 and `FILES` for R2. 
 - [x] Phase 6: interaction and adaptation
 - [x] Phase 7: assessment and learner profile
 - [x] Phase 8: integration, verification, and demo readiness
+- [x] Phase 9: interaction reliability and natural teacher voice
 
-See [submission and evaluator guide](docs/phase-8-submission.md) and [demo script](docs/demo-script.md).
+See [submission and evaluator guide](docs/phase-8-submission.md), [interaction and voice polish](docs/phase-9-interaction-voice.md), and [demo script](docs/demo-script.md).
