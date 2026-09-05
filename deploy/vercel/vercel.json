@@ -2,6 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
+      "source": "/",
+      "destination": "https://edukriti-ai-teacher.fuzailahmad2006.chatgpt.site/"
+    },
+    {
       "source": "/:path*",
       "destination": "https://edukriti-ai-teacher.fuzailahmad2006.chatgpt.site/:path*"
     }
