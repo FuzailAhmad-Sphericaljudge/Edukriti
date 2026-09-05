@@ -48,7 +48,10 @@ test('rejects empty final assessment answers', () => {
 });
 
 test('validates contextual tutor questions and grounded answers', () => {
-  assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: 'Why does this happen?' }).success, true);
+  const request = tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: 'Why does this happen?', history: [{ role: 'user', content: 'What is force?' }, { role: 'assistant', content: 'Force is a push or pull.' }] });
+  assert.equal(request.success, true);
+  assert.equal(request.success && request.data.history.length, 2);
   assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: '' }).success, false);
+  assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: 'Continue', history: Array.from({ length: 7 }, () => ({ role: 'user', content: 'Earlier question' })) }).success, false);
   assert.equal(tutorResponseSchema.safeParse({ answer: 'Because the force changes motion.', followUpQuestion: 'Can you name an example?', grounded: false, provider: 'deterministic', citations: [] }).success, true);
 });
