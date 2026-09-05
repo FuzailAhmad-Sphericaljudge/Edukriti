@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import { ArrowLeft, BookOpen, CheckCircle2, Clock3, Code2, FileText, GitBranch, LineChart, Map, Sigma, Sparkles, Target } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { ShareLessonButton } from '@/components/share-lesson-button';
 
 const visualIcons = {
   diagram: GitBranch,
@@ -38,7 +39,7 @@ export default async function LessonPlanPage({ params }: { params: Promise<{ les
         <header className="relative overflow-hidden rounded-[30px] border border-primary/15 bg-[#eef4ff] p-7 sm:p-9">
           <div className="absolute -right-16 -top-20 size-64 rounded-full bg-primary/10 blur-3xl" />
           <div className="relative">
-            <div className="flex flex-wrap gap-2"><Badge className="bg-primary text-primary-foreground">Lesson ready</Badge><Badge variant="outline" className="bg-white/60">{grounded ? 'Source grounded' : 'Topic based'}</Badge><Badge variant="outline" className="bg-white/60">{provider === 'openai' ? 'Live AI plan' : 'Reliable demo plan'}</Badge></div>
+            <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2"><Badge className="bg-primary text-primary-foreground">Lesson ready</Badge><Badge variant="outline" className="bg-white/60">{grounded ? 'Source grounded' : 'Topic based'}</Badge><Badge variant="outline" className="bg-white/60">{provider === 'openai' ? 'Live AI plan' : 'Reliable demo plan'}</Badge></div><ShareLessonButton title={plan.title} /></div>
             <h1 className="mt-5 max-w-3xl font-heading text-3xl font-bold leading-tight tracking-[-0.045em] sm:text-4xl">{plan.title}</h1>
             <div className="mt-5 flex flex-wrap gap-5 text-sm text-muted-foreground"><span className="flex items-center gap-2"><Clock3 className="size-4 text-primary" /> {plan.durationMinutes} minutes</span><span className="flex items-center gap-2"><BookOpen className="size-4 text-primary" /> {plan.segments.length} teaching segments</span><span className="flex items-center gap-2"><Target className="size-4 text-primary" /> {plan.objectives.length} outcomes</span></div>
           </div>

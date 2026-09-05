@@ -1,7 +1,7 @@
 'use client';
 
-import { ArrowRight, FileText } from 'lucide-react';
-import { useEffect } from 'react';
+import { ArrowRight, FileText, LoaderCircle, Play } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 declare global {
   interface Document {
@@ -33,6 +33,9 @@ function openSetup(mode: 'topic' | 'upload', values = defaults) {
 }
 
 export function LessonEntryActions() {
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState('');
+
   useEffect(() => {
     const context = document.modelContext;
     if (!context?.registerTool) return;
@@ -77,14 +80,46 @@ export function LessonEntryActions() {
     return () => lifecycle.abort();
   }, []);
 
+  async function startInstantDemo() {
+    setDemoLoading(true);
+    setDemoError('');
+    try {
+      const response = await fetch('/api/lessons', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          learnerId: 'public-demo-learner',
+          topic: "Newton's laws of motion",
+          level: 'beginner',
+          language: 'hinglish',
+          durationMinutes: 5,
+          style: 'visual',
+          goal: 'Explain force, mass, and acceleration with simple everyday examples',
+        }),
+      });
+      const body = await response.json() as { plan?: { id?: string }; error?: { message?: string } };
+      if (!response.ok || !body.plan?.id) throw new Error(body.error?.message || 'The demo lesson could not start.');
+      window.location.assign(`/lessons/${body.plan.id}/classroom?demo=1`);
+    } catch (error) {
+      setDemoError(error instanceof Error ? error.message : 'The demo lesson could not start.');
+      setDemoLoading(false);
+    }
+  }
+
   return (
-    <div className="mt-6 flex flex-wrap gap-3">
-      <a href="/lessons/new?mode=topic&level=beginner&language=hinglish&duration=20" className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/80 active:translate-y-px">
-        Start with a topic <ArrowRight data-icon="inline-end" />
-      </a>
-      <a href="/lessons/new?mode=upload&level=beginner&language=hinglish&duration=20" className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-primary/20 bg-white/75 px-4 text-sm font-medium text-foreground transition hover:bg-white active:translate-y-px">
-        <FileText data-icon="inline-start" /> Upload material
-      </a>
+    <div className="mt-6">
+      <div className="flex flex-wrap gap-3">
+        <button type="button" onClick={startInstantDemo} disabled={demoLoading} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#15223f] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#21345b] active:translate-y-px disabled:cursor-wait disabled:opacity-70">
+          {demoLoading ? <LoaderCircle className="size-4 animate-spin" /> : <Play className="size-4 fill-current" />}{demoLoading ? 'Preparing demo...' : 'Try instant demo'}
+        </button>
+        <a href="/lessons/new?mode=topic&level=beginner&language=hinglish&duration=20" className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/80 active:translate-y-px">
+          Start with a topic <ArrowRight data-icon="inline-end" />
+        </a>
+        <a href="/lessons/new?mode=upload&level=beginner&language=hinglish&duration=20" className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-primary/20 bg-white/75 px-4 text-sm font-medium text-foreground transition hover:bg-white active:translate-y-px">
+          <FileText data-icon="inline-start" /> Upload material
+        </a>
+      </div>
+      {demoError && <p role="alert" className="mt-3 text-sm font-medium text-red-700">{demoError} <button type="button" onClick={startInstantDemo} className="underline underline-offset-2">Try again</button></p>}
     </div>
   );
 }

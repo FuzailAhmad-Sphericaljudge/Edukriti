@@ -115,5 +115,6 @@ The web application expects Cloudflare bindings `DB` for D1 and `FILES` for R2. 
 - [x] Phase 8: integration, verification, and demo readiness
 - [x] Phase 9: interaction reliability and natural teacher voice
 - [x] Phase 10: richer knowledge engine, contextual AI tutor, and voice speed controls
+- [x] Phase 11: one-click public demo and shareable lesson journeys
 
-See [Phase 10 notes](docs/phase-10-knowledge-tutor.md), [submission and evaluator guide](docs/phase-8-submission.md), [interaction and voice polish](docs/phase-9-interaction-voice.md), and [demo script](docs/demo-script.md).
+See [Phase 11 notes](docs/phase-11-public-demo.md), [Phase 10 notes](docs/phase-10-knowledge-tutor.md), [submission and evaluator guide](docs/phase-8-submission.md), and [demo script](docs/demo-script.md).
