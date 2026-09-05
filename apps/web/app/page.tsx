@@ -67,10 +67,10 @@ export default async function Home() {
           <nav className="hidden items-center gap-7 text-sm font-medium text-muted-foreground md:flex" aria-label="Primary navigation">
             <a className="text-foreground" href="#dashboard">Home</a>
             <a className="transition-colors hover:text-foreground" href="#lessons">My lessons</a>
-            <a className="transition-colors hover:text-foreground" href="#progress">Progress</a>
+            <a className="transition-colors hover:text-foreground" href="/progress">Progress</a>
           </nav>
 
-          <a href="#progress" className="grid size-10 place-items-center rounded-full bg-[#efe7d5] text-sm font-bold text-[#765524]" aria-label="View learner progress">FJ</a>
+          <a href="/progress" className="grid size-10 place-items-center rounded-full bg-[#efe7d5] text-sm font-bold text-[#765524]" aria-label="View learner progress">FJ</a>
         </div>
       </header>
 
