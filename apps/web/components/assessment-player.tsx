@@ -64,7 +64,7 @@ export function AssessmentPlayer({ assessment, lessonTitle }: { assessment: Asse
 
   return <main className="min-h-screen bg-[#f5f7fb] px-5 py-7 text-slate-900 sm:px-8">
     <div className="mx-auto max-w-3xl">
-      <div className="flex items-center justify-between gap-4"><Button variant="ghost" render={<Link href={`/lessons/${assessment.lessonId}/class`} />}><ArrowLeft /> Back to classroom</Button><Badge className="bg-indigo-100 text-indigo-700">Final assessment</Badge></div>
+      <div className="flex items-center justify-between gap-4"><Button variant="ghost" render={<Link href={`/lessons/${assessment.lessonId}/classroom`} />}><ArrowLeft /> Back to classroom</Button><Badge className="bg-indigo-100 text-indigo-700">Final assessment</Badge></div>
       <header className="mt-6 rounded-[28px] bg-[#14213d] p-6 text-white shadow-xl sm:p-8"><div className="flex items-center gap-3"><div className="grid size-11 place-items-center rounded-2xl bg-amber-300 text-slate-950"><Sparkles className="size-5" /></div><div><p className="text-xs font-bold uppercase tracking-[0.15em] text-sky-300">Show what you learned</p><h1 className="mt-1 font-heading text-2xl font-bold">{lessonTitle}</h1></div></div><div className="mt-6 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-sky-400 to-amber-300 transition-all" style={{ width: `${progress}%` }} /></div><div className="mt-2 flex justify-between text-xs text-white/55"><span>Question {questionIndex + 1} of {assessment.questions.length}</span><span>{progress}% complete</span></div></header>
 
       <section className="mt-5 rounded-[28px] border bg-white p-6 shadow-[0_16px_55px_rgb(30_42_70/8%)] sm:p-8">
