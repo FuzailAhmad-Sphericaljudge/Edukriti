@@ -44,7 +44,7 @@ export default async function Home() {
   if (env.DB) {
     try {
       const stored = await env.DB.prepare("SELECT l.id, l.title, l.language, l.duration_minutes AS durationMinutes, l.status, COALESCE(r.score_percent, 68) AS progress FROM lessons l LEFT JOIN learning_reports r ON r.lesson_id = l.id ORDER BY l.created_at DESC LIMIT 4").all<{ id: string; title: string; language: string; durationMinutes: number; status: string; progress: number }>();
-      if (stored.results.length) recentLessons = stored.results.map((lesson) => ({ id: lesson.id, title: lesson.title, meta: `${lesson.language} · ${lesson.durationMinutes} min · ${lesson.status}`, progress: lesson.progress, accent: lesson.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800', icon: lesson.status === 'completed' ? Target : BookOpen, href: `/lessons/${lesson.id}/${lesson.status === 'completed' ? 'report' : 'class'}` }));
+      if (stored.results.length) recentLessons = stored.results.map((lesson) => ({ id: lesson.id, title: lesson.title, meta: `${lesson.language} · ${lesson.durationMinutes} min · ${lesson.status}`, progress: lesson.progress, accent: lesson.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800', icon: lesson.status === 'completed' ? Target : BookOpen, href: `/lessons/${lesson.id}/${lesson.status === 'completed' ? 'report' : 'classroom'}` }));
     } catch {
       recentLessons = fallbackLessons;
     }

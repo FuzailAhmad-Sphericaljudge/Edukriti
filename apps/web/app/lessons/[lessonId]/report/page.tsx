@@ -27,6 +27,6 @@ export default async function LearningReportPage({ params }: { params: Promise<{
       <aside className="rounded-[24px] bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white"><Target className="size-6 text-amber-300" /><p className="mt-5 text-xs font-bold uppercase tracking-[0.14em] text-white/55">Recommended next</p><h2 className="mt-2 font-heading text-2xl font-bold">{report.recommendedNextTopic}</h2><p className={`mt-5 text-sm font-bold ${scoreTone === 'text-emerald-600' ? 'text-emerald-200' : 'text-amber-200'}`}>Your score: {report.scorePercent}%</p><Button className="mt-6 w-full bg-white text-indigo-700 hover:bg-white/90" render={<Link href="/lessons/new" />}>Create next lesson <ArrowRight /></Button></aside>
     </div>
 
-    <div className="mt-6 flex flex-wrap justify-center gap-3"><Button variant="outline" render={<Link href={`/lessons/${lessonId}/class`} />}><RefreshCcw /> Replay lesson</Button><Button variant="ghost" render={<Link href="/" />}><Home /> Dashboard</Button></div>
+    <div className="mt-6 flex flex-wrap justify-center gap-3"><Button variant="outline" render={<Link href={`/lessons/${lessonId}/classroom`} />}><RefreshCcw /> Replay lesson</Button><Button variant="ghost" render={<Link href="/" />}><Home /> Dashboard</Button></div>
   </div></main>;
 }
