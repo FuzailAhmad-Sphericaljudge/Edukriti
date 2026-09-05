@@ -2,10 +2,8 @@ import { assessmentSchema, lessonPlanGenerationResponseSchema } from '@edukriti/
 import { buildAssessment } from '@edukriti/teaching-engine';
 import { env } from 'cloudflare:workers';
 import { ClipboardCheck } from 'lucide-react';
-import Link from 'next/link';
 
 import { AssessmentPlayer } from '@/components/assessment-player';
-import { Button } from '@/components/ui/button';
 
 export default async function AssessmentPage({ params }: { params: Promise<{ lessonId: string }> }) {
   const { lessonId } = await params;
@@ -22,5 +20,5 @@ export default async function AssessmentPage({ params }: { params: Promise<{ les
 }
 
 function Unavailable({ lessonId, message }: { lessonId: string; message: string }) {
-  return <main className="grid min-h-screen place-items-center bg-background p-6"><div className="max-w-md rounded-3xl border bg-card p-8 text-center"><ClipboardCheck className="mx-auto size-8 text-primary" /><h1 className="mt-4 text-2xl font-bold">Assessment locked</h1><p className="mt-2 text-sm text-muted-foreground">{message}</p><Button className="mt-6" render={<Link href={`/lessons/${lessonId}/classroom`} />}>Return to classroom</Button></div></main>;
+  return <main className="grid min-h-screen place-items-center bg-background p-6"><div className="max-w-md rounded-3xl border bg-card p-8 text-center"><ClipboardCheck className="mx-auto size-8 text-primary" /><h1 className="mt-4 text-2xl font-bold">Assessment locked</h1><p className="mt-2 text-sm text-muted-foreground">{message}</p><a href={`/lessons/${lessonId}/classroom`} className="mt-6 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">Return to classroom</a></div></main>;
 }

@@ -100,6 +100,22 @@ export function speechLocale(language: LessonPlan['language']) {
   return language === 'hindi' ? 'hi-IN' : 'en-IN';
 }
 
+export function speechChunks(text: string) {
+  const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((sentence) => sentence.trim()).filter(Boolean) ?? [];
+  return sentences.length ? sentences : [text.trim()].filter(Boolean);
+}
+
+export function teachingVoiceScore(name: string, voiceLanguage: string, lessonLanguage: LessonPlan['language']) {
+  const normalizedName = name.toLowerCase();
+  const normalizedLanguage = voiceLanguage.toLowerCase();
+  const target = speechLocale(lessonLanguage).toLowerCase();
+  let score = normalizedLanguage === target ? 100 : normalizedLanguage.startsWith(target.slice(0, 2)) ? 65 : 0;
+  if (/natural|neural|online/.test(normalizedName)) score += 45;
+  if (/swara|neerja|heera|kalpana|veena|zira|aria|samantha/.test(normalizedName)) score += 30;
+  if (/microsoft|google/.test(normalizedName)) score += 10;
+  return score;
+}
+
 export function captionAt(text: string, characterIndex: number) {
   const sentences = Array.from(text.matchAll(/[^.!?]+[.!?]?/g));
   const current = sentences.find((match) => {

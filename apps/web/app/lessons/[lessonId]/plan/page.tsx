@@ -1,10 +1,8 @@
 import { lessonPlanGenerationResponseSchema, type LessonPlan } from '@edukriti/contracts';
 import { env } from 'cloudflare:workers';
 import { ArrowLeft, BookOpen, CheckCircle2, Clock3, Code2, FileText, GitBranch, LineChart, Map, Sigma, Sparkles, Target } from 'lucide-react';
-import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
 const visualIcons = {
   diagram: GitBranch,
@@ -28,14 +26,14 @@ export default async function LessonPlanPage({ params }: { params: Promise<{ les
   const parsed = row ? lessonPlanGenerationResponseSchema.safeParse(JSON.parse(row.planJson)) : null;
 
   if (!parsed?.success) {
-    return <main className="grid min-h-screen place-items-center bg-background p-6"><div className="max-w-md rounded-3xl border bg-card p-8 text-center"><BookOpen className="mx-auto size-8 text-primary" /><h1 className="mt-4 text-2xl font-bold">Lesson plan unavailable</h1><p className="mt-2 text-sm text-muted-foreground">Create a new lesson so Edukriti can build a validated teaching plan.</p><Button className="mt-6" render={<Link href="/lessons/new" />}>Create lesson</Button></div></main>;
+    return <main className="grid min-h-screen place-items-center bg-background p-6"><div className="max-w-md rounded-3xl border bg-card p-8 text-center"><BookOpen className="mx-auto size-8 text-primary" /><h1 className="mt-4 text-2xl font-bold">Lesson plan unavailable</h1><p className="mt-2 text-sm text-muted-foreground">Create a new lesson so Edukriti can build a validated teaching plan.</p><a href="/lessons/new" className="mt-6 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">Create lesson</a></div></main>;
   }
 
   const { plan, grounded, provider } = parsed.data;
   return (
     <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8">
       <div className="mx-auto max-w-5xl">
-        <Link href="/lessons/new" className="mb-7 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" /> Create another lesson</Link>
+        <a href="/lessons/new" className="mb-7 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" /> Create another lesson</a>
 
         <header className="relative overflow-hidden rounded-[30px] border border-primary/15 bg-[#eef4ff] p-7 sm:p-9">
           <div className="absolute -right-16 -top-20 size-64 rounded-full bg-primary/10 blur-3xl" />
