@@ -4,7 +4,7 @@ Edukriti is a multilingual, adaptive AI teacher that converts a topic or uploade
 
 ## Working prototype
 
-The deployed prototype is available at [edukriti-ai-teacher.fuzailahmad2006.chatgpt.site](https://edukriti-ai-teacher.fuzailahmad2006.chatgpt.site). Access is currently private to the project owner.
+The public demo is available at [vercel-sigma-eight-16.vercel.app](https://vercel-sigma-eight-16.vercel.app). Its Cloudflare-compatible application origin is [edukriti-ai-teacher.fuzailahmad2006.chatgpt.site](https://edukriti-ai-teacher.fuzailahmad2006.chatgpt.site).
 
 Canonical journey:
 
