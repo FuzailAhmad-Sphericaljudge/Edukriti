@@ -119,10 +119,16 @@ export const lessonPlanGenerationResponseSchema = z.object({
   provider: z.enum(['deterministic', 'openai']),
 });
 
+export const tutorTurnSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string().trim().min(1).max(3000),
+});
+
 export const tutorRequestSchema = z.object({
   lessonId: identifierSchema,
   question: z.string().trim().min(2).max(1000),
   currentSegmentId: identifierSchema.optional(),
+  history: z.array(tutorTurnSchema).max(6).default([]),
 });
 
 export const tutorResponseSchema = z.object({
@@ -232,6 +238,7 @@ export type RetrievalResponse = z.infer<typeof retrievalResponseSchema>;
 export type LessonRequest = z.infer<typeof lessonRequestSchema>;
 export type LessonPlan = z.infer<typeof lessonPlanSchema>;
 export type LessonPlanGenerationResponse = z.infer<typeof lessonPlanGenerationResponseSchema>;
+export type TutorTurn = z.infer<typeof tutorTurnSchema>;
 export type TutorRequest = z.infer<typeof tutorRequestSchema>;
 export type TutorResponse = z.infer<typeof tutorResponseSchema>;
 export type ResponseEvaluation = z.infer<typeof responseEvaluationSchema>;

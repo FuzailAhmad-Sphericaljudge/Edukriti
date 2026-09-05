@@ -13,6 +13,7 @@ import { ShareLessonButton } from '@/components/share-lesson-button';
 type Segment = LessonPlan['segments'][number];
 type PlayerState = 'idle' | 'speaking' | 'paused' | 'finished';
 type VoiceSpeed = 0.8 | 0.95 | 1.1 | 1.25;
+type TutorExchange = { question: string; response: TutorResponse };
 
 const voiceSpeeds: Array<{ value: VoiceSpeed; label: string }> = [
   { value: 0.8, label: '0.8×' },
@@ -45,13 +46,14 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
   const [speechAvailable, setSpeechAvailable] = useState(true);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceSpeed, setVoiceSpeed] = useState<VoiceSpeed>(0.95);
+  const [selectedVoiceName, setSelectedVoiceName] = useState('auto');
   const [spokenText, setSpokenText] = useState(lesson.plan.segments[0]!.narration);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [attempts, setAttempts] = useState<Record<string, CheckpointAttemptResponse>>({});
   const [submitting, setSubmitting] = useState(false);
   const [checkpointError, setCheckpointError] = useState('');
   const [tutorQuestion, setTutorQuestion] = useState('');
-  const [tutorAnswer, setTutorAnswer] = useState<TutorResponse | null>(null);
+  const [tutorHistory, setTutorHistory] = useState<TutorExchange[]>([]);
   const [tutorBusy, setTutorBusy] = useState(false);
   const [tutorError, setTutorError] = useState('');
   const requestIds = useRef<Record<string, string>>({});
@@ -59,7 +61,8 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
   const progress = lessonProgress(segmentIndex, lesson.plan.segments.length);
   const caption = useMemo(() => captionAt(spokenText, captionIndex), [captionIndex, spokenText]);
   const checkpointResult = segment.checkpoint ? attempts[segment.checkpoint.id] : undefined;
-  const preferredVoice = useMemo(() => [...voices].sort((left, right) => teachingVoiceScore(right.name, right.lang, lesson.plan.language) - teachingVoiceScore(left.name, left.lang, lesson.plan.language))[0] ?? null, [lesson.plan.language, voices]);
+  const rankedVoices = useMemo(() => [...voices].sort((left, right) => teachingVoiceScore(right.name, right.lang, lesson.plan.language) - teachingVoiceScore(left.name, left.lang, lesson.plan.language)), [lesson.plan.language, voices]);
+  const preferredVoice = useMemo(() => selectedVoiceName === 'auto' ? rankedVoices[0] ?? null : voices.find((voice) => voice.name === selectedVoiceName) ?? rankedVoices[0] ?? null, [rankedVoices, selectedVoiceName, voices]);
   const stopSpeech = useCallback(() => { if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel(); }, []);
 
   useEffect(() => {
@@ -74,6 +77,16 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
       stopSpeech();
     };
   }, [stopSpeech]);
+
+  useEffect(() => {
+    try {
+      const savedSpeed = Number(window.localStorage.getItem('edukriti.voice-speed'));
+      if (voiceSpeeds.some((speed) => speed.value === savedSpeed)) setVoiceSpeed(savedSpeed as VoiceSpeed);
+      setSelectedVoiceName(window.localStorage.getItem('edukriti.voice-name') || 'auto');
+    } catch {
+      // Browser privacy settings may disable preference storage.
+    }
+  }, []);
 
   const speakText = useCallback((text: string) => {
     if (!speechAvailable) return;
@@ -119,7 +132,7 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
     setPlayerState('idle');
     setCheckpointError('');
     setTutorQuestion('');
-    setTutorAnswer(null);
+    setTutorHistory([]);
     setTutorError('');
   };
   const tryMove = (nextIndex: number) => {
@@ -146,10 +159,12 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
       const response = await fetch('/api/tutor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lessonId: lesson.plan.id, currentSegmentId: segment.id, question }),
+        body: JSON.stringify({ lessonId: lesson.plan.id, currentSegmentId: segment.id, question, history: tutorHistory.flatMap((exchange) => [{ role: 'user', content: exchange.question }, { role: 'assistant', content: exchange.response.answer }]).slice(-6) }),
       });
       if (!response.ok) throw new Error('Aarohi could not answer right now. Please try again.');
-      setTutorAnswer(tutorResponseSchema.parse(await response.json()));
+      const answer = tutorResponseSchema.parse(await response.json());
+      setTutorHistory((current) => [...current, { question, response: answer }].slice(-3));
+      setTutorQuestion('');
     } catch (error) {
       setTutorError(error instanceof Error ? error.message : 'Aarohi could not answer right now.');
     } finally {
@@ -196,9 +211,9 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
             </div>
             <div className="flex items-center gap-2 text-xs text-white/55"><Volume2 className="size-4" /> {speechAvailable ? `${preferredVoice?.name ?? `${speechLocale(lesson.plan.language)} teacher voice`} · ${voiceSpeed}× speed` : 'Captions mode · voice unavailable'}</div>
           </div>
-          <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
             <p className="text-xs text-white/45">Natural sentence pauses and live captions are enabled.</p>
-            <div className="flex rounded-full bg-white/5 p-1" aria-label="Teacher voice speed">{voiceSpeeds.map((speed) => <button key={speed.value} type="button" onClick={() => { stop(); setVoiceSpeed(speed.value); }} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${voiceSpeed === speed.value ? 'bg-sky-300 text-slate-950' : 'text-white/55 hover:text-white'}`}>{speed.label}</button>)}</div>
+            <div className="flex flex-wrap items-center justify-end gap-2"><label className="sr-only" htmlFor="teacher-voice">Teacher voice</label><select id="teacher-voice" value={selectedVoiceName} onChange={(event) => { stop(); setSelectedVoiceName(event.target.value); try { window.localStorage.setItem('edukriti.voice-name', event.target.value); } catch { /* Preference storage is optional. */ } }} className="h-8 max-w-44 rounded-full border border-white/10 bg-white/5 px-3 text-xs text-white outline-none"><option value="auto" className="text-slate-950">Auto voice</option>{rankedVoices.slice(0, 12).map((voice) => <option key={`${voice.name}-${voice.lang}`} value={voice.name} className="text-slate-950">{voice.name} ({voice.lang})</option>)}</select><div className="flex rounded-full bg-white/5 p-1" aria-label="Teacher voice speed">{voiceSpeeds.map((speed) => <button key={speed.value} type="button" onClick={() => { stop(); setVoiceSpeed(speed.value); try { window.localStorage.setItem('edukriti.voice-speed', String(speed.value)); } catch { /* Preference storage is optional. */ } }} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${voiceSpeed === speed.value ? 'bg-sky-300 text-slate-950' : 'text-white/55 hover:text-white'}`}>{speed.label}</button>)}</div></div>
           </div>
         </div>
         <div className="border-t border-white/10 bg-sky-400/[0.06] p-4 sm:p-5">
@@ -207,7 +222,7 @@ export function LessonClassroom({ lesson }: { lesson: LessonPlanGenerationRespon
           <div className="mt-3 flex flex-wrap gap-2">{[`Explain ${segment.title} more simply`, 'Give me a real-world example'].map((suggestion) => <button key={suggestion} type="button" onClick={() => setTutorQuestion(suggestion)} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-left text-xs text-white/65 transition hover:border-sky-300/30 hover:text-white">{suggestion}</button>)}</div>
           <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"><Textarea value={tutorQuestion} onChange={(event) => { setTutorQuestion(event.target.value); setTutorError(''); }} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void askTutor(); } }} disabled={tutorBusy} placeholder="What would you like to understand?" className="min-h-20 border-white/15 bg-slate-950/40 text-white placeholder:text-white/35" /><button type="button" onClick={() => void askTutor()} disabled={tutorBusy || tutorQuestion.trim().length < 2} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sky-300 px-5 text-sm font-semibold text-slate-950 transition hover:bg-sky-200 disabled:cursor-not-allowed disabled:opacity-50"><Sparkles className="size-4" />{tutorBusy ? 'Thinking...' : 'Ask AI Teacher'}</button></div>
           {tutorError && <p role="alert" className="mt-2 text-xs text-red-300">{tutorError}</p>}
-          {tutorAnswer && <div aria-live="polite" className="mt-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4"><div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em]"><span className="rounded-full bg-sky-300/15 px-2 py-1 text-sky-200">{tutorAnswer.provider === 'openai' ? 'Live AI answer' : 'Lesson knowledge'}</span>{tutorAnswer.grounded && <span className="rounded-full bg-emerald-300/15 px-2 py-1 text-emerald-200">Source grounded</span>}</div><p className="mt-3 whitespace-pre-line text-sm leading-6 text-white/80">{tutorAnswer.answer}</p><p className="mt-3 border-t border-white/10 pt-3 text-sm font-medium text-sky-100">{tutorAnswer.followUpQuestion}</p><button type="button" onClick={() => speakText(tutorAnswer.answer)} disabled={!speechAvailable} className="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-white/20 px-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"><Volume2 className="size-4" /> Hear answer</button>{tutorAnswer.citations.length > 0 && <p className="mt-3 text-xs text-white/45">Lesson sources: {tutorAnswer.citations.map((citation) => citation.page ? `page ${citation.page}` : citation.chunkId).join(', ')}</p>}</div>}
+          {tutorHistory.length > 0 && <div aria-live="polite" className="mt-4 max-h-[460px] space-y-4 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/35 p-4">{tutorHistory.map((exchange, index) => <div key={`${exchange.question}-${index}`} className="space-y-3"><p className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-sky-300 px-4 py-3 text-sm leading-6 text-slate-950">{exchange.question}</p><div className="max-w-[94%] rounded-2xl rounded-bl-md bg-white/[0.07] p-4"><div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em]"><span className="rounded-full bg-sky-300/15 px-2 py-1 text-sky-200">{exchange.response.provider === 'openai' ? 'Live AI answer' : 'Lesson knowledge'}</span>{exchange.response.grounded && <span className="rounded-full bg-emerald-300/15 px-2 py-1 text-emerald-200">Source grounded</span>}</div><p className="mt-3 whitespace-pre-line text-sm leading-6 text-white/80">{exchange.response.answer}</p><button type="button" onClick={() => speakText(exchange.response.answer)} disabled={!speechAvailable} className="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-white/20 px-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"><Volume2 className="size-4" /> Hear answer</button>{exchange.response.citations.length > 0 && <p className="mt-3 text-xs text-white/45">Lesson sources: {exchange.response.citations.map((citation) => citation.page ? `page ${citation.page}` : citation.chunkId).join(', ')}</p>}</div>{index === tutorHistory.length - 1 && <button type="button" onClick={() => setTutorQuestion(exchange.response.followUpQuestion)} className="text-left text-sm font-medium text-sky-200 underline decoration-sky-300/30 underline-offset-4 hover:text-sky-100">Continue: {exchange.response.followUpQuestion}</button>}</div>)}</div>}
         </div>
       </section>
       <aside className="space-y-4"><section className="rounded-[24px] border border-white/10 bg-white/[0.055] p-5"><p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-300">Now teaching</p><h1 className="mt-2 font-heading text-2xl font-bold leading-tight">{segment.title}</h1><p className="mt-3 text-sm leading-6 text-white/60">{segment.objective}</p><div className="mt-4 flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-xs"><span>{segment.estimatedMinutes} min</span><span className="capitalize">{segment.visualType.replace('_', ' ')}</span></div></section>
