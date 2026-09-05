@@ -118,5 +118,6 @@ The web application expects Cloudflare bindings `DB` for D1 and `FILES` for R2. 
 - [x] Phase 11: one-click public demo and shareable lesson journeys
 - [x] Phase 12: conversational tutor memory and persistent voice preferences
 - [x] Phase 13: automatic notes, flashcards, and a seven-day revision plan
+- [x] Phase 14: two-way voice questions and spoken checkpoint answers
 
-See [Phase 13 notes](docs/phase-13-revision-studio.md), [Phase 12 notes](docs/phase-12-conversation-voice.md), [Phase 11 notes](docs/phase-11-public-demo.md), and [demo script](docs/demo-script.md).
+See [Phase 14 notes](docs/phase-14-voice-input.md), [Phase 13 notes](docs/phase-13-revision-studio.md), [Phase 12 notes](docs/phase-12-conversation-voice.md), and [demo script](docs/demo-script.md).
