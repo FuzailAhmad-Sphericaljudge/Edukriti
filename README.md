@@ -119,5 +119,6 @@ The web application expects Cloudflare bindings `DB` for D1 and `FILES` for R2. 
 - [x] Phase 12: conversational tutor memory and persistent voice preferences
 - [x] Phase 13: automatic notes, flashcards, and a seven-day revision plan
 - [x] Phase 14: two-way voice questions and spoken checkpoint answers
+- [x] Phase 15: adaptive practice with weak-concept targeting and live mastery
 
-See [Phase 14 notes](docs/phase-14-voice-input.md), [Phase 13 notes](docs/phase-13-revision-studio.md), [Phase 12 notes](docs/phase-12-conversation-voice.md), and [demo script](docs/demo-script.md).
+See [Phase 15 notes](docs/phase-15-adaptive-practice.md), [Phase 14 notes](docs/phase-14-voice-input.md), [Phase 13 notes](docs/phase-13-revision-studio.md), and [demo script](docs/demo-script.md).
