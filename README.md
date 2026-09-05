@@ -20,6 +20,7 @@ Canonical journey:
 - Human-like teacher avatar, browser voice, synchronized captions, and teaching controls
 - Equations, diagrams, graphs, code, timelines, maps, and key-point visuals selected by subject
 - Semantic checkpoint evaluation and misconception detection
+- Contextual Ask Aarohi tutoring with lesson-grounded answers and spoken follow-ups
 - Observable re-teaching through a different analogy and visual strategy
 - Three-to-five-question final assessment with immediate feedback
 - Durable scores, strengths, weak concepts, misconceptions, revision advice, and next-topic recommendations
@@ -113,5 +114,6 @@ The web application expects Cloudflare bindings `DB` for D1 and `FILES` for R2. 
 - [x] Phase 7: assessment and learner profile
 - [x] Phase 8: integration, verification, and demo readiness
 - [x] Phase 9: interaction reliability and natural teacher voice
+- [x] Phase 10: richer knowledge engine, contextual AI tutor, and voice speed controls
 
-See [submission and evaluator guide](docs/phase-8-submission.md), [interaction and voice polish](docs/phase-9-interaction-voice.md), and [demo script](docs/demo-script.md).
+See [Phase 10 notes](docs/phase-10-knowledge-tutor.md), [submission and evaluator guide](docs/phase-8-submission.md), [interaction and voice polish](docs/phase-9-interaction-voice.md), and [demo script](docs/demo-script.md).

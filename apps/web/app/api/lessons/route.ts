@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       const chunks = await env.DB.prepare(
         'SELECT id, source_id AS sourceId, chunk_index AS `index`, page_start AS pageStart, page_end AS pageEnd, token_count AS tokenCount, content AS text FROM source_chunks WHERE source_id = ? ORDER BY chunk_index ASC LIMIT 1000',
       ).bind(parsed.data.sourceId).all<StoredChunk>();
-      evidence = rankChunks(chunks.results, `${parsed.data.topic ?? ''} ${parsed.data.goal}`, 8).map((chunk) => ({
+      evidence = rankChunks(chunks.results, `${parsed.data.topic ?? ''} ${parsed.data.goal}`, 10).map((chunk) => ({
         sourceId: chunk.sourceId,
         chunkId: chunk.id,
         page: chunk.pageStart,

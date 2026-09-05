@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { assessmentAttemptRequestSchema, checkpointAttemptRequestSchema, lessonRequestSchema, retrievalRequestSchema, utcTimestampSchema } from './index.ts';
+import { assessmentAttemptRequestSchema, checkpointAttemptRequestSchema, lessonRequestSchema, retrievalRequestSchema, tutorRequestSchema, tutorResponseSchema, utcTimestampSchema } from './index.ts';
 
 const validRequest = {
   learnerId: 'learner-demo',
@@ -45,4 +45,10 @@ test('requires a durable idempotency key for checkpoint attempts', () => {
 test('rejects empty final assessment answers', () => {
   const result = assessmentAttemptRequestSchema.safeParse({ lessonId: 'lesson', questionId: 'question', response: ' ', clientRequestId: '550e8400-e29b-41d4-a716-446655440000' });
   assert.equal(result.success, false);
+});
+
+test('validates contextual tutor questions and grounded answers', () => {
+  assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: 'Why does this happen?' }).success, true);
+  assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: '' }).success, false);
+  assert.equal(tutorResponseSchema.safeParse({ answer: 'Because the force changes motion.', followUpQuestion: 'Can you name an example?', grounded: false, provider: 'deterministic', citations: [] }).success, true);
 });
