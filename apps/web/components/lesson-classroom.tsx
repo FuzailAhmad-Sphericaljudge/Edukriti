@@ -917,6 +917,12 @@ export function LessonClassroom({
                   Start final assessment <ArrowRight className="size-4" />
                 </a>
                 <a
+                  href={`/lessons/${lesson.plan.id}/practice`}
+                  className="mt-2 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 text-sm font-semibold text-amber-200 transition hover:bg-amber-300/20"
+                >
+                  <Sparkles className="size-4" /> Adaptive practice
+                </a>
+                <a
                   href={`/lessons/${lesson.plan.id}/revision`}
                   className="mt-2 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-4 text-sm font-semibold text-white transition hover:bg-white/10"
                 >
