@@ -120,5 +120,6 @@ The web application expects Cloudflare bindings `DB` for D1 and `FILES` for R2. 
 - [x] Phase 13: automatic notes, flashcards, and a seven-day revision plan
 - [x] Phase 14: two-way voice questions and spoken checkpoint answers
 - [x] Phase 15: adaptive practice with weak-concept targeting and live mastery
+- [x] Phase 16: persistent learner progress dashboard and mastery analytics
 
-See [Phase 15 notes](docs/phase-15-adaptive-practice.md), [Phase 14 notes](docs/phase-14-voice-input.md), [Phase 13 notes](docs/phase-13-revision-studio.md), and [demo script](docs/demo-script.md).
+See [Phase 16 notes](docs/phase-16-progress-dashboard.md), [Phase 15 notes](docs/phase-15-adaptive-practice.md), [Phase 14 notes](docs/phase-14-voice-input.md), and [demo script](docs/demo-script.md).

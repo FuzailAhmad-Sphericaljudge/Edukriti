@@ -28,7 +28,7 @@ export default async function LessonsPage() {
     <div className="mx-auto max-w-5xl">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <a href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" /> Dashboard</a>
-        <a href="/lessons/new" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/80"><Plus className="size-4" /> Create lesson</a>
+        <div className="flex flex-wrap gap-2"><a href="/progress" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border bg-white px-4 text-sm font-semibold text-primary hover:bg-primary/5"><Target className="size-4" /> Progress dashboard</a><a href="/lessons/new" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/80"><Plus className="size-4" /> Create lesson</a></div>
       </div>
       <header className="mt-8"><p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">My lessons</p><h1 className="mt-2 font-heading text-3xl font-bold tracking-[-0.04em]">Continue learning</h1><p className="mt-2 text-muted-foreground">Open any lesson card to continue from where you stopped.</p></header>
       {lessons.length ? <div className="mt-7 grid gap-4 sm:grid-cols-2">{lessons.map((lesson) => {
