@@ -122,5 +122,6 @@ The web application expects Cloudflare bindings `DB` for D1 and `FILES` for R2. 
 - [x] Phase 15: adaptive practice with weak-concept targeting and live mastery
 - [x] Phase 16: persistent learner progress dashboard and mastery analytics
 - [x] Phase 17: project story, technical notes, responsible AI, and future vision
+- [x] Phase 18: interactive concept map and visual prerequisite paths
 
-See [hackathon submission notes](docs/hackathon-submission-notes.md), [project overview and vision](docs/project-overview-and-vision.md), [Phase 17 notes](docs/phase-17-about-vision.md), and [demo script](docs/demo-script.md).
+See [Phase 18 notes](docs/phase-18-concept-map.md), [hackathon submission notes](docs/hackathon-submission-notes.md), [project overview and vision](docs/project-overview-and-vision.md), and [demo script](docs/demo-script.md).
