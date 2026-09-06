@@ -121,5 +121,6 @@ The web application expects Cloudflare bindings `DB` for D1 and `FILES` for R2. 
 - [x] Phase 14: two-way voice questions and spoken checkpoint answers
 - [x] Phase 15: adaptive practice with weak-concept targeting and live mastery
 - [x] Phase 16: persistent learner progress dashboard and mastery analytics
+- [x] Phase 17: project story, technical notes, responsible AI, and future vision
 
-See [Phase 16 notes](docs/phase-16-progress-dashboard.md), [Phase 15 notes](docs/phase-15-adaptive-practice.md), [Phase 14 notes](docs/phase-14-voice-input.md), and [demo script](docs/demo-script.md).
+See [hackathon submission notes](docs/hackathon-submission-notes.md), [project overview and vision](docs/project-overview-and-vision.md), [Phase 17 notes](docs/phase-17-about-vision.md), and [demo script](docs/demo-script.md).
