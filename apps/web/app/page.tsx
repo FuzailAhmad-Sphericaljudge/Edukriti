@@ -68,9 +68,10 @@ export default async function Home() {
             <a className="text-foreground" href="#dashboard">Home</a>
             <a className="transition-colors hover:text-foreground" href="#lessons">My lessons</a>
             <a className="transition-colors hover:text-foreground" href="/progress">Progress</a>
+            <a className="transition-colors hover:text-foreground" href="/about">About</a>
           </nav>
 
-          <a href="/progress" className="grid size-10 place-items-center rounded-full bg-[#efe7d5] text-sm font-bold text-[#765524]" aria-label="View learner progress">FJ</a>
+          <div className="flex items-center gap-2"><a href="/about" className="hidden h-9 items-center rounded-lg px-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground sm:inline-flex">Project vision</a><a href="/progress" className="grid size-10 place-items-center rounded-full bg-[#efe7d5] text-sm font-bold text-[#765524]" aria-label="View learner progress">FJ</a></div>
         </div>
       </header>
 
