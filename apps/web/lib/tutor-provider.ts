@@ -242,25 +242,35 @@ function buildDeterministicTutorAnswer(
     }
   } else {
     const conceptName = bestCitation?.title || plan?.title || 'Core Principle';
+    const generalNotice =
+      language === 'hindi'
+        ? '> ℹ️ *सूचना: यह उत्तर सामान्य शैक्षणिक ज्ञान पर आधारित है (पाठ्यक्रम सामग्री में सीधे उपलब्ध नहीं है)।*\n\n'
+        : language === 'hinglish'
+          ? '> ℹ️ *Note: Yeh answer general academic knowledge par based hai (course material mein directly available nahi hai).*\n\n'
+          : '> ℹ️ *Note: This explanation is synthesized from general academic knowledge (not from standard course textbook material).*\n\n';
+
     if (style === 'eli10') {
       explanation =
-        language === 'hindi'
+        generalNotice +
+        (language === 'hindi'
           ? `सरल शब्दों में समझें: जैसे जब आप साइकिल चलाते हैं तो पैडल मारने से पहिए घूमते हैं, ठीक वैसे ही “${conceptName}” में एक कारण दूसरे प्रभाव को जन्म देता है। ${question} का मूल अर्थ यही है!`
           : language === 'hinglish'
             ? `Simple shabdon mein: Jaise water pipe mein paani ka pressure flow decide karta hai, waise hi “${conceptName}” mein cause and effect direct connect hote hain. '${question}' ka main logic yahi hai!`
-            : `Imagine a water pipe: water pressure pushes the flow along, while narrow pipes slow it down. Similarly, in “${conceptName}”, the driving mechanism directly dictates the result!`;
+            : `Imagine a water pipe: water pressure pushes the flow along, while narrow pipes slow it down. Similarly, in “${conceptName}”, the driving mechanism directly dictates the result!`);
     } else if (style === 'exam_style') {
       explanation =
-        language === 'hindi'
+        generalNotice +
+        (language === 'hindi'
           ? `### मुख्य परीक्षा बिंदु (Key Exam Points)\n- **परिभाषा:** “${conceptName}” की मुख्य संकल्पना कारण-प्रभाव सिद्धांत पर आधारित है।\n- **मुख्य सूत्र / नियम:** सभी संबंधित चरों का संतुलन बनाए रखना अनिवार्य है।\n- **परीक्षा टिप:** इकाई (units) लिखना कभी न भूलें और आरेख (diagram) अवश्य बनाएं।`
-          : `### Key Exam Highlights\n- **Core Definition:** In ${conceptName}, state the fundamental physical law clearly.\n- **High-Scoring Formula/Mechanism:** Always state SI units and conservation principles.\n- **Common Mistake to Avoid:** Distinguish clearly between vector and scalar quantities.`;
+          : `### Key Exam Highlights\n- **Core Definition:** In ${conceptName}, state the fundamental physical law clearly.\n- **High-Scoring Formula/Mechanism:** Always state SI units and conservation principles.\n- **Common Mistake to Avoid:** Distinguish clearly between vector and scalar quantities.`);
     } else {
       explanation =
-        language === 'hindi'
+        generalNotice +
+        (language === 'hindi'
           ? `“${conceptName}” के संदर्भ में, '${question}' का मुख्य उत्तर यह है कि किसी भी प्रणाली में भौतिक और गणितीय नियम स्थिरता बनाए रखते हैं। जब आप इसे दैनिक जीवन से जोड़ते हैं, तो यह और स्पष्ट हो जाता है।`
           : language === 'hinglish'
             ? `“${conceptName}” ke context mein, '${question}' ka core idea yeh hai ki cause aur effect seamlessly linked hain. Jab aap isse observe karte hain, toh mechanism clear ho jata hai.`
-            : `In the context of “${conceptName}”, answering '${question}' reveals how foundational physical and conceptual relationships govern observed behavior. When applied to real-world systems, cause directly dictates effect.`;
+            : `In the context of “${conceptName}”, answering '${question}' reveals how foundational physical and conceptual relationships govern observed behavior. When applied to real-world systems, cause directly dictates effect.`);
     }
   }
 

@@ -172,3 +172,18 @@ test('streamTutorQuestion yields progressive events and complete response', asyn
   assert.ok(events.includes('delta'));
   assert.ok(events.includes('complete'));
 });
+
+test('answerTutorQuestion labels missing curriculum topics as not from course material', async () => {
+  const req: TutorRequest = {
+    question: 'What is the history and geographical significance of the Panama Canal?',
+    history: [],
+    style: 'default',
+    language: 'english',
+  };
+
+  const response = await answerTutorQuestion(null, req, {});
+  assert.equal(response.provider, 'deterministic');
+  assert.equal(response.sourceAttributionNotice, 'not from course material');
+  assert.ok(response.answer.includes('not from standard course textbook material'));
+  assert.equal(response.grounded, false);
+});
