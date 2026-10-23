@@ -8,6 +8,7 @@
     "test": "node --test src/teaching-engine.test.ts"
   },
   "dependencies": {
-    "@edukriti/contracts": "*"
+    "@edukriti/contracts": "*",
+    "@edukriti/ai": "*"
   }
 }

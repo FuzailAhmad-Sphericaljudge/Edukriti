@@ -1,4 +1,20 @@
-import { assessmentAttemptResponseSchema, assessmentQuestionSchema, learningReportSchema, lessonAdaptationSchema, responseEvaluationSchema, lessonPlanSchema, type AssessmentAttemptResponse, type AssessmentQuestion, type LearningReport, type LessonAdaptation, type LessonPlan, type LessonRequest, type ResponseEvaluation } from '@edukriti/contracts';
+import {
+  assessmentAttemptResponseSchema,
+  assessmentQuestionSchema,
+  learningReportSchema,
+  lessonAdaptationSchema,
+  responseEvaluationSchema,
+  lessonPlanSchema,
+  type AssessmentAttemptResponse,
+  type AssessmentQuestion,
+  type LearningReport,
+  type LessonAdaptation,
+  type LessonPlan,
+  type LessonRequest,
+  type ResponseEvaluation,
+} from '@edukriti/contracts';
+import type { AiProvider } from '@edukriti/ai';
+import { z } from 'zod';
 
 export type LessonEvidence = {
   sourceId: string;
@@ -7,6 +23,12 @@ export type LessonEvidence = {
   text: string;
 };
 
+/**
+ * ============================================================================
+ * OFFLINE DETERMINISTIC FALLBACK DATA & REGISTRY
+ * Used when running offline or as fallback when no AI provider key is configured.
+ * ============================================================================
+ */
 const topicSequences: Array<{ pattern: RegExp; concepts: string[] }> = [
   { pattern: /electric|circuit|ohm|voltage|current|resistance/i, concepts: ['Electric charge and current', 'Voltage as the driving force', 'Resistance and Ohm’s Law', 'Applying ideas to a simple circuit', 'Practice and reflection', 'Challenge problem'] },
   { pattern: /newton|force|motion/i, concepts: ['Motion and force', 'Newton’s First Law', 'Newton’s Second Law', 'Newton’s Third Law', 'Everyday applications', 'Challenge problem'] },
@@ -92,6 +114,69 @@ export function buildDeterministicLessonPlan(request: LessonRequest, evidence: L
   });
 }
 
+/**
+ * Generates an end-to-end personalized lesson plan using the configured AI provider.
+ * Falls back deterministically to buildDeterministicLessonPlan if provider throws or fails.
+ */
+export async function generateLessonPlanWithAi(
+  provider: AiProvider,
+  request: LessonRequest,
+  evidence: LessonEvidence[] = [],
+  id = crypto.randomUUID(),
+  now = new Date().toISOString(),
+): Promise<LessonPlan> {
+  const count = segmentCount(request.durationMinutes);
+  const topic = request.topic?.trim() || evidence[0]?.text.split(/[.!?\n]/)[0]?.slice(0, 90) || 'Uploaded material';
+
+  const prompt = {
+    instructions: `# Role
+You are Edukriti, an expert, encouraging, adaptive teacher building an interactive lesson plan.
+Produce a structured lesson plan adhering strictly to the schema.
+
+# Guidelines
+- Match language: ${request.language} (English / Hindi / Hinglish).
+- Level: ${request.level}.
+- Duration: exactly ${request.durationMinutes} minutes with ${count} logical segments.
+- Style: ${request.style}.
+- Learner goal: ${request.goal}.
+- Narration should be conversational spoken teaching with natural explanations and transitions.
+- Checkpoints should check conceptual understanding rather than pure memorization.
+- Citations must strictly reference provided evidence when present.`,
+    input: {
+      topic,
+      level: request.level,
+      language: request.language,
+      durationMinutes: request.durationMinutes,
+      style: request.style,
+      goal: request.goal,
+      evidence: evidence.map((e) => ({
+        sourceId: e.sourceId,
+        chunkId: e.chunkId,
+        page: e.page,
+        text: e.text.slice(0, 500),
+      })),
+    },
+  };
+
+  try {
+    const generated = await provider.generateStructured(lessonPlanSchema, prompt, {
+      schemaName: 'edukriti_lesson_plan',
+      schemaDescription: 'Structured personalized lesson plan',
+    });
+
+    return lessonPlanSchema.parse({
+      ...generated,
+      id,
+      learnerId: request.learnerId,
+      language: request.language,
+      durationMinutes: request.durationMinutes,
+      createdAt: now,
+    });
+  } catch {
+    return buildDeterministicLessonPlan(request, evidence, id, now);
+  }
+}
+
 export function lessonMinutes(plan: LessonPlan) {
   return plan.segments.reduce((total, segment) => total + segment.estimatedMinutes, 0);
 }
@@ -174,6 +259,48 @@ export function evaluateCheckpoint(context: CheckpointContext, learnerResponse: 
   });
 }
 
+/**
+ * Evaluates a learner's checkpoint response using the AI provider.
+ * Analyzes semantic meaning, misconceptions, confidence, and suggests pedagogical next actions.
+ * Falls back deterministically if AI provider fails or is offline.
+ */
+export async function evaluateCheckpointWithAi(
+  provider: AiProvider,
+  context: CheckpointContext,
+  learnerResponse: string,
+): Promise<ResponseEvaluation> {
+  const prompt = {
+    instructions: `# Role
+You are an expert educational evaluator evaluating a student's response to an in-lesson checkpoint.
+Target concept: "${context.targetConcept}"
+Language: ${context.language}
+
+# Rules
+- Evaluate conceptual understanding, not exact rote memorization.
+- Diagnose if there is a known misconception (e.g. current being consumed, confusing voltage with current, action-reaction acting on same body).
+- If the learner is confused or incorrect, write kind, constructive feedback in ${context.language} and select an appropriate nextAction ('new_analogy', 'simplify', 'new_example', 'change_visual').
+- If correct, acknowledge what they understood accurately and set nextAction to 'continue'.`,
+    input: {
+      targetConcept: context.targetConcept,
+      learnerResponse,
+      language: context.language,
+    },
+  };
+
+  try {
+    const evaluation = await provider.generateStructured(responseEvaluationSchema, prompt, {
+      schemaName: 'checkpoint_evaluation',
+      schemaDescription: 'Semantic assessment of student checkpoint response',
+    });
+    return responseEvaluationSchema.parse({
+      ...evaluation,
+      checkpointId: context.id,
+    });
+  } catch {
+    return evaluateCheckpoint(context, learnerResponse);
+  }
+}
+
 export function buildAdaptation(context: CheckpointContext, evaluation: ResponseEvaluation): LessonAdaptation | null {
   if (evaluation.isCorrect) return null;
   const concept = context.targetConcept;
@@ -188,10 +315,68 @@ export function buildAdaptation(context: CheckpointContext, evaluation: Response
   return lessonAdaptationSchema.parse({ strategy: 'new_analogy', title: `${concept}, explained another way`, explanation, visualType: 'diagram', visualBrief: `Show a three-part cause → change → result diagram for ${concept}.` });
 }
 
+/**
+ * Builds an adaptive teaching segment when a student struggles with a checkpoint.
+ * Falls back to deterministic adaptation if provider fails.
+ */
+export async function buildAdaptationWithAi(
+  provider: AiProvider,
+  context: CheckpointContext,
+  evaluation: ResponseEvaluation,
+): Promise<LessonAdaptation | null> {
+  if (evaluation.isCorrect) return null;
+
+  const prompt = {
+    instructions: `# Role
+You are Aarohi, an adaptive tutor creating a fresh teaching angle for a student struggling with "${context.targetConcept}".
+Language: ${context.language}
+
+# Adaptation Strategy: ${evaluation.nextAction}
+- Create an intuitive analogy or simplified breakdown.
+- Do NOT repeat the failed explanation verbatim.
+- Connect cause, mechanism, and real-life observable result.
+- Select an appropriate visualType from: 'diagram', 'equation', 'graph', 'timeline', 'map', 'code', 'illustration', 'key_points'.`,
+    input: {
+      targetConcept: context.targetConcept,
+      misconception: evaluation.misconception,
+      feedback: evaluation.feedback,
+      strategy: evaluation.nextAction,
+      language: context.language,
+    },
+  };
+
+  try {
+    const result = await provider.generateStructured(lessonAdaptationSchema, prompt, {
+      schemaName: 'lesson_adaptation',
+      schemaDescription: 'Adaptive re-teaching segment',
+    });
+    return lessonAdaptationSchema.parse(result);
+  } catch {
+    return buildAdaptation(context, evaluation);
+  }
+}
+
 export type AssessmentQuestionDefinition = AssessmentQuestion & {
   expectedAnswer: string;
   targetConcept: string;
 };
+
+const aiGeneratedAssessmentSchema = z.object({
+  questions: z.array(
+    z.object({
+      type: z.enum(['mcq', 'short_answer']),
+      prompt: z.string().min(1).max(1000),
+      choices: z.array(
+        z.object({
+          id: z.string().min(1).max(12),
+          text: z.string().min(1).max(500),
+        }),
+      ).min(2).max(6).optional(),
+      expectedAnswer: z.string().min(1).max(500),
+      targetConcept: z.string().min(1).max(200),
+    }),
+  ).min(3).max(5),
+});
 
 function assessmentPrompt(language: LessonPlan['language'], english: string, hinglish: string, hindi: string) {
   return language === 'hindi' ? hindi : language === 'hinglish' ? hinglish : english;
@@ -219,6 +404,52 @@ export function buildAssessment(plan: LessonPlan): AssessmentQuestionDefinition[
   });
 }
 
+/**
+ * Builds assessment questions tailored dynamically to any lesson plan using AI.
+ * Falls back deterministically if provider fails or is offline.
+ */
+export async function buildAssessmentWithAi(
+  provider: AiProvider,
+  plan: LessonPlan,
+): Promise<AssessmentQuestionDefinition[]> {
+  const count = plan.durationMinutes === 60 ? 5 : 3;
+  const prompt = {
+    instructions: `# Role
+You are an expert assessment designer creating a ${count}-question quiz for a lesson on "${plan.title}".
+Language: ${plan.language}
+
+# Rules
+- Build exactly ${count} questions covering the lesson segments.
+- Include a mix of MCQ (with 3-4 plausible choices labeled a, b, c, d) and 1 conceptual short-answer question.
+- Each question must specify the expectedAnswer and targetConcept.
+- Match lesson language: ${plan.language} (English / Hindi / Hinglish).`,
+    input: {
+      lessonTitle: plan.title,
+      language: plan.language,
+      segments: plan.segments.map((s) => ({ title: s.title, objective: s.objective })),
+      questionCount: count,
+    },
+  };
+
+  try {
+    const generated = await provider.generateStructured(aiGeneratedAssessmentSchema, prompt, {
+      schemaName: 'lesson_assessment',
+      schemaDescription: 'Dynamic multi-question assessment tailored to lesson content',
+    });
+
+    return generated.questions.slice(0, count).map((q, idx) => ({
+      id: `${plan.id}-assessment-${idx + 1}`,
+      type: q.type,
+      prompt: q.prompt,
+      choices: q.choices,
+      expectedAnswer: q.expectedAnswer,
+      targetConcept: q.targetConcept,
+    }));
+  } catch {
+    return buildAssessment(plan);
+  }
+}
+
 export function evaluateAssessmentAnswer(plan: LessonPlan, question: AssessmentQuestionDefinition, learnerResponse: string, attemptId: string, attemptedAt = new Date().toISOString()): AssessmentAttemptResponse {
   const semanticEvaluation = question.type === 'short_answer' ? evaluateCheckpoint({ id: question.id, targetConcept: question.targetConcept, language: plan.language }, learnerResponse) : null;
   const isCorrect = question.type === 'mcq' ? learnerResponse === question.expectedAnswer : Boolean(semanticEvaluation?.isCorrect);
@@ -226,6 +457,59 @@ export function evaluateAssessmentAnswer(plan: LessonPlan, question: AssessmentQ
     ? assessmentPrompt(plan.language, 'Correct — that shows a clear understanding.', 'Bilkul sahi — concept clear hai.', 'सही उत्तर — अवधारणा स्पष्ट है।')
     : semanticEvaluation?.feedback ?? assessmentPrompt(plan.language, 'Not quite. Review this concept in the lesson report.', 'Not quite. Is concept ko report mein revise karein.', 'यह सही नहीं है। रिपोर्ट में इस अवधारणा को दोहराएँ।');
   return assessmentAttemptResponseSchema.parse({ attemptId, questionId: question.id, isCorrect, feedback, understoodConcepts: isCorrect ? [question.targetConcept] : [], weakConcepts: isCorrect ? [] : [question.targetConcept], misconception: semanticEvaluation?.misconception ?? null, attemptedAt });
+}
+
+/**
+ * Evaluates a learner's assessment response using AI for deep semantic understanding.
+ * Falls back to evaluateAssessmentAnswer if provider is offline or throws.
+ */
+export async function evaluateAssessmentAnswerWithAi(
+  provider: AiProvider,
+  plan: LessonPlan,
+  question: AssessmentQuestionDefinition,
+  learnerResponse: string,
+  attemptId: string,
+  attemptedAt = new Date().toISOString(),
+): Promise<AssessmentAttemptResponse> {
+  if (question.type === 'mcq') {
+    const isCorrect = learnerResponse.trim().toLowerCase() === question.expectedAnswer.trim().toLowerCase();
+    const feedback = isCorrect
+      ? assessmentPrompt(plan.language, 'Correct — that shows a clear understanding.', 'Bilkul sahi — concept clear hai.', 'सही उत्तर — अवधारणा स्पष्ट है।')
+      : assessmentPrompt(
+          plan.language,
+          `Not quite. The correct answer was (${question.expectedAnswer}). Review this in your report.`,
+          `Not quite. Sahi answer (${question.expectedAnswer}) tha. Report mein isse revise karein.`,
+          `यह सही नहीं है। सही उत्तर (${question.expectedAnswer}) था। रिपोर्ट में इसे दोहराएँ।`,
+        );
+    return assessmentAttemptResponseSchema.parse({
+      attemptId,
+      questionId: question.id,
+      isCorrect,
+      feedback,
+      understoodConcepts: isCorrect ? [question.targetConcept] : [],
+      weakConcepts: isCorrect ? [] : [question.targetConcept],
+      misconception: isCorrect ? null : `Confusion regarding ${question.targetConcept}`,
+      attemptedAt,
+    });
+  }
+
+  // Short answer: evaluate conceptually with AI
+  const semanticEval = await evaluateCheckpointWithAi(
+    provider,
+    { id: question.id, targetConcept: question.targetConcept, language: plan.language },
+    learnerResponse,
+  );
+
+  return assessmentAttemptResponseSchema.parse({
+    attemptId,
+    questionId: question.id,
+    isCorrect: semanticEval.isCorrect,
+    feedback: semanticEval.feedback,
+    understoodConcepts: semanticEval.isCorrect ? [question.targetConcept] : [],
+    weakConcepts: semanticEval.isCorrect ? [] : [question.targetConcept],
+    misconception: semanticEval.misconception,
+    attemptedAt,
+  });
 }
 
 export function buildLearningReport(plan: LessonPlan, attempts: AssessmentAttemptResponse[], completedAt = new Date().toISOString()): LearningReport {
