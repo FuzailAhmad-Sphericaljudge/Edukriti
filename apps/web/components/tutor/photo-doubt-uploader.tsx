@@ -17,6 +17,24 @@ export function PhotoDoubtUploader({
 }: PhotoDoubtUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string>('');
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!disabled) setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (disabled) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -104,12 +122,19 @@ export function PhotoDoubtUploader({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           disabled={disabled}
-          title="Upload problem photo or diagram"
-          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-2.5 text-slate-300 transition hover:border-sky-400/40 hover:bg-sky-500/10 hover:text-sky-200 disabled:opacity-50"
+          title="Upload or drag & drop problem photo or diagram"
+          className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-2.5 transition ${
+            isDragging
+              ? 'border-sky-400 bg-sky-500/20 text-sky-200 ring-2 ring-sky-400/40'
+              : 'border-white/15 bg-white/5 text-slate-300 hover:border-sky-400/40 hover:bg-sky-500/10 hover:text-sky-200'
+          } disabled:opacity-50`}
         >
           <Camera className="size-4 text-sky-400" />
-          <span className="hidden sm:inline">Photo Doubt</span>
+          <span className="hidden sm:inline">{isDragging ? 'Drop Image' : 'Photo Doubt'}</span>
         </button>
       )}
 
