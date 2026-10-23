@@ -39,4 +39,15 @@ export class TokenBudgetTracker {
   }
 }
 
+export function estimateTokens(input: unknown): number {
+  if (!input) return 0;
+  const str = typeof input === 'string' ? input : JSON.stringify(input);
+  let tokens = 0;
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    tokens += code > 127 ? 0.65 : 0.25;
+  }
+  return Math.max(1, Math.ceil(tokens));
+}
+
 export const globalTokenBudget = new TokenBudgetTracker();
