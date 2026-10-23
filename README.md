@@ -20,7 +20,14 @@ Canonical journey:
 - Human-like teacher avatar, browser voice, synchronized captions, and teaching controls
 - Equations, diagrams, graphs, code, timelines, maps, and key-point visuals selected by subject
 - Semantic checkpoint evaluation and misconception detection
-- Contextual Ask Aarohi tutoring with lesson-grounded answers and spoken follow-ups
+- Omnipresent "Ask Aarohi" AI study station with global drawer (`Ctrl+/`), full `/tutor` studio, and streaming SSE responses
+- Safe step-by-step numerical solver for maths/physics/chemistry with SI auto-normalization and KaTeX formula typesetting
+- Deterministic formula recomputation verifying AI numerical answers within 5% tolerance
+- Multimodal photo doubts: upload problem diagrams or textbook equations (PNG, JPEG, WebP) for OCR extraction
+- Hands-Free continuous voice loop with automated answer readout, listening triggers, and animated waveforms
+- Multi-turn conversation memory, follow-up intent classification, and style switches ("Like I'm 10", Exam-Style, Deep-Dive)
+- Curated textbook knowledge base grounding with inline citations `[1][2]` and explicit `not from course material` notice
+- 105-question Golden Evaluation benchmark across 6 subjects with automated regression report (`npm run eval`)
 - Observable re-teaching through a different analogy and visual strategy
 - Three-to-five-question final assessment with immediate feedback
 - Durable scores, strengths, weak concepts, misconceptions, revision advice, and next-topic recommendations
@@ -86,6 +93,9 @@ The web application expects Cloudflare bindings `DB` for D1 and `FILES` for R2. 
 | `GET /api/lessons/:id` | Retrieve a validated lesson plan |
 | `POST /api/checkpoints` | Evaluate and adapt during teaching |
 | `GET/POST /api/assessments` | Load and answer the final assessment |
+| `POST /api/tutor` | Ask Aarohi multimodal question answering with grounding |
+| `POST /api/tutor/stream` | Server-Sent Events (SSE) progressive streaming for Ask Aarohi |
+| `POST /api/tutor/feedback` | Record student pedagogical rating and quality signals |
 | `POST /api/reports` | Generate a report from recorded answers |
 | `GET /api/reports/:id` | Retrieve a completed learning report |
 
