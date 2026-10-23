@@ -15,7 +15,10 @@ import {
   Loader2,
   ThumbsUp,
   ThumbsDown,
+  Download,
+  Trash2,
 } from 'lucide-react';
+import { exportConversationAsMarkdown } from '../../lib/tutor-export';
 import type {
   Citation,
   TeachingLanguage,
@@ -113,6 +116,26 @@ export function TutorConversationPanel({
       });
     } catch {
       // Offline fallback
+    }
+  };
+
+  const handleDownloadChat = () => {
+    const md = exportConversationAsMarkdown(messages, initialTopic || 'General Study');
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `aarohi-session-${Date.now()}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleClearChat = () => {
+    if (messages.length === 0) return;
+    if (typeof window !== 'undefined' && window.confirm('Clear current tutor conversation history?')) {
+      setMessages([]);
     }
   };
 
@@ -334,6 +357,32 @@ export function TutorConversationPanel({
             <option value="hindi" className="bg-slate-900">हिंदी</option>
             <option value="hinglish" className="bg-slate-900">Hinglish</option>
           </select>
+
+          {/* Export and Clear controls */}
+          <div className="flex items-center gap-1 ml-auto">
+            {messages.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleDownloadChat}
+                  title="Export session as Markdown notes"
+                  className="inline-flex size-7 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:text-white transition"
+                  aria-label="Export chat as Markdown notes"
+                >
+                  <Download className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearChat}
+                  title="Clear chat history"
+                  className="inline-flex size-7 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300 transition"
+                  aria-label="Clear chat history"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
