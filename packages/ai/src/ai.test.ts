@@ -11,6 +11,7 @@ import {
   sanitizeObject,
   globalAiCache,
   TokenBudgetTracker,
+  estimateTokens,
 } from './index.ts';
 
 const testSchema = z.object({
@@ -164,6 +165,14 @@ test('TokenBudgetTracker enforces limits and resets correctly', () => {
   assert.equal(tracker.hasBudgetFor(20), false);
   tracker.reset();
   assert.equal(tracker.remaining, 100);
+});
+
+test('estimateTokens calculates realistic token counts for English and Hindi text', () => {
+  assert.equal(estimateTokens(''), 0);
+  const english = estimateTokens('Explain Newton laws of motion with simple examples.');
+  assert.ok(english > 10 && english < 25);
+  const hindi = estimateTokens('न्यूटन के गति के नियम');
+  assert.ok(hindi > 5);
 });
 
 test('FallbackProvider returns deterministic text and caches results', async () => {
