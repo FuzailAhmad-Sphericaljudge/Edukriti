@@ -453,12 +453,24 @@ You are Aarohi, Edukriti's brilliant, warm, patient, and encouraging AI study co
           : undefined,
       };
 
+      const temperature =
+        intent === 'numerical_problem'
+          ? 0.1
+          : adjustedStyle === 'eli10'
+            ? 0.4
+            : adjustedStyle === 'exam_style'
+              ? 0.2
+              : 0.3;
+      const topP = intent === 'numerical_problem' ? 0.8 : 0.92;
+
       const generated = await aiProvider.generateStructured<z.infer<typeof structuredTutorAnswerSchema>>(
         structuredTutorAnswerSchema,
         promptPayload,
         {
           schemaName: 'edukriti_tutor_response',
           schemaDescription: 'Warm conversational AI teacher response with structured steps and suggestions',
+          temperature,
+          topP,
         },
       );
 
