@@ -180,9 +180,14 @@ export default function AboutPage() {
             <ul className="mt-5 space-y-3 text-sm leading-6 text-amber-950/80"><li>• The avatar uses a polished portrait with speaking-state motion, not photorealistic real-time lip synchronization.</li><li>• Voice availability and recognition quality depend on browser and operating-system support.</li><li>• The current upload experience supports PDF and TXT; broader document formats are on the roadmap.</li><li>• Semantic evaluation is optimized for the prototype and needs wider subject testing before high-stakes use.</li></ul>
           </article>
           <article className="rounded-[26px] border bg-white p-6 sm:p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Technology disclosure</p>
+            <p className="mt-xs font-bold uppercase tracking-[0.14em] text-slate-500">Technology disclosure</p>
             <h2 className="mt-2 font-heading text-2xl font-bold">Services and libraries</h2>
-            <p className="mt-4 text-sm leading-7 text-muted-foreground">React and Vinext power the interface. Cloudflare Workers, D1, and R2 provide deployment and persistence. Zod validates public boundaries. The browser Web Speech API provides voice playback and input. OpenAI structured generation is optional; the complete demonstration also works through a deterministic teaching provider without a paid model key.</p>
+            <p className="mt-4 text-sm leading-7 text-muted-foreground">React and Vinext power the interface. Cloudflare Workers, D1, and R2 provide deployment and persistence. Zod validates public boundaries. The browser Web Speech API provides voice playback and input. Google Gemini 2.5 Flash is the default primary AI provider via the unified <code>packages/ai</code> adapter, with OpenAI as an optional secondary and a cached deterministic engine ensuring 100% offline availability without paid keys.</p>
+            <div className="mt-4 pt-3 border-t">
+              <a href="/admin/status" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                <BrainCircuit className="size-3.5" /> Open /admin/status System Diagnostics Console
+              </a>
+            </div>
           </article>
         </section>
 
