@@ -13,6 +13,8 @@ import {
   BookOpen,
   Info,
   Loader2,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react';
 import type {
   Citation,
@@ -59,6 +61,7 @@ export function TutorConversationPanel({
   const [selectedImage, setSelectedImage] = useState<TutorImageAttachment | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [handsFree, setHandsFree] = useState(false);
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, 'positive' | 'negative'>>({});
   const [savedNotes, setSavedNotes] = useState<TutorNote[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -94,6 +97,24 @@ export function TutorConversationPanel({
 
   const isNoteSaved = (answerText: string) =>
     savedNotes.some((n) => n.answer === answerText);
+
+  const handleFeedback = async (msgId: string, rating: 'positive' | 'negative', snippet: string) => {
+    setFeedbackMap((prev) => ({ ...prev, [msgId]: rating }));
+    try {
+      await fetch('/api/tutor/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          rating,
+          questionSnippet: snippet.slice(0, 150) || 'Academic inquiry',
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch {
+      // Offline fallback
+    }
+  };
 
   // Auto-scroll on new message
   useEffect(() => {
@@ -424,8 +445,35 @@ export function TutorConversationPanel({
                       )}
                     </div>
 
-                    {/* Action buttons: Save to notes & Make a lesson */}
+                    {/* Action buttons: Feedback, Save to notes & Make a lesson */}
                     <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-0.5 border-r border-white/10 pr-1.5">
+                        <button
+                          type="button"
+                          onClick={() => void handleFeedback(msg.id, 'positive', msg.content)}
+                          title="Helpful explanation"
+                          className={`rounded p-1 transition ${
+                            feedbackMap[msg.id] === 'positive'
+                              ? 'text-emerald-400 bg-emerald-500/20'
+                              : 'text-slate-400 hover:text-emerald-300'
+                          }`}
+                        >
+                          <ThumbsUp className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleFeedback(msg.id, 'negative', msg.content)}
+                          title="Needs improvement"
+                          className={`rounded p-1 transition ${
+                            feedbackMap[msg.id] === 'negative'
+                              ? 'text-rose-400 bg-rose-500/20'
+                              : 'text-slate-400 hover:text-rose-300'
+                          }`}
+                        >
+                          <ThumbsDown className="size-3.5" />
+                        </button>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() => saveNote(msg)}
