@@ -305,7 +305,7 @@ export function AdaptivePractice({
         <section className="rounded-[24px] border bg-white p-5">
           <Progress value={(completedCount / questions.length) * 100}>
             <ProgressLabel>Session progress</ProgressLabel>
-            <ProgressValue>{completedCount}/{questions.length}</ProgressValue>
+            <ProgressValue>{() => `${completedCount}/${questions.length}`}</ProgressValue>
           </Progress>
           <div className="mt-5 flex items-center justify-between rounded-xl bg-orange-50 p-3 text-sm font-semibold text-orange-900">
             <span className="inline-flex items-center gap-2"><Flame className="size-4 text-orange-500" /> Correct streak</span>
