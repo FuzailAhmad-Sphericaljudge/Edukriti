@@ -357,4 +357,14 @@ test('extractQuantities normalizes non-SI unit prefixes to canonical variables',
   assert.equal(quantities.t, 120); // 2 minutes -> 120 s
 });
 
+test('buildStepByStepNumericalSolution introduces SI unit conversion step when non-SI units are detected', () => {
+  const sol = buildStepByStepNumericalSolution('Calculate the resistance if a 24V supply causes a current of 500 mA.');
+  assert.equal(sol.isSolved, true);
+  assert.equal(sol.steps.length, 4);
+  assert.equal(sol.steps[1]?.title, 'Standardize to SI Base Units');
+  assert.ok(sol.steps[1]?.explanation.includes('500 mA = 0.5 A'));
+  assert.equal(sol.steps[3]?.result, '48');
+  assert.equal(sol.steps[3]?.unit, 'Ω');
+});
+
 

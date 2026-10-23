@@ -481,18 +481,49 @@ export function buildStepByStepNumericalSolution(
     };
   }
 
+  const conversionNotes: string[] = [];
+  if (quantities.v_kmh !== undefined) {
+    conversionNotes.push(`${quantities.v_kmh} km/h = ${quantities.v} m/s (multiplied by 5/18)`);
+  }
+  if (quantities.I_mA !== undefined) {
+    conversionNotes.push(`${quantities.I_mA} mA = ${quantities.I} A (divided by 1000)`);
+  }
+  if (quantities.m_g !== undefined) {
+    conversionNotes.push(`${quantities.m_g} g = ${quantities.m} kg (divided by 1000)`);
+  }
+  if (quantities.R_k !== undefined) {
+    conversionNotes.push(`${quantities.R_k} kΩ = ${quantities.R} Ω (multiplied by 1000)`);
+  }
+  if (quantities.t_min !== undefined) {
+    conversionNotes.push(`${quantities.t_min} min = ${quantities.t} s (multiplied by 60)`);
+  }
+
   const steps: TutorNumericStep[] = [
     {
       stepNumber: 1,
       title: 'Identify Given Quantities',
       explanation: `Extract all given values from the problem statement: ${Object.entries(quantities)
+        .filter(([k]) => !k.includes('_'))
         .map(([k, v]) => `${k} = ${v}`)
         .join(', ')}.`,
-      result: Object.keys(quantities).join(', ') || 'Identified given values',
+      result: Object.keys(quantities).filter((k) => !k.includes('_')).join(', ') || 'Identified given values',
       unit: '',
     },
+  ];
+
+  if (conversionNotes.length > 0) {
+    steps.push({
+      stepNumber: steps.length + 1,
+      title: 'Standardize to SI Base Units',
+      explanation: `Convert all given quantities into standard SI units before applying formulas: ${conversionNotes.join('; ')}.`,
+      result: conversionNotes.join('; '),
+      unit: '',
+    });
+  }
+
+  steps.push(
     {
-      stepNumber: 2,
+      stepNumber: steps.length + 1,
       title: 'State the Governing Equation',
       formula: recomputed.formula,
       explanation: `Apply the fundamental physical principle: ${recomputed.formula}.`,
@@ -500,7 +531,7 @@ export function buildStepByStepNumericalSolution(
       unit: '',
     },
     {
-      stepNumber: 3,
+      stepNumber: steps.length + 1,
       title: 'Substitute Values and Calculate',
       formula: recomputed.formula,
       substitution: `Calculating target variable using ${recomputed.formula}`,
@@ -508,7 +539,7 @@ export function buildStepByStepNumericalSolution(
       result: `${recomputed.computedValue}`,
       unit: recomputed.unit,
     },
-  ];
+  );
 
   const unitAlias =
     recomputed.unit === 'Ω'
