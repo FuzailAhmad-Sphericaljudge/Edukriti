@@ -127,19 +127,105 @@ export const tutorTurnSchema = z.object({
   content: z.string().trim().min(1).max(3000),
 });
 
+export const tutorIntentSchema = z.enum([
+  'concept',
+  'numerical_problem',
+  'doubt',
+  'exam_tip',
+  'experiment_help',
+]);
+
+export const tutorPedagogicalStyleSchema = z.enum([
+  'default',
+  'eli10',
+  'exam_style',
+  'deep_dive',
+]);
+
+export const tutorLearnerLevelSchema = z.enum([
+  'elementary',
+  'high_school',
+  'college',
+  'competitive_exam',
+]);
+
+export const tutorNumericStepSchema = z.object({
+  stepNumber: z.number().int().positive(),
+  title: z.string().min(1).max(200),
+  formula: z.string().max(300).optional(),
+  substitution: z.string().max(300).optional(),
+  result: z.string().min(1).max(200),
+  unit: z.string().max(50).optional(),
+  explanation: z.string().min(1).max(1000),
+});
+
+export const tutorMathVerificationSchema = z.object({
+  isVerified: z.boolean(),
+  computedValue: z.number().nullable(),
+  expectedValue: z.number().nullable(),
+  tolerance: z.number().optional(),
+  notes: z.string().optional(),
+});
+
+export const tutorImageAttachmentSchema = z.object({
+  dataUrl: z.string().min(1).max(8_000_000),
+  mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp', 'image/gif']),
+  caption: z.string().max(200).optional(),
+});
+
 export const tutorRequestSchema = z.object({
-  lessonId: identifierSchema,
-  question: z.string().trim().min(2).max(1000),
+  lessonId: identifierSchema.optional(),
+  question: z.string().trim().min(1).max(3000),
   currentSegmentId: identifierSchema.optional(),
-  history: z.array(tutorTurnSchema).max(6).default([]),
+  history: z.array(tutorTurnSchema).max(20).default([]),
+  intent: tutorIntentSchema.optional(),
+  style: tutorPedagogicalStyleSchema.default('default'),
+  level: tutorLearnerLevelSchema.default('high_school'),
+  language: teachingLanguageSchema.default('english'),
+  image: tutorImageAttachmentSchema.optional(),
+  clientRequestId: z.string().optional(),
 });
 
 export const tutorResponseSchema = z.object({
-  answer: z.string().min(1).max(3000),
+  answer: z.string().min(1).max(8000),
   followUpQuestion: z.string().min(1).max(500),
   grounded: z.boolean(),
   provider: aiProviderTypeSchema,
-  citations: z.array(citationSchema).max(6),
+  citations: z.array(citationSchema).max(10),
+  intent: tutorIntentSchema.default('concept'),
+  style: tutorPedagogicalStyleSchema.default('default'),
+  isMathOrNumerical: z.boolean().default(false),
+  steps: z.array(tutorNumericStepSchema).default([]),
+  mathVerification: tutorMathVerificationSchema.optional(),
+  suggestedQuestions: z.array(z.string().min(1).max(300)).default([]),
+  knowledgeBaseGrounded: z.boolean().default(false),
+  sourceAttributionNotice: z.string().optional(),
+  summary: z.string().max(2000).optional(),
+  extractedImageText: z.string().max(4000).optional(),
+  safetyPassed: z.boolean().default(true),
+});
+
+export const tutorStreamEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('status'), phase: z.string(), message: z.string() }),
+  z.object({ type: z.literal('intent'), intent: tutorIntentSchema }),
+  z.object({ type: z.literal('delta'), text: z.string() }),
+  z.object({ type: z.literal('citations'), citations: z.array(citationSchema) }),
+  z.object({ type: z.literal('steps'), steps: z.array(tutorNumericStepSchema) }),
+  z.object({ type: z.literal('verification'), verification: tutorMathVerificationSchema }),
+  z.object({ type: z.literal('suggestions'), suggestions: z.array(z.string()) }),
+  z.object({ type: z.literal('ocr'), extractedText: z.string() }),
+  z.object({ type: z.literal('complete'), response: tutorResponseSchema }),
+  z.object({ type: z.literal('error'), code: z.string(), message: z.string() }),
+]);
+
+export const tutorNoteSchema = z.object({
+  id: z.string().min(1),
+  question: z.string().min(1),
+  answer: z.string().min(1),
+  intent: tutorIntentSchema.default('concept'),
+  subject: z.string().optional(),
+  tags: z.array(z.string()).default([]),
+  savedAt: utcTimestampSchema,
 });
 
 export const lessonPlanJsonSchema = z.toJSONSchema(lessonPlanSchema);
@@ -263,8 +349,16 @@ export type LessonRequest = z.infer<typeof lessonRequestSchema>;
 export type LessonPlan = z.infer<typeof lessonPlanSchema>;
 export type LessonPlanGenerationResponse = z.infer<typeof lessonPlanGenerationResponseSchema>;
 export type TutorTurn = z.infer<typeof tutorTurnSchema>;
+export type TutorIntent = z.infer<typeof tutorIntentSchema>;
+export type TutorPedagogicalStyle = z.infer<typeof tutorPedagogicalStyleSchema>;
+export type TutorLearnerLevel = z.infer<typeof tutorLearnerLevelSchema>;
+export type TutorNumericStep = z.infer<typeof tutorNumericStepSchema>;
+export type TutorMathVerification = z.infer<typeof tutorMathVerificationSchema>;
+export type TutorImageAttachment = z.infer<typeof tutorImageAttachmentSchema>;
 export type TutorRequest = z.infer<typeof tutorRequestSchema>;
 export type TutorResponse = z.infer<typeof tutorResponseSchema>;
+export type TutorStreamEvent = z.infer<typeof tutorStreamEventSchema>;
+export type TutorNote = z.infer<typeof tutorNoteSchema>;
 export type ResponseEvaluation = z.infer<typeof responseEvaluationSchema>;
 export type CheckpointAttemptRequest = z.infer<typeof checkpointAttemptRequestSchema>;
 export type LessonAdaptation = z.infer<typeof lessonAdaptationSchema>;

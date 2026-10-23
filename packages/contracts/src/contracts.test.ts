@@ -1,7 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { aiHealthResponseSchema, assessmentAttemptRequestSchema, checkpointAttemptRequestSchema, lessonRequestSchema, retrievalRequestSchema, tutorRequestSchema, tutorResponseSchema, utcTimestampSchema } from './index.ts';
+import {
+  aiHealthResponseSchema,
+  assessmentAttemptRequestSchema,
+  checkpointAttemptRequestSchema,
+  lessonRequestSchema,
+  retrievalRequestSchema,
+  tutorImageAttachmentSchema,
+  tutorIntentSchema,
+  tutorMathVerificationSchema,
+  tutorNoteSchema,
+  tutorNumericStepSchema,
+  tutorPedagogicalStyleSchema,
+  tutorRequestSchema,
+  tutorResponseSchema,
+  tutorStreamEventSchema,
+  utcTimestampSchema,
+} from './index.ts';
 
 const validRequest = {
   learnerId: 'learner-demo',
@@ -52,9 +68,78 @@ test('validates contextual tutor questions and grounded answers', () => {
   assert.equal(request.success, true);
   assert.equal(request.success && request.data.history.length, 2);
   assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: '' }).success, false);
-  assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: 'Continue', history: Array.from({ length: 7 }, () => ({ role: 'user', content: 'Earlier question' })) }).success, false);
+  assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: 'Continue', history: Array.from({ length: 21 }, () => ({ role: 'user', content: 'Earlier question' })) }).success, false);
   assert.equal(tutorResponseSchema.safeParse({ answer: 'Because the force changes motion.', followUpQuestion: 'Can you name an example?', grounded: false, provider: 'deterministic', citations: [] }).success, true);
   assert.equal(tutorResponseSchema.safeParse({ answer: 'Because the force changes motion.', followUpQuestion: 'Can you name an example?', grounded: false, provider: 'gemini', citations: [] }).success, true);
+});
+
+test('validates expanded tutor contracts: intent, style, numeric steps, photo doubt, and streaming', () => {
+  // Intent
+  assert.equal(tutorIntentSchema.safeParse('numerical_problem').success, true);
+  assert.equal(tutorIntentSchema.safeParse('invalid_intent').success, false);
+
+  // Style
+  assert.equal(tutorPedagogicalStyleSchema.safeParse('eli10').success, true);
+  assert.equal(tutorPedagogicalStyleSchema.safeParse('deep_dive').success, true);
+
+  // Numeric step
+  const step = tutorNumericStepSchema.safeParse({
+    stepNumber: 1,
+    title: 'Calculate acceleration',
+    formula: 'a = (v - u) / t',
+    substitution: 'a = (20 - 0) / 4',
+    result: '5',
+    unit: 'm/s^2',
+    explanation: 'Divide the change in velocity by elapsed time.',
+  });
+  assert.equal(step.success, true);
+
+  // Math verification
+  const verification = tutorMathVerificationSchema.safeParse({
+    isVerified: true,
+    computedValue: 5,
+    expectedValue: 5,
+    tolerance: 0.001,
+    notes: 'Recomputed using kinematics formula.',
+  });
+  assert.equal(verification.success, true);
+
+  // Photo doubt image attachment
+  const photo = tutorImageAttachmentSchema.safeParse({
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    mimeType: 'image/png',
+    caption: 'Circuit diagram problem 4',
+  });
+  assert.equal(photo.success, true);
+
+  // Global standalone request without lessonId
+  const globalRequest = tutorRequestSchema.safeParse({
+    question: 'How do plants convert sunlight into chemical energy?',
+    intent: 'concept',
+    style: 'eli10',
+    language: 'hinglish',
+  });
+  assert.equal(globalRequest.success, true);
+  assert.equal(globalRequest.data?.lessonId, undefined);
+
+  // Streaming event
+  const streamDelta = tutorStreamEventSchema.safeParse({
+    type: 'delta',
+    text: 'Photosynthesis occurs in chloroplasts.',
+  });
+  assert.equal(streamDelta.success, true);
+
+  // Tutor note
+  const note = tutorNoteSchema.safeParse({
+    id: 'note-123',
+    question: 'What is Ohm’s law?',
+    answer: 'V = IR relating potential difference and current.',
+    intent: 'concept',
+    subject: 'Physics',
+    tags: ['electricity', 'circuits'],
+    savedAt: '2026-10-23T11:00:00Z',
+  });
+  assert.equal(note.success, true);
 });
 
 test('validates AI health response schema', () => {
