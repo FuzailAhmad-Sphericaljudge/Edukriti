@@ -1,6 +1,6 @@
 # Ask Aarohi Evaluation Report (Golden Dataset)
 
-*Automated benchmark evaluation run on 2026-10-23T16:10:20.848Z*
+*Automated benchmark evaluation run on 2026-10-23T19:00:55.726Z*
 
 ## Executive Summary
 
@@ -21,8 +21,8 @@
 | Subject | Questions | Passed | Pass Rate | Avg Latency |
 | :--- | :---: | :---: | :---: | :---: |
 | **PHYSICS** | 20 | 20 | **100%** | 6 ms |
-| **CHEMISTRY** | 18 | 18 | **100%** | 4 ms |
-| **MATHEMATICS** | 20 | 20 | **100%** | 4 ms |
+| **CHEMISTRY** | 18 | 18 | **100%** | 5 ms |
+| **MATHEMATICS** | 20 | 20 | **100%** | 5 ms |
 | **BIOLOGY** | 18 | 18 | **100%** | 5 ms |
 | **COMPUTER SCIENCE** | 15 | 15 | **100%** | 5 ms |
 | **HISTORY POLITY** | 14 | 14 | **100%** | 5 ms |
