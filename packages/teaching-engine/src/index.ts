@@ -34,6 +34,16 @@ const topicSequences: Array<{ pattern: RegExp; concepts: string[] }> = [
   { pattern: /newton|force|motion/i, concepts: ['Motion and force', 'Newton’s First Law', 'Newton’s Second Law', 'Newton’s Third Law', 'Everyday applications', 'Challenge problem'] },
   { pattern: /react|component|jsx/i, concepts: ['The component model', 'JSX and rendering', 'Props and data flow', 'State and interaction', 'Building a small feature', 'Interview practice'] },
   { pattern: /artificial intelligence|machine learning|\bai\b/i, concepts: ['What makes a system intelligent', 'Data, models, and learning', 'Training and inference', 'Common AI applications', 'Limits and responsible use', 'Next learning steps'] },
+  { pattern: /photosynthesis|plant|chloroplast|light reaction/i, concepts: ['Light absorption and chlorophyll', 'The light-dependent reactions', 'ATP and NADPH energy carriers', 'The Calvin cycle (carbon fixation)', 'Factors affecting photosynthesis rate', 'Real-world ecological impact'] },
+  { pattern: /cell|mitosis|meiosis|organelle|nucleus/i, concepts: ['Structure of eukaryotic cells', 'Cell organelles and functions', 'DNA and genetic replication', 'Mitosis and cell division', 'Cellular respiration overview', 'Application to growth and healing'] },
+  { pattern: /plate tectonics|earthquake|volcano|crust|mantle/i, concepts: ['Earth layers and lithosphere', 'Tectonic plate boundaries', 'Subduction and mountain building', 'Earthquake generation and seismic waves', 'Volcanic activity and hotspots', 'Predicting geological hazards'] },
+  { pattern: /chemical bond|covalent|ionic|valen/i, concepts: ['Atomic structure and valence electrons', 'Ionic bonding and electron transfer', 'Covalent bonding and electron sharing', 'Polarity and molecular shapes', 'Intermolecular forces', 'Predicting substance properties'] },
+  { pattern: /calculus|derivative|integral|limit/i, concepts: ['The concept of a mathematical limit', 'Instantaneous rate of change', 'The derivative as slope of tangent', 'Rules of differentiation', 'Definite integrals and area under curve', 'Real-world rate of change problem'] },
+  { pattern: /gravity|planetary|orbit|kepler/i, concepts: ['Universal gravitation principle', 'Mass versus weight', 'Kepler’s laws of planetary motion', 'Orbital velocity and satellites', 'Escape velocity and space flight', 'Gravitational challenge problem'] },
+  { pattern: /thermodynamics|heat|temperature|entropy/i, concepts: ['Thermal energy versus temperature', 'First Law of Thermodynamics (Energy)', 'Heat transfer mechanisms', 'Second Law of Thermodynamics (Entropy)', 'Heat engines and efficiency', 'Everyday thermodynamic systems'] },
+  { pattern: /dna|genetics|heredity|mendel/i, concepts: ['DNA double helix structure', 'Genes and chromosomes', 'Mendel’s laws of inheritance', 'Dominant and recessive alleles', 'Transcription and translation', 'Genetic engineering ethics'] },
+  { pattern: /indian constitution|fundamental rights|preamble|parliament/i, concepts: ['Preamble and core constitutional philosophy', 'Fundamental Rights and Duties', 'Directive Principles of State Policy', 'Separation of powers and Parliament', 'The Independent Judiciary', 'Constitutional amendments and democracy'] },
+  { pattern: /macroeconomics|inflation|gdp|monetary/i, concepts: ['Gross Domestic Product (GDP)', 'Aggregate supply and demand', 'Inflation and purchasing power', 'Fiscal policy and government spending', 'Central banks and monetary policy', 'Economic growth challenge problem'] },
 ];
 
 function segmentCount(minutes: 5 | 20 | 60) {
@@ -227,6 +237,12 @@ const conceptSignals: Array<{ pattern: RegExp; signals: RegExp; misconception?: 
   { pattern: /resistance|ohm/i, signals: /oppose|restrict|slow|limit|current|ohm/i, misconception: /creates current|adds current/i },
   { pattern: /newton|force|motion/i, signals: /force|mass|acceleration|motion|reaction|inertia/i },
   { pattern: /component|jsx|react/i, signals: /component|render|props|state|interface|reuse/i },
+  { pattern: /photosynthesis|chlorophyll|light reaction/i, signals: /chlorophyll|sunlight|atp|carbon|glucose|oxygen|water/i, misconception: /plants breathe only co2|only at night|without light/i },
+  { pattern: /cell|mitosis|meiosis|organelle/i, signals: /nucleus|membrane|mitosis|chromosome|dna|division|energy/i, misconception: /mitosis creates gametes|cells do not divide/i },
+  { pattern: /tectonic|earthquake|subduction/i, signals: /plate|crust|boundary|subduction|mantle|seismic|wave/i, misconception: /continents float on water/i },
+  { pattern: /chemical bond|covalent|ionic/i, signals: /valence|electron|transfer|sharing|octet|attraction/i, misconception: /ionic bonds share electrons|bonds are sticks/i },
+  { pattern: /derivative|calculus|rate of change/i, signals: /rate of change|slope|tangent|instantaneous|limit/i, misconception: /divide by zero|slope is always constant/i },
+  { pattern: /gravity|orbit|kepler/i, signals: /mass|distance|attraction|orbit|velocity|gravitational/i, misconception: /no gravity in space|heavier falls faster in vacuum/i },
 ];
 
 function localizedFeedback(language: LessonPlan['language'], correct: boolean, concept: string) {
@@ -392,6 +408,16 @@ export function buildAssessment(plan: LessonPlan): AssessmentQuestionDefinition[
       { id: `${plan.id}-assessment-3`, type: 'short_answer', prompt: assessmentPrompt(plan.language, 'Explain electric current in your own words.', 'Electric current ko apne words mein explain karo.', 'विद्युत धारा को अपने शब्दों में समझाइए।'), expectedAnswer: 'flow charge circuit', targetConcept: 'Electric charge and current' },
       { id: `${plan.id}-assessment-4`, type: 'mcq', prompt: 'Which equation represents Ohm’s Law?', choices: [{ id: 'a', text: 'V = I × R' }, { id: 'b', text: 'V = I + R' }, { id: 'c', text: 'R = V × I' }], expectedAnswer: 'a', targetConcept: 'Resistance and Ohm’s Law' },
       { id: `${plan.id}-assessment-5`, type: 'short_answer', prompt: 'Give one everyday example of a complete electric circuit.', expectedAnswer: 'battery wire bulb switch circuit', targetConcept: 'Applying ideas to a simple circuit' },
+    ];
+    return definitions.slice(0, count).map((question) => ({ ...assessmentQuestionSchema.parse(question), expectedAnswer: question.expectedAnswer, targetConcept: question.targetConcept }));
+  }
+
+  const newton = /newton|force|motion/i.test(plan.title);
+  if (newton) {
+    const definitions: AssessmentQuestionDefinition[] = [
+      { id: `${plan.id}-assessment-1`, type: 'mcq', prompt: assessmentPrompt(plan.language, 'What does Newton’s First Law describe?', 'Newton ka First Law kya describe karta hai?', 'न्यूटन का पहला नियम क्या दर्शाता है?'), choices: [{ id: 'a', text: 'Inertia: an object resists changes to motion unless acted upon by a net force' }, { id: 'b', text: 'Force equals mass divided by acceleration' }, { id: 'c', text: 'Objects always accelerate without force' }], expectedAnswer: 'a', targetConcept: 'Newton’s First Law' },
+      { id: `${plan.id}-assessment-2`, type: 'mcq', prompt: assessmentPrompt(plan.language, 'If force is doubled while mass remains constant, what happens to acceleration?', 'Force double ho aur mass constant rahe, toh acceleration par kya asar hoga?', 'यदि बल दोगुना हो और द्रव्यमान स्थिर रहे, तो त्वरण पर क्या प्रभाव पड़ेगा?'), choices: [{ id: 'a', text: 'It doubles (F = ma)' }, { id: 'b', text: 'It is cut in half' }, { id: 'c', text: 'It remains zero' }], expectedAnswer: 'a', targetConcept: 'Newton’s Second Law' },
+      { id: `${plan.id}-assessment-3`, type: 'short_answer', prompt: assessmentPrompt(plan.language, 'Explain one everyday example of action and reaction (Newton’s Third Law).', 'Action aur reaction (Newton ke Third Law) ka ek real-world example explain karo.', 'क्रिया और प्रतिक्रिया (न्यूटन के तीसरे नियम) का एक उदाहरण समझाइए।'), expectedAnswer: 'rocket swim walk ground jump recoil boat push', targetConcept: 'Newton’s Third Law' },
     ];
     return definitions.slice(0, count).map((question) => ({ ...assessmentQuestionSchema.parse(question), expectedAnswer: question.expectedAnswer, targetConcept: question.targetConcept }));
   }
