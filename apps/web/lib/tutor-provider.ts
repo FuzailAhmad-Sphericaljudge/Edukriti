@@ -19,6 +19,7 @@ import {
 import {
   retrieveFromKnowledgeBase,
   validateClaimsAgainstEvidence,
+  CURATED_KNOWLEDGE_BASE,
 } from '@edukriti/rag';
 import {
   verifyNumericalAnswer,
@@ -183,28 +184,68 @@ function buildDeterministicTutorAnswer(
 
   // Conceptual fallback answer
   const bestCitation = citations[0];
-  const conceptName = bestCitation?.title || plan?.title || 'Core Principle';
+  const matchingChunk = citations.length > 0
+    ? CURATED_KNOWLEDGE_BASE.find((c) => c.id === bestCitation?.chunkId)
+    : undefined;
 
   let explanation = '';
-  if (style === 'eli10') {
-    explanation =
-      language === 'hindi'
-        ? `सरल शब्दों में समझें: जैसे जब आप साइकिल चलाते हैं तो पैडल मारने से पहिए घूमते हैं, ठीक वैसे ही “${conceptName}” में एक कारण दूसरे प्रभाव को जन्म देता है। ${question} का मूल अर्थ यही है!`
-        : language === 'hinglish'
-          ? `Simple shabdon mein: Jaise water pipe mein paani ka pressure flow decide karta hai, waise hi “${conceptName}” mein cause and effect direct connect hote hain. '${question}' ka main logic yahi hai!`
-          : `Imagine a water pipe: water pressure pushes the flow along, while narrow pipes slow it down. Similarly, in “${conceptName}”, the driving mechanism directly dictates the result!`;
-  } else if (style === 'exam_style') {
-    explanation =
-      language === 'hindi'
-        ? `### मुख्य परीक्षा बिंदु (Key Exam Points)\n- **परिभाषा:** “${conceptName}” की मुख्य संकल्पना कारण-प्रभाव सिद्धांत पर आधारित है।\n- **मुख्य सूत्र / नियम:** सभी संबंधित चरों का संतुलन बनाए रखना अनिवार्य है।\n- **परीक्षा टिप:** इकाई (units) लिखना कभी न भूलें और आरेख (diagram) अवश्य बनाएं।`
-        : `### Key Exam Highlights\n- **Core Definition:** In ${conceptName}, state the fundamental physical law clearly.\n- **High-Scoring Formula/Mechanism:** Always state SI units and conservation principles.\n- **Common Mistake to Avoid:** Distinguish clearly between vector and scalar quantities.`;
+  if (matchingChunk) {
+    const factsList = matchingChunk.keyFacts.map((f) => `- ${f}`).join('\n');
+    const eqList =
+      matchingChunk.keyEquations && matchingChunk.keyEquations.length > 0
+        ? `\n\n#### 📐 Important Formulas\n${matchingChunk.keyEquations.map((eq) => `- \`$${eq}$\``).join('\n')}`
+        : '';
+
+    let stylePrefix = '';
+    if (style === 'eli10') {
+      stylePrefix =
+        language === 'hindi'
+          ? `> 💡 **सरल शब्दों में (ELI10):** इसे एक आसान उदाहरण से समझें। जब आप साइकिल चलाते हैं तो जोर लगाने से गति बढ़ती है। ठीक वैसे ही प्रकृति के नियम स्पष्ट और सीधे कार्य करते हैं!\n\n`
+          : language === 'hinglish'
+            ? `> 💡 **Simple Concept (ELI10):** Real life mein jaise water pipe ka pressure flow decide karta hai, waise hi nature ke rules clear aur predictable hote hain!\n\n`
+            : `> 💡 **Simple Analogy (ELI10):** Think of this like water in a pipe or a bicycle on a track: cause and effect are directly linked with zero mystery!\n\n`;
+    }
+
+    let styleSuffix = '';
+    if (style === 'exam_style') {
+      styleSuffix =
+        language === 'hindi'
+          ? `\n\n#### 🎯 परीक्षा के लिए महत्वपूर्ण सुझाव\n- हमेशा मानक SI इकाइयाँ लिखें।\n- मुख्य परिभाषा को यथावत लिखें और स्पष्ट आरेख बनाएँ।`
+          : `\n\n#### 🎯 Board Exam Scoring Strategy\n- Write the definition and governing law verbatim to secure full marks.\n- Always state standard SI units and show all intermediate working.\n- Draw neatly labelled diagrams where appropriate.`;
+    } else if (style === 'deep_dive') {
+      styleSuffix =
+        `\n\n#### 🔬 First-Principles Deep Dive\nFrom first principles, the mathematical formulation guarantees conservation, symmetry, and deterministic behaviour across boundary conditions.`;
+    }
+
+    if (language === 'hindi') {
+      explanation = `${stylePrefix}### ${matchingChunk.topic}\n\n**व्याख्या:** ${matchingChunk.text.slice(0, 350)}... [1]\n\n#### 📌 मुख्य वैज्ञानिक और शैक्षणिक तथ्य\n${factsList}${eqList}${styleSuffix}`;
+    } else if (language === 'hinglish') {
+      explanation = `${stylePrefix}### ${matchingChunk.topic}\n\n**Core Explanation:** ${matchingChunk.text.slice(0, 350)}... [1]\n\n#### 📌 Key Educational Facts\n${factsList}${eqList}${styleSuffix}`;
+    } else {
+      explanation = `${stylePrefix}### ${matchingChunk.topic}\n\n**Core Explanation:** ${matchingChunk.text.slice(0, 350)}... [1]\n\n#### 📌 Key Principles & Facts\n${factsList}${eqList}${styleSuffix}`;
+    }
   } else {
-    explanation =
-      language === 'hindi'
-        ? `“${conceptName}” के संदर्भ में, '${question}' का मुख्य उत्तर यह है कि किसी भी प्रणाली में भौतिक और गणितीय नियम स्थिरता बनाए रखते हैं। जब आप इसे दैनिक जीवन से जोड़ते हैं, तो यह और स्पष्ट हो जाता है।`
-        : language === 'hinglish'
-          ? `“${conceptName}” ke context mein, '${question}' ka core idea yeh hai ki cause aur effect seamlessly linked hain. Jab aap isse observe karte hain, toh mechanism clear ho jata hai.`
-          : `In the context of “${conceptName}”, answering '${question}' reveals how foundational physical and conceptual relationships govern observed behavior. When applied to real-world systems, cause directly dictates effect.`;
+    const conceptName = bestCitation?.title || plan?.title || 'Core Principle';
+    if (style === 'eli10') {
+      explanation =
+        language === 'hindi'
+          ? `सरल शब्दों में समझें: जैसे जब आप साइकिल चलाते हैं तो पैडल मारने से पहिए घूमते हैं, ठीक वैसे ही “${conceptName}” में एक कारण दूसरे प्रभाव को जन्म देता है। ${question} का मूल अर्थ यही है!`
+          : language === 'hinglish'
+            ? `Simple shabdon mein: Jaise water pipe mein paani ka pressure flow decide karta hai, waise hi “${conceptName}” mein cause and effect direct connect hote hain. '${question}' ka main logic yahi hai!`
+            : `Imagine a water pipe: water pressure pushes the flow along, while narrow pipes slow it down. Similarly, in “${conceptName}”, the driving mechanism directly dictates the result!`;
+    } else if (style === 'exam_style') {
+      explanation =
+        language === 'hindi'
+          ? `### मुख्य परीक्षा बिंदु (Key Exam Points)\n- **परिभाषा:** “${conceptName}” की मुख्य संकल्पना कारण-प्रभाव सिद्धांत पर आधारित है।\n- **मुख्य सूत्र / नियम:** सभी संबंधित चरों का संतुलन बनाए रखना अनिवार्य है।\n- **परीक्षा टिप:** इकाई (units) लिखना कभी न भूलें और आरेख (diagram) अवश्य बनाएं।`
+          : `### Key Exam Highlights\n- **Core Definition:** In ${conceptName}, state the fundamental physical law clearly.\n- **High-Scoring Formula/Mechanism:** Always state SI units and conservation principles.\n- **Common Mistake to Avoid:** Distinguish clearly between vector and scalar quantities.`;
+    } else {
+      explanation =
+        language === 'hindi'
+          ? `“${conceptName}” के संदर्भ में, '${question}' का मुख्य उत्तर यह है कि किसी भी प्रणाली में भौतिक और गणितीय नियम स्थिरता बनाए रखते हैं। जब आप इसे दैनिक जीवन से जोड़ते हैं, तो यह और स्पष्ट हो जाता है।`
+          : language === 'hinglish'
+            ? `“${conceptName}” ke context mein, '${question}' ka core idea yeh hai ki cause aur effect seamlessly linked hain. Jab aap isse observe karte hain, toh mechanism clear ho jata hai.`
+            : `In the context of “${conceptName}”, answering '${question}' reveals how foundational physical and conceptual relationships govern observed behavior. When applied to real-world systems, cause directly dictates effect.`;
+    }
   }
 
   return tutorResponseSchema.parse({
