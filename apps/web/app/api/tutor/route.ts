@@ -15,7 +15,15 @@ export async function POST(request: Request) {
   if (!lesson.success) return apiError(500, 'INVALID_STORED_LESSON', 'The stored lesson could not be validated.');
 
   try {
-    return Response.json(await answerTutorQuestion(lesson.data.plan, parsed.data, { apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL }));
+    return Response.json(
+      await answerTutorQuestion(lesson.data.plan, parsed.data, {
+        geminiApiKey: env.GEMINI_API_KEY,
+        geminiModel: env.GEMINI_MODEL || env.LLM_MODEL,
+        openaiApiKey: env.OPENAI_API_KEY,
+        openaiModel: env.OPENAI_MODEL || env.LLM_MODEL,
+        provider: env.LLM_PROVIDER as 'gemini' | 'openai' | 'deterministic' | undefined,
+      }),
+    );
   } catch (error) {
     return apiError(500, 'TUTOR_RESPONSE_FAILED', error instanceof Error ? error.message : 'The tutor could not answer right now.');
   }
