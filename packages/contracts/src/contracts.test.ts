@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { assessmentAttemptRequestSchema, checkpointAttemptRequestSchema, lessonRequestSchema, retrievalRequestSchema, tutorRequestSchema, tutorResponseSchema, utcTimestampSchema } from './index.ts';
+import { aiHealthResponseSchema, assessmentAttemptRequestSchema, checkpointAttemptRequestSchema, lessonRequestSchema, retrievalRequestSchema, tutorRequestSchema, tutorResponseSchema, utcTimestampSchema } from './index.ts';
 
 const validRequest = {
   learnerId: 'learner-demo',
@@ -55,4 +55,29 @@ test('validates contextual tutor questions and grounded answers', () => {
   assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: 'Continue', history: Array.from({ length: 7 }, () => ({ role: 'user', content: 'Earlier question' })) }).success, false);
   assert.equal(tutorResponseSchema.safeParse({ answer: 'Because the force changes motion.', followUpQuestion: 'Can you name an example?', grounded: false, provider: 'deterministic', citations: [] }).success, true);
   assert.equal(tutorResponseSchema.safeParse({ answer: 'Because the force changes motion.', followUpQuestion: 'Can you name an example?', grounded: false, provider: 'gemini', citations: [] }).success, true);
+});
+
+test('validates AI health response schema', () => {
+  const validHealth = {
+    status: 'healthy',
+    provider: 'gemini',
+    configuredProvider: 'gemini',
+    model: 'gemini-2.5-flash',
+    latencyMs: 120,
+    timestamp: '2026-10-23T10:00:00Z',
+    features: {
+      lessonGeneration: true,
+      tutor: true,
+      checkpointEvaluation: true,
+      adaptiveAssessment: true,
+      offlineFallbackReady: true,
+    },
+    credentials: {
+      geminiConfigured: true,
+      openaiConfigured: false,
+    },
+    error: null,
+  };
+  assert.equal(aiHealthResponseSchema.safeParse(validHealth).success, true);
+  assert.equal(aiHealthResponseSchema.safeParse({ ...validHealth, status: 'invalid' }).success, false);
 });
