@@ -45,10 +45,12 @@ The application uses a Node.js 24 npm-workspace monorepo, strict TypeScript, Vin
 
 ## AI, RAG, and teaching approach
 
+- `packages/ai` provides a resilient dual-tier provider adapter supporting Google Gemini 2.5 Flash (default via `GEMINI_API_KEY`), OpenAI (via `OPENAI_API_KEY`), and an offline deterministic fallback with in-memory caching and automatic single-retry on schema errors.
 - `packages/rag` normalizes untrusted document text, creates bounded overlapping page chunks, and ranks evidence for the learner’s goal.
-- `packages/teaching-engine` controls lesson depth, narration, visuals, checkpoints, semantic evaluation, adaptations, assessments, and report calculation.
-- The optional OpenAI Responses provider uses strict structured output and server-only credentials. A deterministic teaching provider keeps the complete demo functional without a paid API.
-- This is a single-teacher pipeline, not a multi-agent architecture. Uploaded content is treated only as evidence and never as executable instructions.
+- `packages/teaching-engine` controls lesson depth, narration, visuals, checkpoints, semantic evaluation, adaptations, assessments, and report calculation across any topic.
+- A deterministic teaching provider keeps the complete demo functional without paid APIs, ensuring 100% offline uptime.
+- This is a single-teacher pipeline, not an uncontrollable multi-agent architecture. Uploaded content is treated only as evidence and never as executable instructions.
+- System health and real-time latency can be inspected at the hidden `/admin/status` diagnostic dashboard.
 
 ## Voice, avatar, and video experience
 
@@ -76,6 +78,8 @@ The web application expects Cloudflare bindings `DB` for D1 and `FILES` for R2. 
 
 | Endpoint | Purpose |
 | --- | --- |
+| `GET /api/health` | Service health status |
+| `GET /api/health/ai` | Live AI provider roundtrip ping and feature diagnosis |
 | `POST /api/sources` | Validate, store, and extract uploaded material |
 | `POST /api/retrieval` | Retrieve grounded source passages |
 | `POST /api/lessons` | Generate and persist a personalized lesson |
