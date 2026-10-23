@@ -331,10 +331,12 @@ export type KbRetrievalResult = {
   isGrounded: boolean;
   chunks: KnowledgeChunk[];
   citations: Array<{
+    sourceId: string;
     chunkId: string;
-    title: string;
-    source: string;
-    page: number;
+    page?: number;
+    excerpt: string;
+    title?: string;
+    source?: string;
   }>;
   sourceAttributionNotice?: string;
   bestScore: number;
@@ -370,10 +372,12 @@ export function retrieveFromKnowledgeBase(
   }
 
   const citations = ranked.map((chunk) => ({
+    sourceId: chunk.sourceTitle.toLowerCase().replace(/[^a-z0-9_-]/g, '-').slice(0, 30) || 'course-material',
     chunkId: chunk.id,
+    page: chunk.pageStart,
+    excerpt: chunk.text.slice(0, 200),
     title: chunk.topic,
     source: chunk.sourceTitle,
-    page: chunk.pageStart,
   }));
 
   return {

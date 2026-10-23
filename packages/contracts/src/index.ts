@@ -80,6 +80,8 @@ export const citationSchema = z.object({
   chunkId: identifierSchema,
   page: z.number().int().positive().optional(),
   excerpt: z.string().max(500),
+  title: z.string().optional(),
+  source: z.string().optional(),
 });
 
 export const checkpointSchema = z.object({

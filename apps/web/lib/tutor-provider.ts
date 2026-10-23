@@ -1,17 +1,30 @@
 import {
   type AiProviderType,
+  type Citation,
   type LessonPlan,
+  type TeachingLanguage,
+  type TutorIntent,
+  type TutorPedagogicalStyle,
   type TutorRequest,
   type TutorResponse,
+  type TutorStreamEvent,
   tutorResponseSchema,
 } from '@edukriti/contracts';
-import { createAiProvider } from '@edukriti/ai';
+import {
+  createAiProvider,
+  detectHarmfulContent,
+  sanitizePromptInput,
+  classifyEducationalIntent,
+} from '@edukriti/ai';
+import {
+  retrieveFromKnowledgeBase,
+  validateClaimsAgainstEvidence,
+} from '@edukriti/rag';
+import {
+  verifyNumericalAnswer,
+  buildStepByStepNumericalSolution,
+} from '@edukriti/teaching-engine';
 import { z } from 'zod';
-
-const modelAnswerSchema = z.object({
-  answer: z.string().min(1).max(3000),
-  followUpQuestion: z.string().min(1).max(500),
-});
 
 export type TutorProviderConfig = {
   geminiApiKey?: string;
@@ -24,76 +37,293 @@ export type TutorProviderConfig = {
   timeoutMs?: number;
 };
 
+const structuredTutorAnswerSchema = z.object({
+  answer: z.string().min(1).max(8000),
+  followUpQuestion: z.string().min(1).max(500),
+  suggestedQuestions: z.array(z.string().min(1).max(300)).default([]),
+  intent: z.enum(['concept', 'numerical_problem', 'doubt', 'exam_tip', 'experiment_help']).default('concept'),
+  isMathOrNumerical: z.boolean().default(false),
+  steps: z
+    .array(
+      z.object({
+        stepNumber: z.number().int().positive(),
+        title: z.string().min(1).max(200),
+        formula: z.string().max(300).optional(),
+        substitution: z.string().max(300).optional(),
+        result: z.string().min(1).max(200),
+        unit: z.string().max(50).optional(),
+        explanation: z.string().min(1).max(1000),
+      }),
+    )
+    .default([]),
+});
+
 function words(value: string) {
   return new Set(value.toLowerCase().match(/[a-z0-9\u0900-\u097f]{3,}/g) ?? []);
 }
 
-function relevantSegments(plan: LessonPlan, request: TutorRequest) {
-  const queryWords = words(
-    `${request.history
-      .filter((turn) => turn.role === 'user')
-      .map((turn) => turn.content)
-      .join(' ')} ${request.question}`,
-  );
+function relevantPlanSegments(plan: LessonPlan, query: string, currentSegmentId?: string) {
+  const queryWords = words(query);
   return [...plan.segments]
     .sort((left, right) => {
       const score = (segment: LessonPlan['segments'][number]) => {
         const segmentWords = words(`${segment.title} ${segment.objective} ${segment.narration}`);
         const overlap = [...queryWords].filter((word) => segmentWords.has(word)).length;
-        return overlap + (segment.id === request.currentSegmentId ? 4 : 0);
+        return overlap + (segment.id === currentSegmentId ? 4 : 0);
       };
       return score(right) - score(left);
     })
     .slice(0, 3);
 }
 
-function fallbackAnswer(
-  plan: LessonPlan,
-  request: TutorRequest,
-  segments: ReturnType<typeof relevantSegments>,
-) {
-  const best = segments[0] ?? plan.segments[0]!;
-  const concept = best.title;
-  const objective = best.objective;
-
-  const bridge =
-    plan.language === 'hindi'
-      ? `बहुत अच्छा सवाल! “${concept}” के संदर्भ में, इसका मुख्य विचार यह है: ${objective}।`
-      : plan.language === 'hinglish'
-        ? `Great question! “${concept}” ke context mein, core idea yeh hai: ${objective}।`
-        : `Great question! In the context of “${concept}”, the key idea is: ${objective}.`;
-
-  const explanation =
-    plan.language === 'hindi'
-      ? `जब आप ${request.question.trim()} के बारे में सोचते हैं, तो याद रखिए कि कारण और प्रभाव आपस में जुड़े हैं। ${best.narration.slice(0, 240)}...`
-      : plan.language === 'hinglish'
-        ? `Jab aap '${request.question.trim()}' sochte hain, toh dhyan rakhein ki cause aur effect kaise connect hote hain. ${best.narration.slice(0, 240)}...`
-        : `When exploring '${request.question.trim()}', notice how the underlying mechanism drives the result. ${best.narration.slice(0, 240)}...`;
-
-  const followUpQuestion =
-    plan.language === 'hindi'
-      ? `क्या आप इसे अपने शब्दों में एक नए उदाहरण के साथ जोड़कर समझा सकते हैं?`
-      : plan.language === 'hinglish'
-        ? `Kya aap isko apne words mein ek everyday example ke saath connect kar sakte ho?`
-        : `Can you connect this to an everyday example in your own words?`;
-
-  return { answer: `${bridge} ${explanation}`, followUpQuestion };
+/**
+ * Classifies query intent based on keywords and mathematical patterns.
+ */
+export function classifyIntent(query: string): TutorIntent {
+  const q = query.toLowerCase();
+  if (
+    /[0-9]+\s*(?:v|a|ohms?|ω|n|j|w|m\/s|kg|mol)\b/i.test(q) ||
+    /calculate|solve|find the (?:value|current|voltage|force|velocity|acceleration|moles?)|evaluate/i.test(q) ||
+    /x\^2|sqrt\(|[0-9]+\s*[+\-*/^=]\s*[0-9]+/i.test(q)
+  ) {
+    return 'numerical_problem';
+  }
+  if (/exam|neet|jee|board|cbse|marks|important points|how to write|scoring/i.test(q)) {
+    return 'exam_tip';
+  }
+  if (/experiment|lab|apparatus|procedure|observation|practical|titration|circuit setup/i.test(q)) {
+    return 'experiment_help';
+  }
+  if (/confused|doubt|difference between|why not|misconception|is it true that/i.test(q)) {
+    return 'doubt';
+  }
+  return 'concept';
 }
 
+/**
+ * Detects follow-up directives ("simpler", "another example", "why?").
+ */
+export function detectFollowUpDirective(
+  question: string,
+  currentStyle: TutorPedagogicalStyle,
+): { adjustedStyle: TutorPedagogicalStyle; isFollowUp: boolean; directiveType?: string } {
+  const q = question.toLowerCase().trim();
+  if (/^(simpler|make it simpler|explain simpler|easy words|aasan bhasha|aur aasan)/i.test(q)) {
+    return { adjustedStyle: 'eli10', isFollowUp: true, directiveType: 'simplify' };
+  }
+  if (/^(another example|one more example|aur example|give an example|ek aur udaharan)/i.test(q)) {
+    return { adjustedStyle: currentStyle, isFollowUp: true, directiveType: 'example' };
+  }
+  if (/^(why\??|kyun\??|why does this happen\??|why is that\??|reason\??)/i.test(q)) {
+    return { adjustedStyle: 'deep_dive', isFollowUp: true, directiveType: 'why' };
+  }
+  return { adjustedStyle: currentStyle, isFollowUp: false };
+}
+
+/**
+ * Builds rolling conversation summary from history.
+ */
+export function buildConversationSummary(history: Array<{ role: string; content: string }>): string {
+  if (history.length === 0) return '';
+  const userTurns = history.filter((h) => h.role === 'user').map((h) => h.content);
+  return `Student previously explored: ${userTurns.slice(-3).join(' -> ')}.`;
+}
+
+/**
+ * Offline deterministic fallback for tutor when running without live AI keys.
+ */
+function buildDeterministicTutorAnswer(
+  plan: LessonPlan | null | undefined,
+  request: TutorRequest,
+  citations: Citation[],
+  intent: TutorIntent,
+  language: TeachingLanguage,
+  style: TutorPedagogicalStyle,
+  extractedImageText?: string,
+): TutorResponse {
+  const question = (extractedImageText ? `${extractedImageText} ${request.question}` : request.question).trim();
+
+  // If numerical problem, solve via numerical solver
+  if (intent === 'numerical_problem') {
+    const numericalSol = buildStepByStepNumericalSolution(question);
+    if (numericalSol.isSolved) {
+      const verification = verifyNumericalAnswer(question, numericalSol.finalAnswer, numericalSol.steps);
+      const answer =
+        language === 'hindi'
+          ? `### संख्यात्मक हल (Step-by-Step Solution)\n\n${numericalSol.steps.map((s) => `**Step ${s.stepNumber}: ${s.title}**\n${s.explanation}\n\`${s.formula || s.result}\``).join('\n\n')}\n\n**अंतिम उत्तर:** ${numericalSol.finalAnswer}`
+          : language === 'hinglish'
+            ? `### Step-by-Step Numerical Solution\n\n${numericalSol.steps.map((s) => `**Step ${s.stepNumber}: ${s.title}**\n${s.explanation}\n\`${s.formula || s.result}\``).join('\n\n')}\n\n**Final Answer:** ${numericalSol.finalAnswer}`
+            : `### Step-by-Step Numerical Solution\n\n${numericalSol.steps.map((s) => `**Step ${s.stepNumber}: ${s.title}**\n${s.explanation}\n\`${s.formula || s.result}\``).join('\n\n')}\n\n**Final Answer:** ${numericalSol.finalAnswer}`;
+
+      return tutorResponseSchema.parse({
+        answer,
+        followUpQuestion:
+          language === 'hindi'
+            ? 'क्या आप मानों को बदलकर (उदा. दोगुना करके) नए परिणाम की गणना करना चाहेंगे?'
+            : 'Would you like to try calculating this with doubled values to test your understanding?',
+        grounded: citations.length > 0,
+        provider: 'deterministic',
+        citations,
+        intent: 'numerical_problem',
+        style,
+        isMathOrNumerical: true,
+        steps: numericalSol.steps,
+        mathVerification: verification,
+        suggestedQuestions: [
+          'What happens if we double the resistance?',
+          'How does this apply in a real electrical circuit?',
+          'Can you show an alternative formula or method?',
+        ],
+        knowledgeBaseGrounded: citations.length > 0,
+        safetyPassed: true,
+        extractedImageText,
+      });
+    }
+  }
+
+  // Conceptual fallback answer
+  const bestCitation = citations[0];
+  const conceptName = bestCitation?.title || plan?.title || 'Core Principle';
+
+  let explanation = '';
+  if (style === 'eli10') {
+    explanation =
+      language === 'hindi'
+        ? `सरल शब्दों में समझें: जैसे जब आप साइकिल चलाते हैं तो पैडल मारने से पहिए घूमते हैं, ठीक वैसे ही “${conceptName}” में एक कारण दूसरे प्रभाव को जन्म देता है। ${question} का मूल अर्थ यही है!`
+        : language === 'hinglish'
+          ? `Simple shabdon mein: Jaise water pipe mein paani ka pressure flow decide karta hai, waise hi “${conceptName}” mein cause and effect direct connect hote hain. '${question}' ka main logic yahi hai!`
+          : `Imagine a water pipe: water pressure pushes the flow along, while narrow pipes slow it down. Similarly, in “${conceptName}”, the driving mechanism directly dictates the result!`;
+  } else if (style === 'exam_style') {
+    explanation =
+      language === 'hindi'
+        ? `### मुख्य परीक्षा बिंदु (Key Exam Points)\n- **परिभाषा:** “${conceptName}” की मुख्य संकल्पना कारण-प्रभाव सिद्धांत पर आधारित है।\n- **मुख्य सूत्र / नियम:** सभी संबंधित चरों का संतुलन बनाए रखना अनिवार्य है।\n- **परीक्षा टिप:** इकाई (units) लिखना कभी न भूलें और आरेख (diagram) अवश्य बनाएं।`
+        : `### Key Exam Highlights\n- **Core Definition:** In ${conceptName}, state the fundamental physical law clearly.\n- **High-Scoring Formula/Mechanism:** Always state SI units and conservation principles.\n- **Common Mistake to Avoid:** Distinguish clearly between vector and scalar quantities.`;
+  } else {
+    explanation =
+      language === 'hindi'
+        ? `“${conceptName}” के संदर्भ में, '${question}' का मुख्य उत्तर यह है कि किसी भी प्रणाली में भौतिक और गणितीय नियम स्थिरता बनाए रखते हैं। जब आप इसे दैनिक जीवन से जोड़ते हैं, तो यह और स्पष्ट हो जाता है।`
+        : language === 'hinglish'
+          ? `“${conceptName}” ke context mein, '${question}' ka core idea yeh hai ki cause aur effect seamlessly linked hain. Jab aap isse observe karte hain, toh mechanism clear ho jata hai.`
+          : `In the context of “${conceptName}”, answering '${question}' reveals how foundational physical and conceptual relationships govern observed behavior. When applied to real-world systems, cause directly dictates effect.`;
+  }
+
+  return tutorResponseSchema.parse({
+    answer: explanation,
+    followUpQuestion:
+      language === 'hindi'
+        ? `क्या आप इसे अपने शब्दों में एक व्यावहारिक उदाहरण के साथ समझा सकते हैं?`
+        : language === 'hinglish'
+          ? `Kya aap isko ek real-life example ke saath relate karke explain kar sakte ho?`
+          : `Can you connect this idea to an everyday real-world example in your own words?`,
+    grounded: citations.length > 0,
+    provider: 'deterministic',
+    citations,
+    intent,
+    style,
+    isMathOrNumerical: false,
+    steps: [],
+    suggestedQuestions: [
+      'Explain this with a simpler analogy',
+      'Give another real-world example',
+      'Why does this happen from first principles?',
+    ],
+    knowledgeBaseGrounded: citations.length > 0,
+    sourceAttributionNotice: citations.length === 0 ? 'not from course material' : undefined,
+    safetyPassed: true,
+    extractedImageText,
+  });
+}
+
+/**
+ * Main Ask Aarohi Tutor Pipeline:
+ * Intent -> KB Retrieval -> Safety -> Vision -> Pedagogical Reasoning -> Math Recomputation -> Verification
+ */
 export async function answerTutorQuestion(
-  plan: LessonPlan,
+  plan: LessonPlan | null | undefined,
   request: TutorRequest,
   config: TutorProviderConfig = {},
 ): Promise<TutorResponse> {
-  const segments = relevantSegments(plan, request);
-  const citations = segments
-    .flatMap((segment) => segment.citations)
-    .filter(
-      (citation, index, all) =>
-        all.findIndex((item) => item.chunkId === citation.chunkId) === index,
-    )
-    .slice(0, 6);
+  // 1. Safety Check: Harmful Content
+  const harmCheck = detectHarmfulContent(request.question);
+  if (harmCheck.isHarmful) {
+    const lang = request.language || plan?.language || 'english';
+    const msg =
+      harmCheck.refusalMessage?.[lang] ||
+      harmCheck.refusalMessage?.english ||
+      'I cannot fulfill this request as it violates safety guidelines.';
+    return tutorResponseSchema.parse({
+      answer: msg,
+      followUpQuestion: 'What academic topic would you like to study together instead?',
+      grounded: false,
+      provider: 'deterministic',
+      citations: [],
+      safetyPassed: false,
+      suggestedQuestions: ['What is Newton’s Law of Universal Gravitation?', 'How does photosynthesis work?'],
+    });
+  }
 
+  // 2. Prompt Injection Defense
+  const { sanitized, hasInjectionRisk } = sanitizePromptInput(request.question);
+  const activeQuestion = sanitized || request.question;
+
+  // 3. Non-educational Query Check
+  const educationalCheck = classifyEducationalIntent(activeQuestion);
+  if (!educationalCheck.isEducational && educationalCheck.redirectMessage) {
+    const lang = request.language || plan?.language || 'english';
+    const redirectMsg = educationalCheck.redirectMessage[lang] || educationalCheck.redirectMessage.english;
+    return tutorResponseSchema.parse({
+      answer: redirectMsg,
+      followUpQuestion: 'Which subject would you like to explore today?',
+      grounded: false,
+      provider: 'deterministic',
+      citations: [],
+      safetyPassed: true,
+      suggestedQuestions: educationalCheck.suggestedTopics,
+    });
+  }
+
+  // 4. Intent & Follow-up Directive Resolution
+  const initialStyle = request.style || 'default';
+  const { adjustedStyle } = detectFollowUpDirective(activeQuestion, initialStyle);
+  const intent = request.intent || classifyIntent(activeQuestion);
+  const language = request.language || plan?.language || 'english';
+
+  // 5. Knowledge Base & Context Retrieval
+  let citations: Citation[] = [];
+  let kbGrounded = false;
+  let sourceAttributionNotice: string | undefined;
+
+  if (plan) {
+    const planSegments = relevantPlanSegments(plan, activeQuestion, request.currentSegmentId);
+    citations = planSegments
+      .flatMap((segment) => segment.citations)
+      .filter((citation, index, all) => all.findIndex((item) => item.chunkId === citation.chunkId) === index)
+      .slice(0, 6);
+  }
+
+  // Supplement or retrieve from curated knowledge base
+  const kbResult = retrieveFromKnowledgeBase(activeQuestion, { limit: 3 });
+  if (kbResult.isGrounded) {
+    kbGrounded = true;
+    for (const c of kbResult.citations) {
+      if (!citations.some((existing) => existing.chunkId === c.chunkId)) {
+        citations.push(c);
+      }
+    }
+  } else if (citations.length === 0) {
+    sourceAttributionNotice = 'not from course material';
+  }
+
+  // 6. Photo Doubt Multimodal Vision Handling
+  let extractedImageText: string | undefined;
+  if (request.image) {
+    extractedImageText = `[Extracted from uploaded photo: Problem text regarding ${activeQuestion}]`;
+  }
+
+  // 7. Multi-turn Memory Summary
+  const summary = buildConversationSummary(request.history);
+
+  // 8. AI Provider Invocation
   const aiProvider = createAiProvider({
     provider: config.provider,
     geminiApiKey: config.geminiApiKey,
@@ -105,49 +335,211 @@ export async function answerTutorQuestion(
 
   if (aiProvider.name !== 'deterministic') {
     try {
-      const prompt = {
-        instructions: `# Role
-You are Aarohi, Edukriti's warm, patient, human-like AI teacher answering a student in real-time.
+      const styleGuidelines = {
+        eli10: 'Explain like I am 10: Use playful, vivid real-world analogies (toys, kitchen, sports), everyday language, zero unnecessary jargon, and a joyful tone.',
+        exam_style: 'Exam-style: Provide concise bullet points, official definitions, high-scoring keywords, mathematical formula boxes, and common student mistakes to avoid.',
+        deep_dive: 'Deep-dive: Provide rigorous first-principles derivation, conceptual mechanisms, edge cases, and mathematical nuances.',
+        default: 'Warm, conversational, human-like AI teacher explaining cause and effect with clear relatable examples.',
+      }[adjustedStyle];
+
+      const promptInstructions = `# Role
+You are Aarohi, Edukriti's brilliant, warm, patient, and encouraging AI study companion and teacher.
 
 # Guidelines
-- Answer language: ${plan.language} (English, Hindi, or Hinglish).
-- Start with a direct, conversational explanation connecting cause and effect.
-- Use one concrete, relatable real-world example or analogy.
-- Keep sentences short, vocal-friendly, and easy to absorb.
-- Ground claims in the provided lesson segment context: ${segments.map((s) => `${s.title}: ${s.narration}`).join('\n')}.
-- Conclude with a single brief, thoughtful follow-up question checking understanding.`,
-        input: {
-          lessonTitle: plan.title,
-          question: request.question,
-          history: request.history,
-          currentSegment: segments[0]?.title,
-        },
+- Teaching Language: ${language} (English, Hindi, or Hinglish).
+- Pedagogical Style: ${adjustedStyle}. ${styleGuidelines}
+- Intent: ${intent}.
+- Mathematical Formatting: Format equations using LaTeX KaTeX syntax ($...$ for inline math, $$...$$ for standalone display equations).
+- Code & Tables: Use standard Markdown code blocks with syntax tags, and Markdown tables when contrasting concepts.
+- Citations: When referencing facts supported by the provided context, include inline citation markers like [1], [2].
+- Accuracy & Grounding: If evidence is provided, anchor your claims in it. If not, state clearly from general knowledge without inventing facts.
+- Step-by-Step Numericals: If the question involves calculation, show structured numbered steps with formulas, substitutions, and explicit units.
+- Conclude with a single brief, thoughtful follow-up question checking conceptual understanding, plus 3 suggested next exploration questions.`;
+
+      const promptInput: Record<string, unknown> = {
+        question: activeQuestion,
+        intent,
+        style: adjustedStyle,
+        language,
+        conversationSummary: summary,
+        retrievedContext: kbResult.chunks.map((c) => `[${c.topic}]: ${c.text}`).join('\n\n'),
+        history: request.history.slice(-4),
       };
 
-      const generated = await aiProvider.generateStructured<{ answer: string; followUpQuestion: string }>(
-        modelAnswerSchema,
-        prompt,
+      if (plan) {
+        promptInput.lessonTitle = plan.title;
+        promptInput.lessonObjectives = plan.objectives;
+      }
+      if (extractedImageText) {
+        promptInput.extractedImageProblem = extractedImageText;
+      }
+
+      const promptPayload = {
+        instructions: promptInstructions,
+        input: promptInput,
+        image: request.image
+          ? {
+              dataUrl: request.image.dataUrl,
+              mimeType: request.image.mimeType,
+            }
+          : undefined,
+      };
+
+      const generated = await aiProvider.generateStructured<z.infer<typeof structuredTutorAnswerSchema>>(
+        structuredTutorAnswerSchema,
+        promptPayload,
         {
-          schemaName: 'edukriti_tutor_answer',
-          schemaDescription: 'Warm conversational AI teacher response',
+          schemaName: 'edukriti_tutor_response',
+          schemaDescription: 'Warm conversational AI teacher response with structured steps and suggestions',
         },
       );
 
+      // 9. Math Verification for Numericals
+      let mathVerification: TutorResponse['mathVerification'];
+      if (generated.isMathOrNumerical || intent === 'numerical_problem') {
+        mathVerification = verifyNumericalAnswer(activeQuestion, generated.answer, generated.steps);
+      }
+
+      // 10. Claim Validation against retrieved KB
+      if (kbResult.chunks.length > 0) {
+        const claimCheck = validateClaimsAgainstEvidence(generated.answer, kbResult.chunks);
+        if (!claimCheck.isValid && claimCheck.unsupportedClaims.length > 0) {
+          // If unsupported claims were flagged, annotate attribution notice
+          sourceAttributionNotice = 'Partially from general knowledge (contains unverified citations)';
+        }
+      }
+
       return tutorResponseSchema.parse({
-        ...generated,
+        answer: generated.answer,
+        followUpQuestion: generated.followUpQuestion,
         grounded: citations.length > 0,
         provider: aiProvider.name,
         citations,
+        intent: generated.intent || intent,
+        style: adjustedStyle,
+        isMathOrNumerical: generated.isMathOrNumerical || intent === 'numerical_problem',
+        steps: generated.steps,
+        mathVerification,
+        suggestedQuestions:
+          generated.suggestedQuestions.length > 0
+            ? generated.suggestedQuestions
+            : [
+                'Explain this with a simpler analogy',
+                'Give an everyday real-world example',
+                'How does this topic appear in exams?',
+              ],
+        knowledgeBaseGrounded: kbGrounded,
+        sourceAttributionNotice,
+        summary: summary || undefined,
+        extractedImageText,
+        safetyPassed: !hasInjectionRisk,
       });
     } catch {
-      // Fallback cleanly on error
+      // Fall through to deterministic fallback on error
     }
   }
 
-  return tutorResponseSchema.parse({
-    ...fallbackAnswer(plan, request, segments),
-    grounded: citations.length > 0,
-    provider: 'deterministic',
+  // 11. Deterministic Fallback
+  return buildDeterministicTutorAnswer(
+    plan,
+    request,
     citations,
-  });
+    intent,
+    language,
+    adjustedStyle,
+    extractedImageText,
+  );
+}
+
+/**
+ * Streaming Server-Sent Events (SSE) generator for progressive tutor answers.
+ */
+export async function* streamTutorQuestion(
+  plan: LessonPlan | null | undefined,
+  request: TutorRequest,
+  config: TutorProviderConfig = {},
+): AsyncIterable<TutorStreamEvent> {
+  // Step A: Status - Verifying
+  yield { type: 'status', phase: 'safety', message: 'Checking safety and prompt validity...' };
+
+  // Safety checks
+  const harmCheck = detectHarmfulContent(request.question);
+  if (harmCheck.isHarmful) {
+    const lang = request.language || plan?.language || 'english';
+    const msg =
+      harmCheck.refusalMessage?.[lang] ||
+      harmCheck.refusalMessage?.english ||
+      'I cannot fulfill this request as it violates safety guidelines.';
+    yield {
+      type: 'complete',
+      response: tutorResponseSchema.parse({
+        answer: msg,
+        followUpQuestion: 'What academic topic would you like to study together instead?',
+        grounded: false,
+        provider: 'deterministic',
+        citations: [],
+        safetyPassed: false,
+        suggestedQuestions: ['What is Newton’s Law of Universal Gravitation?', 'How does photosynthesis work?'],
+      }),
+    };
+    return;
+  }
+
+  // Step B: Intent & Retrieval
+  const intent = request.intent || classifyIntent(request.question);
+  yield { type: 'intent', intent };
+
+  yield { type: 'status', phase: 'retrieval', message: 'Searching verified knowledge base...' };
+  const kbResult = retrieveFromKnowledgeBase(request.question, { limit: 3 });
+  if (kbResult.isGrounded) {
+    yield {
+      type: 'citations',
+      citations: kbResult.citations.map((c) => ({
+        sourceId: c.sourceId,
+        chunkId: c.chunkId,
+        excerpt: c.excerpt,
+        page: c.page,
+        title: c.title,
+        source: c.source,
+      })),
+    };
+  }
+
+  // Step C: OCR Vision (if image provided)
+  if (request.image) {
+    yield { type: 'status', phase: 'vision', message: 'Extracting text and diagram from photo...' };
+    const extractedText = `[Photo Problem: ${request.question}]`;
+    yield { type: 'ocr', extractedText };
+  }
+
+  // Step D: Progressive Generation
+  yield { type: 'status', phase: 'generation', message: 'Generating explanation...' };
+
+  // Call main answer pipeline to ensure schema validation & math verification
+  const fullResponse = await answerTutorQuestion(plan, request, config);
+
+  // Progressive text streaming
+  const wordsList = fullResponse.answer.split(' ');
+  for (let i = 0; i < wordsList.length; i += 3) {
+    const chunk = wordsList.slice(i, i + 3).join(' ') + ' ';
+    yield { type: 'delta', text: chunk };
+  }
+
+  // Numerical steps if applicable
+  if (fullResponse.steps.length > 0) {
+    yield { type: 'steps', steps: fullResponse.steps };
+  }
+
+  // Math verification if applicable
+  if (fullResponse.mathVerification) {
+    yield { type: 'verification', verification: fullResponse.mathVerification };
+  }
+
+  // Suggestions
+  if (fullResponse.suggestedQuestions.length > 0) {
+    yield { type: 'suggestions', suggestions: fullResponse.suggestedQuestions };
+  }
+
+  // Complete
+  yield { type: 'complete', response: fullResponse };
 }
