@@ -1,5 +1,6 @@
 import { checkpointAttemptRequestSchema, checkpointAttemptResponseSchema, lessonPlanGenerationResponseSchema } from '@edukriti/contracts';
-import { buildAdaptation, evaluateCheckpoint } from '@edukriti/teaching-engine';
+import { buildAdaptationWithAi, evaluateCheckpointWithAi } from '@edukriti/teaching-engine';
+import { createAiProvider } from '@edukriti/ai';
 import { env } from 'cloudflare:workers';
 
 import { apiError } from '@/lib/api-error';
@@ -23,11 +24,26 @@ export async function POST(request: Request) {
   const checkpoint = lesson.data.plan.segments.flatMap((segment) => segment.checkpoint ? [segment.checkpoint] : []).find((item) => item.id === parsed.data.checkpointId);
   if (!checkpoint) return apiError(404, 'CHECKPOINT_NOT_FOUND', 'This checkpoint is not part of the lesson.');
 
-  const evaluation = evaluateCheckpoint({ id: checkpoint.id, targetConcept: checkpoint.targetConcept, language: lesson.data.plan.language }, parsed.data.response);
+  const aiProvider = createAiProvider({
+    provider: env.LLM_PROVIDER as 'gemini' | 'openai' | 'deterministic' | undefined,
+    geminiApiKey: env.GEMINI_API_KEY,
+    geminiModel: env.GEMINI_MODEL || env.LLM_MODEL,
+    openaiApiKey: env.OPENAI_API_KEY,
+    openaiModel: env.OPENAI_MODEL || env.LLM_MODEL,
+  });
+
+  const context = {
+    id: checkpoint.id,
+    targetConcept: checkpoint.targetConcept,
+    language: lesson.data.plan.language,
+  };
+  const evaluation = await evaluateCheckpointWithAi(aiProvider, context, parsed.data.response);
+  const adaptation = await buildAdaptationWithAi(aiProvider, context, evaluation);
+
   const result = checkpointAttemptResponseSchema.parse({
     attemptId: parsed.data.clientRequestId,
     evaluation,
-    adaptation: buildAdaptation({ id: checkpoint.id, targetConcept: checkpoint.targetConcept, language: lesson.data.plan.language }, evaluation),
+    adaptation,
     attemptedAt: new Date().toISOString(),
   });
 
