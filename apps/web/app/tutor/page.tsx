@@ -186,6 +186,7 @@ export default function TutorPage() {
                   key={sub.name}
                   type="button"
                   onClick={() => setSelectedSubject(sub.name)}
+                  aria-label={`Select ${sub.name}`}
                   className={`flex w-full items-center gap-2.5 rounded-xl border p-2 text-left text-xs transition ${
                     selectedSubject === sub.name
                       ? 'border-sky-400/40 bg-sky-500/10 text-white shadow-sm'
