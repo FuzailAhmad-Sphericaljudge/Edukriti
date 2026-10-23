@@ -20,6 +20,10 @@ import {
   speechChunks,
   speechLocale,
   teachingVoiceScore,
+  evaluateSafeMath,
+  extractQuantities,
+  verifyNumericalAnswer,
+  buildStepByStepNumericalSolution,
 } from './index.ts';
 import type { AiProvider } from '@edukriti/ai';
 
@@ -249,5 +253,53 @@ test('buildAssessment handles Newton laws with tailored physics questions', () =
   assert.equal(questions.length, 3);
   assert.equal(questions[0]?.targetConcept, 'Newton’s First Law');
   assert.equal(questions[1]?.targetConcept, 'Newton’s Second Law');
+});
+
+test('evaluateSafeMath correctly computes math expressions without code execution', () => {
+  assert.equal(evaluateSafeMath('12 / 4'), 3);
+  assert.equal(evaluateSafeMath('0.5 * 10 * 4^2'), 80);
+  assert.equal(evaluateSafeMath('sqrt(16) + 5'), 9);
+  // Rejects unsafe code
+  assert.equal(evaluateSafeMath('alert(1)'), null);
+  assert.equal(evaluateSafeMath('process.exit()'), null);
+});
+
+test('extractQuantities parses physical units from problem statement', () => {
+  const problem = 'A circuit has a 12V battery and a 4 ohm resistor. Find the current.';
+  const q = extractQuantities(problem);
+  assert.equal(q.V, 12);
+  assert.equal(q.R, 4);
+
+  const kinematics = 'A 5 kg mass accelerates at 2 m/s^2 for 3 seconds.';
+  const kq = extractQuantities(kinematics);
+  assert.equal(kq.m, 5);
+  assert.equal(kq.a, 2);
+  assert.equal(kq.t, 3);
+});
+
+test('verifyNumericalAnswer verifies correct solutions and catches arithmetic mistakes', () => {
+  const problem = 'A circuit has a 12V battery and a 4 ohm resistor. Calculate current.';
+  const correct = 'Using Ohm Law, I = V / R = 12 / 4 = 3 A.';
+  const verified = verifyNumericalAnswer(problem, correct);
+  assert.equal(verified.isVerified, true);
+  assert.equal(verified.computedValue, 3);
+  assert.equal(verified.expectedValue, 3);
+
+  const incorrect = 'Using Ohm Law, I = V / R = 12 / 4 = 5 A.';
+  const failed = verifyNumericalAnswer(problem, incorrect);
+  assert.equal(failed.isVerified, false);
+  assert.equal(failed.computedValue, 3);
+  assert.equal(failed.expectedValue, 5);
+});
+
+test('buildStepByStepNumericalSolution generates structured steps and recomputed result', () => {
+  const problem = 'A force acts on a 10 kg object accelerating it at 3 m/s^2. Calculate the force.';
+  const solution = buildStepByStepNumericalSolution(problem);
+  assert.equal(solution.isSolved, true);
+  assert.equal(solution.formula, 'F = m * a');
+  assert.equal(solution.steps.length, 3);
+  assert.equal(solution.steps[2]?.result, '30');
+  assert.equal(solution.steps[2]?.unit, 'N');
+  assert.ok(solution.finalAnswer.includes('30 N'));
 });
 

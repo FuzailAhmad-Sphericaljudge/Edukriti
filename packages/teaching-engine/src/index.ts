@@ -556,3 +556,5 @@ export function buildLearningReport(plan: LessonPlan, attempts: AssessmentAttemp
     completedAt,
   });
 }
+
+export * from './numerical-solver.ts';
