@@ -38,6 +38,131 @@ export function evaluateSafeMath(expr: string): number | null {
 }
 
 /**
+ * Converts non-standard or compound physical units into standard SI base units.
+ * Supports km/h -> m/s, cm/mm -> m, g -> kg, mA -> A, kW -> W, kJ -> J, min/h -> s.
+ */
+export function normalizeToSiUnits(
+  value: number,
+  rawUnit: string,
+): { value: number; siUnit: string; factor: number; notes: string } {
+  const clean = rawUnit.trim().toLowerCase();
+  switch (clean) {
+    case 'km/h':
+    case 'kph':
+    case 'kmph': {
+      const v = Number((value * (5 / 18)).toFixed(4));
+      return {
+        value: v,
+        siUnit: 'm/s',
+        factor: 5 / 18,
+        notes: `${value} km/h = ${value} × (5/18) = ${v} m/s`,
+      };
+    }
+    case 'cm': {
+      const v = Number((value * 0.01).toFixed(4));
+      return {
+        value: v,
+        siUnit: 'm',
+        factor: 0.01,
+        notes: `${value} cm = ${value} × 10⁻² = ${v} m`,
+      };
+    }
+    case 'mm': {
+      const v = Number((value * 0.001).toFixed(6));
+      return {
+        value: v,
+        siUnit: 'm',
+        factor: 0.001,
+        notes: `${value} mm = ${value} × 10⁻³ = ${v} m`,
+      };
+    }
+    case 'km': {
+      const v = Number((value * 1000).toFixed(4));
+      return {
+        value: v,
+        siUnit: 'm',
+        factor: 1000,
+        notes: `${value} km = ${value} × 10³ = ${v} m`,
+      };
+    }
+    case 'g':
+    case 'gram':
+    case 'grams': {
+      const v = Number((value * 0.001).toFixed(4));
+      return {
+        value: v,
+        siUnit: 'kg',
+        factor: 0.001,
+        notes: `${value} g = ${value} / 1000 = ${v} kg`,
+      };
+    }
+    case 'ma':
+    case 'milliampere':
+    case 'milliamperes': {
+      const v = Number((value * 0.001).toFixed(6));
+      return {
+        value: v,
+        siUnit: 'A',
+        factor: 0.001,
+        notes: `${value} mA = ${value} × 10⁻³ = ${v} A`,
+      };
+    }
+    case 'kw':
+    case 'kilowatt':
+    case 'kilowatts': {
+      const v = Number((value * 1000).toFixed(4));
+      return {
+        value: v,
+        siUnit: 'W',
+        factor: 1000,
+        notes: `${value} kW = ${value} × 10³ = ${v} W`,
+      };
+    }
+    case 'kj':
+    case 'kilojoule':
+    case 'kilojoules': {
+      const v = Number((value * 1000).toFixed(4));
+      return {
+        value: v,
+        siUnit: 'J',
+        factor: 1000,
+        notes: `${value} kJ = ${value} × 10³ = ${v} J`,
+      };
+    }
+    case 'min':
+    case 'minute':
+    case 'minutes': {
+      const v = Number((value * 60).toFixed(4));
+      return {
+        value: v,
+        siUnit: 's',
+        factor: 60,
+        notes: `${value} min = ${value} × 60 = ${v} s`,
+      };
+    }
+    case 'h':
+    case 'hr':
+    case 'hour':
+    case 'hours': {
+      const v = Number((value * 3600).toFixed(4));
+      return {
+        value: v,
+        siUnit: 's',
+        factor: 3600,
+        notes: `${value} h = ${value} × 3600 = ${v} s`,
+      };
+    }
+    default:
+      return {
+        value,
+        siUnit: rawUnit,
+        factor: 1,
+        notes: `${value} ${rawUnit}`,
+      };
+  }
+}
+
+/**
  * Extracts numbers with units from text (e.g., "12V", "5 m/s", "10 kg", "2.5 A", "4 ohms").
  */
 export function extractQuantities(text: string): Record<string, number> {
@@ -46,20 +171,30 @@ export function extractQuantities(text: string): Record<string, number> {
   const patterns = [
     // Voltage: 12V, 12 volts
     { key: 'V', regex: /([0-9.]+)\s*(?:V|volts?)\b/i },
+    // Current in mA: 500 mA
+    { key: 'I_mA', regex: /([0-9.]+)\s*(?:mA|milliamperes?)\b/i },
     // Current: 3A, 3 amperes
     { key: 'I', regex: /([0-9.]+)\s*(?:A|amperes?|amps?)\b/i },
+    // Resistance in kΩ
+    { key: 'R_k', regex: /([0-9.]+)\s*(?:kΩ|kohm|kiloohms?)\b/i },
     // Resistance: 4 ohms, 4 Omega, 4Ω
     { key: 'R', regex: /([0-9.]+)\s*(?:ohms?|Ω|Omega)\b/i },
-    // Mass: 5kg, 5 kg, 500g
+    // Mass in grams: 500g
+    { key: 'm_g', regex: /([0-9.]+)\s*(?:g|grams?)\b(?!\s*\/)/i },
+    // Mass: 5kg, 5 kg
     { key: 'm', regex: /([0-9.]+)\s*(?:kg|kilograms?)\b/i },
     // Force: 20N, 20 newtons
     { key: 'F', regex: /([0-9.]+)\s*(?:N|newtons?)\b/i },
     // Acceleration: 2 m/s^2
     { key: 'a', regex: /([0-9.]+)\s*(?:m\/s\^2|m\/s2)\b/i },
+    // Velocity in km/h
+    { key: 'v_kmh', regex: /([0-9.]+)\s*(?:km\/h|kph|kmph)\b/i },
     // Velocity: 10 m/s
     { key: 'v', regex: /([0-9.]+)\s*(?:m\/s|mps)\b/i },
     // Initial velocity: u = 0, initial speed 0 m/s
     { key: 'u', regex: /(?:initial\s+(?:velocity|speed)|u\s*=)\s*([0-9.]+)/i },
+    // Time in minutes
+    { key: 't_min', regex: /([0-9.]+)\s*(?:mins?|minutes?)\b/i },
     // Time: 5s, 5 seconds
     { key: 't', regex: /([0-9.]+)\s*(?:s|seconds?|sec)\b/i },
     // Distance / height: 10m, 10 meters
@@ -78,6 +213,23 @@ export function extractQuantities(text: string): Record<string, number> {
       const val = parseFloat(match[1]);
       if (!isNaN(val)) result[key] = val;
     }
+  }
+
+  // Normalize sub-units to canonical SI if primary key was not directly matched
+  if (result.I === undefined && result.I_mA !== undefined) {
+    result.I = Number((result.I_mA * 0.001).toFixed(6));
+  }
+  if (result.R === undefined && result.R_k !== undefined) {
+    result.R = result.R_k * 1000;
+  }
+  if (result.m === undefined && result.m_g !== undefined) {
+    result.m = Number((result.m_g * 0.001).toFixed(4));
+  }
+  if (result.v === undefined && result.v_kmh !== undefined) {
+    result.v = Number((result.v_kmh * (5 / 18)).toFixed(4));
+  }
+  if (result.t === undefined && result.t_min !== undefined) {
+    result.t = result.t_min * 60;
   }
 
   return result;

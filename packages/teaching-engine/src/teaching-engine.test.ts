@@ -24,6 +24,7 @@ import {
   extractQuantities,
   verifyNumericalAnswer,
   buildStepByStepNumericalSolution,
+  normalizeToSiUnits,
   GOLDEN_EVAL_SET,
 } from './index.ts';
 import type { AiProvider } from '@edukriti/ai';
@@ -330,4 +331,30 @@ test('numerical solver accurately solves resistance given voltage and current', 
   assert.equal(verification.isVerified, true);
   assert.equal(verification.computedValue, 4);
 });
+
+test('normalizeToSiUnits correctly converts km/h, mA, kW, grams, and minutes to SI base units', () => {
+  assert.equal(normalizeToSiUnits(72, 'km/h').value, 20);
+  assert.equal(normalizeToSiUnits(72, 'km/h').siUnit, 'm/s');
+
+  assert.equal(normalizeToSiUnits(500, 'mA').value, 0.5);
+  assert.equal(normalizeToSiUnits(500, 'mA').siUnit, 'A');
+
+  assert.equal(normalizeToSiUnits(2.5, 'kW').value, 2500);
+  assert.equal(normalizeToSiUnits(2.5, 'kW').siUnit, 'W');
+
+  assert.equal(normalizeToSiUnits(250, 'g').value, 0.25);
+  assert.equal(normalizeToSiUnits(250, 'g').siUnit, 'kg');
+
+  assert.equal(normalizeToSiUnits(3, 'min').value, 180);
+  assert.equal(normalizeToSiUnits(3, 'min').siUnit, 's');
+});
+
+test('extractQuantities normalizes non-SI unit prefixes to canonical variables', () => {
+  const quantities = extractQuantities('A 500g ball moves at 72 km/h under 500 mA current for 2 minutes');
+  assert.equal(quantities.m, 0.5); // 500g -> 0.5 kg
+  assert.equal(quantities.v, 20); // 72 km/h -> 20 m/s
+  assert.equal(quantities.I, 0.5); // 500 mA -> 0.5 A
+  assert.equal(quantities.t, 120); // 2 minutes -> 120 s
+});
+
 
