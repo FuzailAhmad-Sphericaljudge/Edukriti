@@ -228,3 +228,26 @@ test('buildAssessmentWithAi creates dynamic questions for non-electricity topics
   assert.equal(questions[2]?.type, 'short_answer');
 });
 
+test('buildDeterministicLessonPlan supports expanded curriculum topics without placeholder text', () => {
+  const topics = [
+    'Photosynthesis and light reactions',
+    'Chemical bonding and covalent molecules',
+    'Calculus and derivatives',
+    'Plate tectonics and earthquakes',
+  ];
+
+  for (const topic of topics) {
+    const plan = buildDeterministicLessonPlan({ ...request, topic, durationMinutes: 20 });
+    assert.equal(plan.segments.length, 4);
+    assert.equal(plan.segments.some((s) => s.title.includes('Foundations of')), false);
+  }
+});
+
+test('buildAssessment handles Newton laws with tailored physics questions', () => {
+  const plan = buildDeterministicLessonPlan({ ...request, topic: 'Newton Laws of Motion', durationMinutes: 20 });
+  const questions = buildAssessment(plan);
+  assert.equal(questions.length, 3);
+  assert.equal(questions[0]?.targetConcept, 'Newton’s First Law');
+  assert.equal(questions[1]?.targetConcept, 'Newton’s Second Law');
+});
+
