@@ -127,6 +127,70 @@ test('OpenAIProvider parses structured output with mocked fetch', async () => {
   }
 });
 
+test('GeminiProvider.stream yields text chunks from SSE stream', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    const sseBody = `data: {"candidates":[{"content":{"parts":[{"text":"Hello "}]}}]}\n\ndata: {"candidates":[{"content":{"parts":[{"text":"world!"}]}}]}\n\ndata: [DONE]\n\n`;
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(sseBody));
+        controller.close();
+      },
+    });
+
+    globalThis.fetch = async () => new Response(stream, { status: 200 });
+
+    const provider = new GeminiProvider({ apiKey: 'test-key' });
+    const chunks: string[] = [];
+    for await (const chunk of provider.stream('Hi')) {
+      chunks.push(chunk);
+    }
+    assert.deepEqual(chunks, ['Hello ', 'world!']);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('GeminiProvider.embed returns embedding vectors', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          embeddings: [{ values: [0.1, 0.2, 0.3] }],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+
+    const provider = new GeminiProvider({ apiKey: 'test-key' });
+    const embeddings = await provider.embed(['Science']);
+    assert.equal(embeddings.length, 1);
+    assert.deepEqual(embeddings[0], [0.1, 0.2, 0.3]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('OpenAIProvider.embed returns embedding vectors', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          data: [{ embedding: [0.4, 0.5, 0.6] }],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+
+    const provider = new OpenAIProvider({ apiKey: 'test-key' });
+    const embeddings = await provider.embed(['Physics']);
+    assert.equal(embeddings.length, 1);
+    assert.deepEqual(embeddings[0], [0.4, 0.5, 0.6]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('ResilientAiAdapter retries once on schema error and falls back gracefully', async () => {
   let callCount = 0;
   const mockFailingPrimary = {
