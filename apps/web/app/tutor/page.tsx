@@ -28,6 +28,36 @@ export default function TutorPage() {
     }
   });
   const [activeTab, setActiveTab] = useState<'chat' | 'notes'>('chat');
+  const [selectedSubject, setSelectedSubject] = useState<string>('Physics');
+  const [activePrompt, setActivePrompt] = useState<string>('');
+
+  const subjectQuestions: Record<string, string[]> = {
+    Physics: [
+      "Explain Newton's first law of motion and inertia",
+      'Calculate resistance: 24V supply causes 6A current',
+      "What is Snell's law and total internal reflection?",
+    ],
+    Chemistry: [
+      "What is the mole concept and Avogadro's number?",
+      'Explain ionic vs covalent chemical bonding',
+      'How does an acid-base neutralization reaction work?',
+    ],
+    Mathematics: [
+      'What does the discriminant determine in a quadratic equation?',
+      'State the Pythagorean theorem and geometric interpretation',
+      'Explain the Fundamental Theorem of Calculus',
+    ],
+    'Computer Science': [
+      'How does binary search achieve O(log n) time complexity?',
+      'Explain the difference between a Stack and a Queue',
+      'What is Big-O notation and why is it used?',
+    ],
+    'History & Polity': [
+      'What are Fundamental Rights in the Indian Constitution?',
+      'What was the Salt Satyagraha Dandi March of 1930?',
+      'Explain the three main organs under separation of powers',
+    ],
+  };
 
   const deleteNote = (id: string) => {
     const updated = savedNotes.filter((n) => n.id !== id);
@@ -119,17 +149,46 @@ export default function TutorPage() {
                 { icon: Binary, name: 'Computer Science', desc: 'Algorithms, Data Structures' },
                 { icon: Landmark, name: 'History & Polity', desc: 'Constitution, Independence' },
               ].map((sub) => (
-                <div
+                <button
                   key={sub.name}
-                  className="flex items-center gap-2.5 rounded-xl border border-white/5 bg-white/5 p-2 text-xs"
+                  type="button"
+                  onClick={() => setSelectedSubject(sub.name)}
+                  className={`flex w-full items-center gap-2.5 rounded-xl border p-2 text-left text-xs transition ${
+                    selectedSubject === sub.name
+                      ? 'border-sky-400/40 bg-sky-500/10 text-white shadow-sm'
+                      : 'border-white/5 bg-white/5 text-slate-300 hover:border-white/10 hover:text-white'
+                  }`}
                 >
-                  <sub.icon className="size-4 text-sky-400 shrink-0" />
+                  <sub.icon
+                    className={`size-4 shrink-0 ${
+                      selectedSubject === sub.name ? 'text-sky-400' : 'text-slate-400'
+                    }`}
+                  />
                   <div>
                     <span className="font-semibold text-white">{sub.name}</span>
                     <p className="text-[10px] text-slate-400">{sub.desc}</p>
                   </div>
-                </div>
+                </button>
               ))}
+            </div>
+
+            {/* Quick Question Chips for Selected Subject */}
+            <div className="mt-3 pt-3 border-t border-white/10">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-300">
+                Quick {selectedSubject} Doubts:
+              </span>
+              <div className="mt-2 space-y-1.5">
+                {(subjectQuestions[selectedSubject] || []).map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => setActivePrompt(q)}
+                    className="block w-full text-left rounded-lg border border-white/5 bg-white/5 px-2.5 py-1.5 text-[11px] text-slate-300 hover:border-sky-400/30 hover:bg-sky-500/10 hover:text-sky-200 transition"
+                  >
+                    “{q}”
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -148,7 +207,11 @@ export default function TutorPage() {
         {/* Center Main: Conversation Panel or Saved Notes */}
         <div className="flex-1 flex flex-col min-h-[500px]">
           {activeTab === 'chat' ? (
-            <TutorConversationPanel className="flex-1 shadow-2xl" />
+            <TutorConversationPanel
+              key={activePrompt}
+              initialTopic={activePrompt}
+              className="flex-1 shadow-2xl"
+            />
           ) : (
             <div className="flex-1 rounded-2xl border border-white/10 bg-slate-900/60 p-6">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
