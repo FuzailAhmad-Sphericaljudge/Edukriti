@@ -176,6 +176,19 @@ export function TutorVoice({
         {listening ? <Mic className="size-4 text-red-400" /> : <MicOff className="size-4" />}
       </button>
 
+      {/* Listening Waveform Indicator */}
+      {listening && (
+        <div
+          className="flex items-center gap-0.5 rounded-lg border border-red-500/30 bg-red-500/10 px-1.5 py-1.5"
+          title="Aarohi is actively listening..."
+        >
+          <span className="size-1 rounded-full bg-red-400 animate-pulse" />
+          <span className="h-3 w-1 rounded-full bg-red-400 animate-bounce [animation-delay:100ms]" />
+          <span className="h-4 w-1 rounded-full bg-red-400 animate-pulse [animation-delay:200ms]" />
+          <span className="h-2 w-1 rounded-full bg-red-400 animate-bounce [animation-delay:300ms]" />
+        </div>
+      )}
+
       {/* Read Answer Voice Toggle */}
       {lastAnswerToSpeak && (
         <button
@@ -191,6 +204,19 @@ export function TutorVoice({
         >
           {speaking ? <VolumeX className="size-4 text-emerald-300" /> : <Volume2 className="size-4" />}
         </button>
+      )}
+
+      {/* Speaking Waveform Indicator */}
+      {speaking && (
+        <div
+          className="flex items-center gap-0.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-1.5"
+          title="Aarohi is speaking..."
+        >
+          <span className="size-1 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="h-3 w-1 rounded-full bg-emerald-400 animate-bounce [animation-delay:100ms]" />
+          <span className="h-4 w-1 rounded-full bg-emerald-400 animate-pulse [animation-delay:200ms]" />
+          <span className="h-2 w-1 rounded-full bg-emerald-400 animate-bounce [animation-delay:300ms]" />
+        </div>
       )}
 
       {/* Hands-Free Mode Toggle */}
