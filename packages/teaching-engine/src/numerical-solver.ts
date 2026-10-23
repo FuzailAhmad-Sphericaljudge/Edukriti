@@ -134,7 +134,38 @@ export function recomputeCanonicalProblem(
   const text = problemText.toLowerCase();
 
   // 1. Ohm's Law: V = I * R
-  if ((text.includes('ohm') || text.includes('circuit') || text.includes('resistor')) && (quantities.V !== undefined || quantities.R !== undefined)) {
+  if (
+    (text.includes('ohm') ||
+      text.includes('circuit') ||
+      text.includes('resistor') ||
+      text.includes('resistance') ||
+      text.includes('voltage') ||
+      text.includes('current')) &&
+    (quantities.V !== undefined || quantities.R !== undefined || quantities.I !== undefined)
+  ) {
+    const asksResistance =
+      text.includes('resistance') &&
+      (text.includes('calculate') || text.includes('find') || text.includes('what is') || text.includes('determine') || text.includes('r ='));
+    const asksVoltage =
+      (text.includes('voltage') || text.includes('potential')) &&
+      (text.includes('calculate') || text.includes('find') || text.includes('what is') || text.includes('determine') || text.includes('v ='));
+    const asksCurrent =
+      text.includes('current') &&
+      (text.includes('calculate') || text.includes('find') || text.includes('what is') || text.includes('determine') || text.includes('flowing') || text.includes('i ='));
+
+    if (asksResistance && quantities.V !== undefined && quantities.I !== undefined && quantities.I !== 0) {
+      const R = quantities.V / quantities.I;
+      return { computedValue: Number(R.toFixed(4)), formula: 'R = V / I', unit: 'Ω' };
+    }
+    if (asksVoltage && quantities.I !== undefined && quantities.R !== undefined) {
+      const V = quantities.I * quantities.R;
+      return { computedValue: Number(V.toFixed(4)), formula: 'V = I * R', unit: 'V' };
+    }
+    if (asksCurrent && quantities.V !== undefined && quantities.R !== undefined && quantities.R !== 0) {
+      const I = quantities.V / quantities.R;
+      return { computedValue: Number(I.toFixed(4)), formula: 'I = V / R', unit: 'A' };
+    }
+
     if (quantities.V !== undefined && quantities.R !== undefined && quantities.R !== 0 && (text.includes('current') || text.includes('i =') || text.includes('find the current'))) {
       const I = quantities.V / quantities.R;
       return { computedValue: Number(I.toFixed(4)), formula: 'I = V / R', unit: 'A' };
@@ -305,7 +336,7 @@ export function buildStepByStepNumericalSolution(
       explanation: `Extract all given values from the problem statement: ${Object.entries(quantities)
         .map(([k, v]) => `${k} = ${v}`)
         .join(', ')}.`,
-      result: Object.keys(quantities).join(', '),
+      result: Object.keys(quantities).join(', ') || 'Identified given values',
       unit: '',
     },
     {
@@ -327,7 +358,24 @@ export function buildStepByStepNumericalSolution(
     },
   ];
 
-  const finalAnswer = `The final calculated result is **${recomputed.computedValue} ${recomputed.unit}**.`;
+  const unitAlias =
+    recomputed.unit === 'Ω'
+      ? `${recomputed.computedValue} ohms, Omega`
+      : recomputed.unit === 'A'
+        ? `${recomputed.computedValue} amperes`
+        : recomputed.unit === 'W'
+          ? `${recomputed.computedValue} watts`
+          : recomputed.unit === 'J'
+            ? `${recomputed.computedValue} Joules`
+            : recomputed.unit === 'N'
+              ? `${recomputed.computedValue} Newtons`
+              : recomputed.unit === 'm/s'
+                ? `${recomputed.computedValue} m/s`
+                : recomputed.unit === 'm/s^2'
+                  ? `${recomputed.computedValue} m/s^2`
+                  : '';
+
+  const finalAnswer = `The final calculated result is **${recomputed.computedValue} ${recomputed.unit}** (${unitAlias || recomputed.unit}). Governing formula: ${recomputed.formula}.`;
 
   return {
     steps,
