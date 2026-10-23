@@ -44,12 +44,16 @@ export function GlobalTutorDrawer() {
 
       {/* Slide-out Drawer Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-sm transition-opacity">
+        <div
+          className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-sm transition-opacity"
+          onClick={() => setIsOpen(false)}
+        >
           <div
             className="flex h-full w-full max-w-lg flex-col border-l border-white/10 bg-slate-950 shadow-2xl transition-transform animate-in slide-in-from-right duration-300"
             role="dialog"
             aria-modal="true"
             aria-label="Ask Aarohi AI Tutor Drawer"
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Top Bar with maximize and close */}
             <div className="flex items-center justify-between border-b border-white/10 bg-slate-900/60 px-4 py-3">
