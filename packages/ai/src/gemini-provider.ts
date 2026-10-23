@@ -77,6 +77,7 @@ export class GeminiProvider implements AiProvider {
         maxOutputTokens: options.maxOutputTokens ?? 6000,
         responseMimeType: 'application/json',
         responseSchema: jsonSchema,
+        ...(options.topP !== undefined ? { topP: options.topP } : {}),
       },
     };
 
@@ -185,6 +186,7 @@ export class GeminiProvider implements AiProvider {
       generationConfig: {
         temperature: options.temperature ?? 0.7,
         maxOutputTokens: options.maxOutputTokens ?? 2048,
+        ...(options.topP !== undefined ? { topP: options.topP } : {}),
       },
     };
 
@@ -289,6 +291,7 @@ export class GeminiProvider implements AiProvider {
       generationConfig: {
         temperature: options.temperature ?? 0.7,
         maxOutputTokens: options.maxOutputTokens ?? 2048,
+        ...(options.topP !== undefined ? { topP: options.topP } : {}),
       },
     };
 

@@ -33,6 +33,7 @@ export type TokenUsage = {
 export type AiRequestOptions = {
   model?: string;
   temperature?: number;
+  topP?: number;
   maxOutputTokens?: number;
   timeoutMs?: number;
   abortSignal?: AbortSignal;

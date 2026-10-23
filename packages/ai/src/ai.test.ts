@@ -324,3 +324,41 @@ test('GeminiProvider formats multimodal image input in request body', async () =
     globalThis.fetch = originalFetch;
   }
 });
+
+test('GeminiProvider and OpenAIProvider propagate topP and temperature options into API requests', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    let geminiConfig: Record<string, unknown> | undefined;
+    globalThis.fetch = async (_url, init) => {
+      const body = JSON.parse(String(init?.body)) as { generationConfig?: Record<string, unknown> };
+      geminiConfig = body.generationConfig;
+      return new Response(
+        JSON.stringify({
+          candidates: [{ content: { parts: [{ text: JSON.stringify({ greeting: 'Hi', lessonCount: 2 }) }] } }],
+        }),
+      );
+    };
+
+    const gemini = new GeminiProvider({ apiKey: 'test-key' });
+    await gemini.generateStructured(testSchema, 'test', { temperature: 0.1, topP: 0.85 });
+    assert.equal(geminiConfig?.temperature, 0.1);
+    assert.equal(geminiConfig?.topP, 0.85);
+
+    let openAiBody: Record<string, unknown> | undefined;
+    globalThis.fetch = async (_url, init) => {
+      openAiBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { content: JSON.stringify({ greeting: 'Hi', lessonCount: 2 }) } }],
+        }),
+      );
+    };
+
+    const openai = new OpenAIProvider({ apiKey: 'test-key' });
+    await openai.generateStructured(testSchema, 'test', { temperature: 0.4, topP: 0.9 });
+    assert.equal(openAiBody?.temperature, 0.4);
+    assert.equal(openAiBody?.top_p, 0.9);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

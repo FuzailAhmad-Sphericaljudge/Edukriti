@@ -78,6 +78,7 @@ export class OpenAIProvider implements AiProvider {
       messages: this.formatOpenAiMessages(messages),
       temperature: options.temperature ?? 0.2,
       max_tokens: options.maxOutputTokens ?? 4000,
+      ...(options.topP !== undefined ? { top_p: options.topP } : {}),
       response_format: {
         type: 'json_schema',
         json_schema: {
@@ -187,6 +188,7 @@ export class OpenAIProvider implements AiProvider {
       messages: this.formatOpenAiMessages(messages),
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxOutputTokens ?? 2048,
+      ...(options.topP !== undefined ? { top_p: options.topP } : {}),
     };
 
     const timeoutMs = options.timeoutMs ?? this.defaultTimeoutMs;
@@ -277,6 +279,7 @@ export class OpenAIProvider implements AiProvider {
       messages: this.formatOpenAiMessages(messages),
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxOutputTokens ?? 2048,
+      ...(options.topP !== undefined ? { top_p: options.topP } : {}),
       stream: true,
     };
 
