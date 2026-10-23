@@ -113,10 +113,13 @@ export const lessonPlanSchema = z.object({
   createdAt: utcTimestampSchema,
 });
 
+export const aiProviderTypeSchema = z.enum(['deterministic', 'openai', 'gemini']);
+export type AiProviderType = z.infer<typeof aiProviderTypeSchema>;
+
 export const lessonPlanGenerationResponseSchema = z.object({
   plan: lessonPlanSchema,
   grounded: z.boolean(),
-  provider: z.enum(['deterministic', 'openai']),
+  provider: aiProviderTypeSchema,
 });
 
 export const tutorTurnSchema = z.object({
@@ -135,7 +138,7 @@ export const tutorResponseSchema = z.object({
   answer: z.string().min(1).max(3000),
   followUpQuestion: z.string().min(1).max(500),
   grounded: z.boolean(),
-  provider: z.enum(['deterministic', 'openai']),
+  provider: aiProviderTypeSchema,
   citations: z.array(citationSchema).max(6),
 });
 

@@ -54,4 +54,5 @@ test('validates contextual tutor questions and grounded answers', () => {
   assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: '' }).success, false);
   assert.equal(tutorRequestSchema.safeParse({ lessonId: 'lesson-1', question: 'Continue', history: Array.from({ length: 7 }, () => ({ role: 'user', content: 'Earlier question' })) }).success, false);
   assert.equal(tutorResponseSchema.safeParse({ answer: 'Because the force changes motion.', followUpQuestion: 'Can you name an example?', grounded: false, provider: 'deterministic', citations: [] }).success, true);
+  assert.equal(tutorResponseSchema.safeParse({ answer: 'Because the force changes motion.', followUpQuestion: 'Can you name an example?', grounded: false, provider: 'gemini', citations: [] }).success, true);
 });
