@@ -30,8 +30,11 @@ export async function POST(request: Request) {
 
     const lessonId = crypto.randomUUID();
     const generated = await generateLessonPlan(parsed.data, evidence, lessonId, {
-      apiKey: env.OPENAI_API_KEY,
-      model: env.OPENAI_MODEL,
+      geminiApiKey: env.GEMINI_API_KEY,
+      geminiModel: env.GEMINI_MODEL || env.LLM_MODEL,
+      openaiApiKey: env.OPENAI_API_KEY,
+      openaiModel: env.OPENAI_MODEL || env.LLM_MODEL,
+      provider: env.LLM_PROVIDER as 'gemini' | 'openai' | 'deterministic' | undefined,
     });
     const response = lessonPlanGenerationResponseSchema.parse({
       plan: generated.plan,
