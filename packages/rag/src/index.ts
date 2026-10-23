@@ -134,7 +134,10 @@ export function rankChunks<T extends RankableChunk>(chunks: T[], query: string, 
         for (const kw of anyChunk.keywords) {
           if (typeof kw === 'string') {
             const normKw = normalizeText(kw).toLocaleLowerCase();
-            if (normKw && normalizedQuery.includes(normKw)) {
+            const isMatch = normKw.includes(' ')
+              ? normalizedQuery.includes(normKw)
+              : querySet.has(normKw);
+            if (normKw && isMatch) {
               score += 0.35;
               hasDirectHit = true;
               break;
