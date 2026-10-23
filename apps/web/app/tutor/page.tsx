@@ -13,6 +13,8 @@ import {
   Binary,
   Landmark,
   Layers,
+  Download,
+  Copy,
 } from 'lucide-react';
 import type { TutorNote } from '@edukriti/contracts';
 import { TutorConversationPanel } from '@/components/tutor/tutor-conversation-panel';
@@ -30,6 +32,7 @@ export default function TutorPage() {
   const [activeTab, setActiveTab] = useState<'chat' | 'notes'>('chat');
   const [selectedSubject, setSelectedSubject] = useState<string>('Physics');
   const [activePrompt, setActivePrompt] = useState<string>('');
+  const [copiedAll, setCopiedAll] = useState(false);
 
   const subjectQuestions: Record<string, string[]> = {
     Physics: [
@@ -76,6 +79,36 @@ export default function TutorPage() {
     } catch {
       // Ignore
     }
+  };
+
+  const copyAllNotes = async () => {
+    if (savedNotes.length === 0) return;
+    const text = savedNotes
+      .map(
+        (n, i) =>
+          `[Note ${i + 1}] ${n.subject || 'General'} (${new Date(n.savedAt).toLocaleDateString()}):\n${n.answer}`
+      )
+      .join('\n\n---\n\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+    } catch {
+      // Ignore
+    }
+  };
+
+  const exportNotesAsJson = () => {
+    if (savedNotes.length === 0) return;
+    const dataStr =
+      'data:text/json;charset=utf-8,' +
+      encodeURIComponent(JSON.stringify(savedNotes, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', 'edukriti-study-notes.json');
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
   };
 
   return (
@@ -222,13 +255,31 @@ export default function TutorPage() {
                   </p>
                 </div>
                 {savedNotes.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearAllNotes}
-                    className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs text-red-300 hover:bg-red-500/20"
-                  >
-                    <Trash2 className="size-3" /> Clear All
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={exportNotesAsJson}
+                      className="inline-flex items-center gap-1 rounded-lg border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-xs text-sky-300 hover:bg-sky-500/20 transition"
+                      title="Download notes as JSON"
+                    >
+                      <Download className="size-3" /> Export JSON
+                    </button>
+                    <button
+                      type="button"
+                      onClick={copyAllNotes}
+                      className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300 hover:bg-white/10 transition"
+                      title="Copy all notes to clipboard"
+                    >
+                      <Copy className="size-3" /> {copiedAll ? 'Copied!' : 'Copy All'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearAllNotes}
+                      className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs text-red-300 hover:bg-red-500/20 transition"
+                    >
+                      <Trash2 className="size-3" /> Clear All
+                    </button>
+                  </div>
                 )}
               </div>
 

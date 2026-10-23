@@ -22,6 +22,8 @@ test('exportConversationAsMarkdown outputs user doubts, math notes, and citation
         answer: 'Using Ohm Law, I = V / R = 3 A.',
         followUpQuestion: 'Would you like to try with 24V?',
         grounded: true,
+        knowledgeBaseGrounded: true,
+        safetyPassed: true,
         provider: 'deterministic',
         citations: [
           {
