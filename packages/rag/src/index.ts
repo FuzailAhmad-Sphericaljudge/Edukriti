@@ -31,7 +31,7 @@ export function normalizeText(value: string) {
 function tokenize(value: string) {
   return normalizeText(value)
     .toLocaleLowerCase()
-    .match(/[\p{L}\p{N}]+/gu)
+    .match(/[\p{L}\p{M}\p{N}]+/gu)
     ?.filter((token) => token.length > 1 && !STOP_WORDS.has(token)) ?? [];
 }
 
@@ -88,15 +88,66 @@ export function rankChunks<T extends RankableChunk>(chunks: T[], query: string, 
 
   return chunks
     .map((chunk) => {
+      const anyChunk = chunk as Record<string, unknown>;
+      const fullSearchableParts: string[] = [chunk.text];
+      if (typeof anyChunk.topic === 'string') {
+        fullSearchableParts.push(anyChunk.topic, anyChunk.topic);
+      }
+      if (Array.isArray(anyChunk.keywords)) {
+        for (const kw of anyChunk.keywords) {
+          if (typeof kw === 'string') fullSearchableParts.push(kw, kw);
+        }
+      }
+      if (Array.isArray(anyChunk.keyFacts)) {
+        for (const kf of anyChunk.keyFacts) {
+          if (typeof kf === 'string') fullSearchableParts.push(kf);
+        }
+      }
+      if (Array.isArray(anyChunk.keyEquations)) {
+        for (const eq of anyChunk.keyEquations) {
+          if (typeof eq === 'string') fullSearchableParts.push(eq);
+        }
+      }
+
+      const combinedText = fullSearchableParts.join(' ');
       const frequencies = new Map<string, number>();
-      for (const token of tokenize(chunk.text)) frequencies.set(token, (frequencies.get(token) ?? 0) + 1);
+      for (const token of tokenize(combinedText)) frequencies.set(token, (frequencies.get(token) ?? 0) + 1);
+
       let score = 0;
+      let matchedTokensCount = 0;
       for (const token of querySet) {
         const frequency = frequencies.get(token) ?? 0;
-        if (frequency > 0) score += 1 + Math.log1p(frequency) * 0.2;
+        if (frequency > 0) {
+          matchedTokensCount++;
+          score += 1 + Math.log1p(frequency) * 0.2;
+        }
       }
       score /= querySet.size;
-      if (normalizedQuery.length > 3 && chunk.text.toLocaleLowerCase().includes(normalizedQuery)) score += 0.5;
+
+      let hasDirectHit = false;
+      if (normalizedQuery.length > 3 && combinedText.toLocaleLowerCase().includes(normalizedQuery)) {
+        score += 0.5;
+        hasDirectHit = true;
+      }
+
+      if (Array.isArray(anyChunk.keywords)) {
+        for (const kw of anyChunk.keywords) {
+          if (typeof kw === 'string') {
+            const normKw = normalizeText(kw).toLocaleLowerCase();
+            if (normKw && normalizedQuery.includes(normKw)) {
+              score += 0.35;
+              hasDirectHit = true;
+              break;
+            }
+          }
+        }
+      }
+
+      // Suppress accidental single-token matches when query has multiple tokens and lacks direct keyword hit
+      if (querySet.size >= 3 && matchedTokensCount < 2 && !hasDirectHit) {
+        score = 0;
+      }
+
       return { ...chunk, score: Number(score.toFixed(4)) };
     })
     .filter((chunk) => chunk.score > 0)
