@@ -2,7 +2,26 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { LessonRequest } from '@edukriti/contracts';
-import { buildAdaptation, buildAssessment, buildDeterministicLessonPlan, buildLearningReport, captionAt, evaluateAssessmentAnswer, evaluateCheckpoint, lessonMinutes, lessonProgress, speechChunks, speechLocale, teachingVoiceScore } from './index.ts';
+import {
+  buildAdaptation,
+  buildAdaptationWithAi,
+  buildAssessment,
+  buildAssessmentWithAi,
+  buildDeterministicLessonPlan,
+  buildLearningReport,
+  captionAt,
+  evaluateAssessmentAnswer,
+  evaluateAssessmentAnswerWithAi,
+  evaluateCheckpoint,
+  evaluateCheckpointWithAi,
+  generateLessonPlanWithAi,
+  lessonMinutes,
+  lessonProgress,
+  speechChunks,
+  speechLocale,
+  teachingVoiceScore,
+} from './index.ts';
+import type { AiProvider } from '@edukriti/ai';
 
 const request: LessonRequest = {
   learnerId: 'demo-learner',
@@ -94,3 +113,118 @@ test('scores actual assessment responses and builds a learning report', () => {
   assert.ok(report.strongConcepts.length > 0);
   assert.ok(report.weakConcepts.length > 0);
 });
+
+test('generateLessonPlanWithAi uses AI provider and falls back to deterministic on failure', async () => {
+  const plan = buildDeterministicLessonPlan(request, [], 'lesson', '2026-09-04T15:00:00Z');
+  const mockProvider: AiProvider = {
+    name: 'gemini',
+    defaultModel: 'gemini-2.5-flash',
+    async generateStructured() {
+      return plan;
+    },
+    async generateText() { return ''; },
+    async *stream() { yield ''; },
+    async embed() { return []; },
+  };
+
+  const aiPlan = await generateLessonPlanWithAi(mockProvider, request, []);
+  assert.equal(aiPlan.title, plan.title);
+
+  const failingProvider: AiProvider = {
+    name: 'gemini',
+    defaultModel: 'gemini-2.5-flash',
+    async generateStructured() {
+      throw new Error('AI Provider network failure');
+    },
+    async generateText() { return ''; },
+    async *stream() { yield ''; },
+    async embed() { return []; },
+  };
+
+  const fallbackPlan = await generateLessonPlanWithAi(failingProvider, request, []);
+  assert.ok(fallbackPlan.segments.length > 0);
+  assert.equal(fallbackPlan.learnerId, request.learnerId);
+});
+
+test('evaluateCheckpointWithAi evaluates response via provider and falls back on error', async () => {
+  const mockProvider: AiProvider = {
+    name: 'gemini',
+    defaultModel: 'gemini-2.5-flash',
+    async generateStructured() {
+      return {
+        checkpointId: 'cp-ai',
+        isCorrect: true,
+        confidence: 0.95,
+        understoodConcepts: ['Voltage'],
+        misconception: null,
+        feedback: 'Excellent explanation!',
+        nextAction: 'continue',
+      };
+    },
+    async generateText() { return ''; },
+    async *stream() { yield ''; },
+    async embed() { return []; },
+  };
+
+  const context = { id: 'cp-ai', targetConcept: 'Voltage', language: 'english' as const };
+  const evalResult = await evaluateCheckpointWithAi(mockProvider, context, 'Voltage is electrical potential difference.');
+  assert.equal(evalResult.isCorrect, true);
+  assert.equal(evalResult.confidence, 0.95);
+
+  const failingProvider: AiProvider = {
+    ...mockProvider,
+    async generateStructured() { throw new Error('Offline'); },
+  };
+  const fallbackEval = await evaluateCheckpointWithAi(failingProvider, context, 'Electric current pushes voltage.');
+  assert.equal(typeof fallbackEval.isCorrect, 'boolean');
+});
+
+test('buildAssessmentWithAi creates dynamic questions for non-electricity topics', async () => {
+  const mockProvider: AiProvider = {
+    name: 'gemini',
+    defaultModel: 'gemini-2.5-flash',
+    async generateStructured() {
+      return {
+        questions: [
+          {
+            type: 'mcq',
+            prompt: 'What organelle performs photosynthesis?',
+            choices: [
+              { id: 'a', text: 'Chloroplast' },
+              { id: 'b', text: 'Mitochondria' },
+              { id: 'c', text: 'Ribosome' },
+            ],
+            expectedAnswer: 'a',
+            targetConcept: 'Chloroplast function',
+          },
+          {
+            type: 'mcq',
+            prompt: 'What gas is released during photosynthesis?',
+            choices: [
+              { id: 'a', text: 'Carbon Dioxide' },
+              { id: 'b', text: 'Oxygen' },
+            ],
+            expectedAnswer: 'b',
+            targetConcept: 'Photosynthesis products',
+          },
+          {
+            type: 'short_answer',
+            prompt: 'Explain the light-dependent reactions in your own words.',
+            expectedAnswer: 'light chlorophyll atp thylakoid water oxygen',
+            targetConcept: 'Light-dependent reactions',
+          },
+        ],
+      };
+    },
+    async generateText() { return ''; },
+    async *stream() { yield ''; },
+    async embed() { return []; },
+  };
+
+  const plan = buildDeterministicLessonPlan({ ...request, topic: 'Photosynthesis' }, [], 'bio-lesson', '2026-09-04T15:00:00Z');
+  const questions = await buildAssessmentWithAi(mockProvider, plan);
+  assert.equal(questions.length, 3);
+  assert.equal(questions[0]?.targetConcept, 'Chloroplast function');
+  assert.equal(questions[2]?.type, 'short_answer');
+});
+
