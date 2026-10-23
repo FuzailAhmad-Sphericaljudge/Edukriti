@@ -1,5 +1,6 @@
 import { assessmentAttemptRequestSchema, assessmentAttemptResponseSchema, assessmentSchema, lessonPlanGenerationResponseSchema } from '@edukriti/contracts';
-import { buildAssessment, evaluateAssessmentAnswer } from '@edukriti/teaching-engine';
+import { buildAssessment, buildAssessmentWithAi, evaluateAssessmentAnswerWithAi } from '@edukriti/teaching-engine';
+import { createAiProvider } from '@edukriti/ai';
 import { env } from 'cloudflare:workers';
 
 import { apiError } from '@/lib/api-error';
@@ -23,7 +24,17 @@ export async function GET(request: Request) {
     const completed = new Set(rows.results.map((row) => row.checkpointId));
     if (requiredCheckpoints.some((id) => !completed.has(id))) return apiError(409, 'LESSON_CHECKPOINTS_INCOMPLETE', 'Complete every lesson checkpoint before starting the final assessment.');
   }
-  const questions = buildAssessment(lesson.plan).map(({ expectedAnswer: _expected, targetConcept: _concept, ...question }) => question);
+
+  const aiProvider = createAiProvider({
+    provider: env.LLM_PROVIDER as 'gemini' | 'openai' | 'deterministic' | undefined,
+    geminiApiKey: env.GEMINI_API_KEY,
+    geminiModel: env.GEMINI_MODEL || env.LLM_MODEL,
+    openaiApiKey: env.OPENAI_API_KEY,
+    openaiModel: env.OPENAI_MODEL || env.LLM_MODEL,
+  });
+
+  const rawQuestions = await buildAssessmentWithAi(aiProvider, lesson.plan);
+  const questions = rawQuestions.map(({ expectedAnswer: _expected, targetConcept: _concept, ...question }) => question);
   return Response.json(assessmentSchema.parse({ lessonId, questions }));
 }
 
@@ -38,9 +49,28 @@ export async function POST(request: Request) {
   }
   const lesson = await loadLesson(parsed.data.lessonId);
   if (!lesson) return apiError(404, 'LESSON_NOT_FOUND', 'This lesson could not be found.');
-  const question = buildAssessment(lesson.plan).find((item) => item.id === parsed.data.questionId);
+
+  const aiProvider = createAiProvider({
+    provider: env.LLM_PROVIDER as 'gemini' | 'openai' | 'deterministic' | undefined,
+    geminiApiKey: env.GEMINI_API_KEY,
+    geminiModel: env.GEMINI_MODEL || env.LLM_MODEL,
+    openaiApiKey: env.OPENAI_API_KEY,
+    openaiModel: env.OPENAI_MODEL || env.LLM_MODEL,
+  });
+
+  const assessmentQuestions = await buildAssessmentWithAi(aiProvider, lesson.plan);
+  const question =
+    assessmentQuestions.find((item) => item.id === parsed.data.questionId) ||
+    buildAssessment(lesson.plan).find((item) => item.id === parsed.data.questionId);
   if (!question) return apiError(404, 'ASSESSMENT_QUESTION_NOT_FOUND', 'This question is not part of the final assessment.');
-  const result = evaluateAssessmentAnswer(lesson.plan, question, parsed.data.response, parsed.data.clientRequestId);
+
+  const result = await evaluateAssessmentAnswerWithAi(
+    aiProvider,
+    lesson.plan,
+    question,
+    parsed.data.response,
+    parsed.data.clientRequestId,
+  );
   try {
     await env.DB.prepare('INSERT INTO checkpoint_attempts (id, lesson_id, checkpoint_id, response, evaluation_json, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(result.attemptId, parsed.data.lessonId, question.id, parsed.data.response, JSON.stringify(result), result.attemptedAt).run();
   } catch {
