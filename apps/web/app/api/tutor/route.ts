@@ -5,8 +5,8 @@ import {
 } from '@edukriti/contracts';
 import { env } from 'cloudflare:workers';
 
-import { apiError } from '@/lib/api-error';
-import { answerTutorQuestion } from '@/lib/tutor-provider';
+import { apiError } from '../../../lib/api-error.ts';
+import { answerTutorQuestion } from '../../../lib/tutor-provider.ts';
 
 export async function POST(request: Request) {
   const parsed = tutorRequestSchema.safeParse(await request.json().catch(() => null));

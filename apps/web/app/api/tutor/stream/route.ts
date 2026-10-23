@@ -5,7 +5,7 @@ import {
 } from '@edukriti/contracts';
 import { env } from 'cloudflare:workers';
 
-import { streamTutorQuestion } from '@/lib/tutor-provider';
+import { streamTutorQuestion } from '../../../../lib/tutor-provider.ts';
 
 export async function POST(request: Request) {
   const parsed = tutorRequestSchema.safeParse(await request.json().catch(() => null));

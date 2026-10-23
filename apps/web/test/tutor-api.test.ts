@@ -45,3 +45,28 @@ test('tutorRequestSchema rejects empty question strings', () => {
   });
   assert.equal(result.success, false);
 });
+
+test('tutorRequestSchema validates multimodal image attachments and styles', () => {
+  const result = tutorRequestSchema.safeParse({
+    question: 'Solve this circuit question from the photo',
+    style: 'exam_style',
+    language: 'hinglish',
+    image: {
+      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      mimeType: 'image/png',
+      caption: 'circuit-diagram.png',
+    },
+    history: [
+      { role: 'user', content: 'What is Ohm Law?' },
+      { role: 'assistant', content: 'Ohm law states V = IR.' },
+    ],
+  });
+
+  assert.equal(result.success, true);
+  if (result.success) {
+    assert.equal(result.data.style, 'exam_style');
+    assert.equal(result.data.language, 'hinglish');
+    assert.equal(result.data.image?.mimeType, 'image/png');
+    assert.equal(result.data.history?.length, 2);
+  }
+});
