@@ -233,6 +233,27 @@ export const apiErrorSchema = z.object({
   }),
 });
 
+export const aiHealthResponseSchema = z.object({
+  status: z.enum(['healthy', 'fallback', 'degraded']),
+  provider: aiProviderTypeSchema,
+  configuredProvider: aiProviderTypeSchema,
+  model: z.string().min(1),
+  latencyMs: z.number().int().nonnegative(),
+  timestamp: utcTimestampSchema,
+  features: z.object({
+    lessonGeneration: z.boolean(),
+    tutor: z.boolean(),
+    checkpointEvaluation: z.boolean(),
+    adaptiveAssessment: z.boolean(),
+    offlineFallbackReady: z.boolean(),
+  }),
+  credentials: z.object({
+    geminiConfigured: z.boolean(),
+    openaiConfigured: z.boolean(),
+  }),
+  error: z.string().nullable().optional(),
+});
+
 export type LearnerProfile = z.infer<typeof learnerProfileSchema>;
 export type LearningSource = z.infer<typeof learningSourceSchema>;
 export type SourceIngestionResponse = z.infer<typeof sourceIngestionResponseSchema>;
@@ -253,3 +274,4 @@ export type Assessment = z.infer<typeof assessmentSchema>;
 export type AssessmentAttemptRequest = z.infer<typeof assessmentAttemptRequestSchema>;
 export type AssessmentAttemptResponse = z.infer<typeof assessmentAttemptResponseSchema>;
 export type LearningReport = z.infer<typeof learningReportSchema>;
+export type AiHealthResponse = z.infer<typeof aiHealthResponseSchema>;
