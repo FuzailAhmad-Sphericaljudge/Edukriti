@@ -558,3 +558,4 @@ export function buildLearningReport(plan: LessonPlan, attempts: AssessmentAttemp
 }
 
 export * from './numerical-solver.ts';
+export * from './golden-eval-set.ts';
