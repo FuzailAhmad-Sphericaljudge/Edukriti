@@ -23,6 +23,35 @@ function renderKaTeX(math: string, displayMode: boolean): string {
   }
 }
 
+function MathBlock({ math }: { math: string }) {
+  const [copied, setCopied] = useState(false);
+  const html = renderKaTeX(math, true);
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(math.trim());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="group relative my-3 rounded-xl border border-white/5 bg-slate-900/60 p-3 text-center">
+      <div
+        className="overflow-x-auto font-serif text-base text-sky-200"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+      <button
+        type="button"
+        onClick={handleCopy}
+        title="Copy LaTeX formula"
+        className="absolute right-2 top-2 hidden items-center gap-1 rounded-md border border-white/10 bg-slate-800/80 px-2 py-0.5 text-[10px] text-slate-300 opacity-0 transition group-hover:inline-flex group-hover:opacity-100 hover:text-white hover:bg-slate-700"
+      >
+        {copied ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+        <span>{copied ? 'Copied' : 'LaTeX'}</span>
+      </button>
+    </div>
+  );
+}
+
 function CodeBlock({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -140,15 +169,24 @@ export function MarkdownMath({
             continue;
           }
 
-          // Block Math: $$ ... $$
-          if (line.trim().startsWith('$$') && line.trim().endsWith('$$') && line.trim().length > 4) {
-            const math = line.trim().slice(2, -2);
-            const html = renderKaTeX(math, true);
+          // Block Math: $$ ... $$ or multi-line $$
+          if (line.trim().startsWith('$$')) {
+            if (line.trim().endsWith('$$') && line.trim().length > 4) {
+              const math = line.trim().slice(2, -2);
+              elements.push(<MathBlock key={`blockmath-${blockIndex}-${i}`} math={math} />);
+              continue;
+            }
+            // Multi-line math block
+            const mathLines: string[] = [];
+            i++;
+            while (i < lines.length && lines[i]!.trim() !== '$$') {
+              mathLines.push(lines[i]!);
+              i++;
+            }
             elements.push(
-              <div
+              <MathBlock
                 key={`blockmath-${blockIndex}-${i}`}
-                className="my-3 overflow-x-auto text-center font-serif text-base text-sky-200"
-                dangerouslySetInnerHTML={{ __html: html }}
+                math={mathLines.join('\n')}
               />,
             );
             continue;
