@@ -11,6 +11,8 @@ import {
   tutorIntentSchema,
   tutorMathVerificationSchema,
   tutorNoteSchema,
+  tutorFeedbackSchema,
+  tutorExportPayloadSchema,
   tutorNumericStepSchema,
   tutorPedagogicalStyleSchema,
   tutorRequestSchema,
@@ -165,4 +167,33 @@ test('validates AI health response schema', () => {
   };
   assert.equal(aiHealthResponseSchema.safeParse(validHealth).success, true);
   assert.equal(aiHealthResponseSchema.safeParse({ ...validHealth, status: 'invalid' }).success, false);
+});
+
+test('validates tutor student feedback and note export schemas', () => {
+  const validFeedback = {
+    id: 'fb-001',
+    rating: 'positive',
+    comment: 'Great step-by-step breakdown of Ohm law!',
+    questionSnippet: 'Calculate the resistance in a 24V circuit',
+    timestamp: '2026-10-23T12:00:00Z',
+  };
+  assert.equal(tutorFeedbackSchema.safeParse(validFeedback).success, true);
+  assert.equal(tutorFeedbackSchema.safeParse({ ...validFeedback, rating: 'invalid_rating' }).success, false);
+
+  const validExport = {
+    format: 'markdown',
+    notes: [
+      {
+        id: 'note-1',
+        question: 'What is Newton second law?',
+        answer: 'F = m*a with force in Newtons.',
+        intent: 'concept',
+        tags: ['physics', 'mechanics'],
+        savedAt: '2026-10-23T12:05:00Z',
+      },
+    ],
+    exportedAt: '2026-10-23T12:10:00Z',
+  };
+  assert.equal(tutorExportPayloadSchema.safeParse(validExport).success, true);
+  assert.equal(tutorExportPayloadSchema.safeParse({ ...validExport, notes: [] }).success, false);
 });

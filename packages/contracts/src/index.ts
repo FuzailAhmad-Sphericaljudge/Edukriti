@@ -230,6 +230,20 @@ export const tutorNoteSchema = z.object({
   savedAt: utcTimestampSchema,
 });
 
+export const tutorFeedbackSchema = z.object({
+  id: z.string().min(1),
+  rating: z.enum(['positive', 'negative']),
+  comment: z.string().max(500).optional(),
+  questionSnippet: z.string().min(1).max(300),
+  timestamp: utcTimestampSchema,
+});
+
+export const tutorExportPayloadSchema = z.object({
+  format: z.enum(['markdown', 'json']),
+  notes: z.array(tutorNoteSchema).min(1),
+  exportedAt: utcTimestampSchema,
+});
+
 export const lessonPlanJsonSchema = z.toJSONSchema(lessonPlanSchema);
 
 export const responseEvaluationSchema = z.object({
@@ -364,6 +378,8 @@ export type TutorRequestOutput = z.output<typeof tutorRequestSchema>;
 export type TutorResponse = z.infer<typeof tutorResponseSchema>;
 export type TutorStreamEvent = z.infer<typeof tutorStreamEventSchema>;
 export type TutorNote = z.infer<typeof tutorNoteSchema>;
+export type TutorFeedback = z.infer<typeof tutorFeedbackSchema>;
+export type TutorExportPayload = z.infer<typeof tutorExportPayloadSchema>;
 export type ResponseEvaluation = z.infer<typeof responseEvaluationSchema>;
 export type CheckpointAttemptRequest = z.infer<typeof checkpointAttemptRequestSchema>;
 export type LessonAdaptation = z.infer<typeof lessonAdaptationSchema>;
