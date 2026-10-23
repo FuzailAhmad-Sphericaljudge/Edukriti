@@ -741,9 +741,11 @@ export function LessonClassroom({
                     <div className="max-w-[94%] rounded-2xl rounded-bl-md bg-white/[0.07] p-4">
                       <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em]">
                         <span className="rounded-full bg-sky-300/15 px-2 py-1 text-sky-200">
-                          {exchange.response.provider === 'openai'
-                            ? 'Live AI answer'
-                            : 'Lesson knowledge'}
+                          {exchange.response.provider === 'gemini'
+                            ? 'Gemini AI'
+                            : exchange.response.provider === 'openai'
+                              ? 'OpenAI AI'
+                              : 'Lesson knowledge'}
                         </span>
                         {exchange.response.grounded && (
                           <span className="rounded-full bg-emerald-300/15 px-2 py-1 text-emerald-200">
