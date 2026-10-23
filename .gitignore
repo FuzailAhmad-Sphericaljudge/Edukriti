@@ -11,4 +11,5 @@ demo-reference.mp4
 output/
 *.tsbuildinfo
 .codex-ppt-build/
+deliverables/
 apps/web/.site-git-backup/
