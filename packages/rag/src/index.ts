@@ -103,3 +103,5 @@ export function rankChunks<T extends RankableChunk>(chunks: T[], query: string, 
     .sort((left, right) => right.score - left.score || left.index - right.index)
     .slice(0, Math.min(Math.max(1, limit), 10));
 }
+
+export * from './knowledge-base.ts';
