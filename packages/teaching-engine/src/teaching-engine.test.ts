@@ -24,6 +24,7 @@ import {
   extractQuantities,
   verifyNumericalAnswer,
   buildStepByStepNumericalSolution,
+  GOLDEN_EVAL_SET,
 } from './index.ts';
 import type { AiProvider } from '@edukriti/ai';
 
@@ -301,5 +302,32 @@ test('buildStepByStepNumericalSolution generates structured steps and recomputed
   assert.equal(solution.steps[2]?.result, '30');
   assert.equal(solution.steps[2]?.unit, 'N');
   assert.ok(solution.finalAnswer.includes('30 N'));
+});
+
+test('golden eval set contains over 100 questions covering all required subjects and intents', () => {
+  assert.ok(GOLDEN_EVAL_SET.length >= 100);
+  const subjects = new Set(GOLDEN_EVAL_SET.map((q) => q.subject));
+  assert.ok(subjects.has('physics'));
+  assert.ok(subjects.has('chemistry'));
+  assert.ok(subjects.has('mathematics'));
+  assert.ok(subjects.has('biology'));
+  assert.ok(subjects.has('computer_science'));
+  assert.ok(subjects.has('history_polity'));
+
+  for (const item of GOLDEN_EVAL_SET) {
+    assert.ok(item.id.length > 0);
+    assert.ok(item.question.length > 5);
+    assert.ok(item.expectedKeyFacts.length > 0);
+  }
+});
+
+test('numerical solver accurately solves resistance given voltage and current', () => {
+  const problem = 'Calculate the resistance if a 24V supply causes a current of 6A.';
+  const sol = buildStepByStepNumericalSolution(problem);
+  assert.equal(sol.isSolved, true);
+  assert.ok(sol.finalAnswer.includes('4 Ω') || sol.finalAnswer.includes('4 ohms'));
+  const verification = verifyNumericalAnswer(problem, sol.finalAnswer, sol.steps);
+  assert.equal(verification.isVerified, true);
+  assert.equal(verification.computedValue, 4);
 });
 
