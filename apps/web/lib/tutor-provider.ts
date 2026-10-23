@@ -149,12 +149,28 @@ function buildDeterministicTutorAnswer(
     const numericalSol = buildStepByStepNumericalSolution(question);
     if (numericalSol.isSolved) {
       const verification = verifyNumericalAnswer(question, numericalSol.finalAnswer, numericalSol.steps);
+      const formattedSteps = numericalSol.steps
+        .map((s) => {
+          let stepBlock = `**Step ${s.stepNumber}: ${s.title}**\n${s.explanation}`;
+          if (s.formula) {
+            stepBlock += `\n$$\n${s.formula}\n$$`;
+          }
+          if (s.substitution) {
+            stepBlock += `\n*Substitution:* \`${s.substitution}\``;
+          }
+          if (s.result && !s.formula) {
+            stepBlock += `\n\`${s.result}\``;
+          }
+          return stepBlock;
+        })
+        .join('\n\n');
+
       const answer =
         language === 'hindi'
-          ? `### संख्यात्मक हल (Step-by-Step Solution)\n\n${numericalSol.steps.map((s) => `**Step ${s.stepNumber}: ${s.title}**\n${s.explanation}\n\`${s.formula || s.result}\``).join('\n\n')}\n\n**अंतिम उत्तर:** ${numericalSol.finalAnswer}`
+          ? `### संख्यात्मक हल (Step-by-Step Solution)\n\n${formattedSteps}\n\n**अंतिम उत्तर:** ${numericalSol.finalAnswer}`
           : language === 'hinglish'
-            ? `### Step-by-Step Numerical Solution\n\n${numericalSol.steps.map((s) => `**Step ${s.stepNumber}: ${s.title}**\n${s.explanation}\n\`${s.formula || s.result}\``).join('\n\n')}\n\n**Final Answer:** ${numericalSol.finalAnswer}`
-            : `### Step-by-Step Numerical Solution\n\n${numericalSol.steps.map((s) => `**Step ${s.stepNumber}: ${s.title}**\n${s.explanation}\n\`${s.formula || s.result}\``).join('\n\n')}\n\n**Final Answer:** ${numericalSol.finalAnswer}`;
+            ? `### Step-by-Step Numerical Solution\n\n${formattedSteps}\n\n**Final Answer:** ${numericalSol.finalAnswer}`
+            : `### Step-by-Step Numerical Solution\n\n${formattedSteps}\n\n**Final Answer:** ${numericalSol.finalAnswer}`;
 
       return tutorResponseSchema.parse({
         answer,
