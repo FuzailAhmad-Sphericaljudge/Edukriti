@@ -4,6 +4,7 @@ dist/
 .wrangler/
 .env
 .env.local
+!**/.env.example
 *.log
 *.tar.gz
 demo-reference.mp4
