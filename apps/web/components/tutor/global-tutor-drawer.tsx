@@ -7,10 +7,14 @@ import { TutorConversationPanel } from './tutor-conversation-panel';
 export function GlobalTutorDrawer() {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Close on Escape key
+  // Keyboard shortcuts: Escape to close, Ctrl+/ (or Cmd+/) to toggle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsOpen(false);
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        setIsOpen((prev) => !prev);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -32,6 +36,9 @@ export function GlobalTutorDrawer() {
           <span className="rounded bg-sky-400/20 px-1.5 py-0.5 text-[10px] text-sky-300 font-mono">
             AI
           </span>
+          <kbd className="hidden sm:inline-block rounded border border-white/20 bg-white/5 px-1.5 py-0.5 text-[9px] text-slate-400 font-mono">
+            Ctrl+/
+          </kbd>
         </button>
       )}
 
