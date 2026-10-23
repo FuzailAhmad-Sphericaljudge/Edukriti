@@ -5,6 +5,7 @@ import type {
   AiRequestOptions,
   AiStreamOptions,
   PromptInput,
+  SchemaValidator,
   TokenUsage,
 } from './types.ts';
 import { normalizePrompt } from './prompt-utils.ts';
@@ -32,7 +33,7 @@ export class OpenAIProvider implements AiProvider {
   }
 
   async generateStructured<T>(
-    schema: z.ZodType<T>,
+    schema: SchemaValidator<T> | z.ZodType<T>,
     prompt: PromptInput,
     options: AiRequestOptions = {},
   ): Promise<T> {

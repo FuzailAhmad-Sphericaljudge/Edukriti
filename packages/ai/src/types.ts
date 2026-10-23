@@ -59,12 +59,16 @@ export type AiTextResult = {
   latencyMs: number;
 };
 
+export type SchemaValidator<T> = {
+  parse(input: unknown): T;
+};
+
 export interface AiProvider {
   readonly name: AiProviderType;
   readonly defaultModel: string;
 
   generateStructured<T>(
-    schema: z.ZodType<T>,
+    schema: SchemaValidator<T> | z.ZodType<T>,
     prompt: PromptInput,
     options?: AiRequestOptions,
   ): Promise<T>;

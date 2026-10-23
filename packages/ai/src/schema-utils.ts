@@ -1,8 +1,15 @@
 import { z } from 'zod';
 
-export function zodToJsonSchema(schema: z.ZodType): Record<string, unknown> {
-  const jsonSchema = z.toJSONSchema(schema) as Record<string, unknown>;
-  return cleanJsonSchema(jsonSchema);
+export function zodToJsonSchema(schema: unknown): Record<string, unknown> {
+  try {
+    if (schema && typeof schema === 'object') {
+      const jsonSchema = z.toJSONSchema(schema as z.ZodType) as Record<string, unknown>;
+      return cleanJsonSchema(jsonSchema);
+    }
+  } catch {
+    // Return empty schema fallback
+  }
+  return { type: 'object' };
 }
 
 export function cleanJsonSchema(schema: Record<string, unknown>): Record<string, unknown> {

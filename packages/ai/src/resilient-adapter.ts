@@ -5,6 +5,7 @@ import type {
   AiRequestOptions,
   AiStreamOptions,
   PromptInput,
+  SchemaValidator,
 } from './types.ts';
 import type { AiProviderType } from '@edukriti/contracts';
 import { aiLogger } from './logger.ts';
@@ -43,7 +44,7 @@ export class ResilientAiAdapter implements AiProvider {
   }
 
   async generateStructured<T>(
-    schema: z.ZodType<T>,
+    schema: SchemaValidator<T> | z.ZodType<T>,
     prompt: PromptInput,
     options: AiRequestOptions = {},
   ): Promise<T> {

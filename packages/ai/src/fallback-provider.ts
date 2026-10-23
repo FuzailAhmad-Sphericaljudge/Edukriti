@@ -5,6 +5,7 @@ import type {
   AiRequestOptions,
   AiStreamOptions,
   PromptInput,
+  SchemaValidator,
 } from './types.ts';
 import { normalizePrompt } from './prompt-utils.ts';
 import { globalAiCache } from './cache.ts';
@@ -22,7 +23,7 @@ export class FallbackProvider implements AiProvider {
   }
 
   async generateStructured<T>(
-    schema: z.ZodType<T>,
+    schema: SchemaValidator<T> | z.ZodType<T>,
     prompt: PromptInput,
     options: AiRequestOptions = {},
   ): Promise<T> {
@@ -75,7 +76,7 @@ export class FallbackProvider implements AiProvider {
   }
 
   private synthesizeDefault<T>(
-    schema: z.ZodType<T>,
+    schema: SchemaValidator<T> | z.ZodType<T>,
     rawText: string,
     options: AiRequestOptions,
   ): T {
