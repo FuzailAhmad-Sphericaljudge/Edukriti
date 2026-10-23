@@ -36,10 +36,24 @@ export class GeminiProvider implements AiProvider {
   private buildContents(messages: PromptMessage[]) {
     return messages
       .filter((m) => m.role !== 'system')
-      .map((m) => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }],
-      }));
+      .map((m) => {
+        const parts: Array<Record<string, unknown>> = [{ text: m.content }];
+        if (m.image) {
+          const rawBase64 = m.image.base64 || (m.image.dataUrl?.includes(',') ? m.image.dataUrl.split(',')[1] : m.image.dataUrl);
+          if (rawBase64) {
+            parts.push({
+              inlineData: {
+                mimeType: m.image.mimeType,
+                data: rawBase64,
+              },
+            });
+          }
+        }
+        return {
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts,
+        };
+      });
   }
 
   async generateStructured<T>(

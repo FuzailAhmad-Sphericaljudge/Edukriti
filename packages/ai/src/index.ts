@@ -9,3 +9,4 @@ export * from './openai-provider.ts';
 export * from './fallback-provider.ts';
 export * from './resilient-adapter.ts';
 export * from './factory.ts';
+export * from './safety.ts';

@@ -32,6 +32,24 @@ export class OpenAIProvider implements AiProvider {
     this.defaultTimeoutMs = config.timeoutMs ?? 30_000;
   }
 
+  private formatOpenAiMessages(messages: PromptMessage[]) {
+    return messages.map((m) => {
+      if (!m.image) {
+        return { role: m.role, content: m.content };
+      }
+      const dataUrl =
+        m.image.dataUrl ||
+        `data:${m.image.mimeType};base64,${m.image.base64}`;
+      return {
+        role: m.role,
+        content: [
+          { type: 'text', text: m.content },
+          { type: 'image_url', image_url: { url: dataUrl } },
+        ],
+      };
+    });
+  }
+
   async generateStructured<T>(
     schema: SchemaValidator<T> | z.ZodType<T>,
     prompt: PromptInput,
@@ -56,7 +74,7 @@ export class OpenAIProvider implements AiProvider {
 
     const body = {
       model,
-      messages,
+      messages: this.formatOpenAiMessages(messages),
       temperature: options.temperature ?? 0.2,
       max_tokens: options.maxOutputTokens ?? 4000,
       response_format: {
@@ -165,7 +183,7 @@ export class OpenAIProvider implements AiProvider {
 
     const body = {
       model,
-      messages,
+      messages: this.formatOpenAiMessages(messages),
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxOutputTokens ?? 2048,
     };
@@ -255,7 +273,7 @@ export class OpenAIProvider implements AiProvider {
 
     const body = {
       model,
-      messages,
+      messages: this.formatOpenAiMessages(messages),
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxOutputTokens ?? 2048,
       stream: true,

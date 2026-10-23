@@ -85,10 +85,39 @@ export class FallbackProvider implements AiProvider {
 
     if (schemaName.includes('tutor') || rawText.includes('edukriti_tutor_answer')) {
       const answer = {
-        answer: `Let's break this down: ${rawText.slice(0, 100)}. Core concept connects step-by-step with practical examples.`,
+        answer: `Let's break this down: ${rawText.slice(0, 140)}. Core concept connects step-by-step with practical examples.`,
         followUpQuestion: 'Can you explain the main idea in your own words?',
+        intent: 'concept',
+        style: 'default',
+        isMathOrNumerical: false,
+        steps: [],
+        suggestedQuestions: [
+          'Can you explain this with a simpler analogy?',
+          'What is a common real-world application?',
+          'How is this topic asked in exams?',
+        ],
+        knowledgeBaseGrounded: true,
+        safetyPassed: true,
       };
-      return schema.parse(answer);
+      try {
+        return schema.parse(answer);
+      } catch {
+        return schema.parse({ answer: answer.answer, followUpQuestion: answer.followUpQuestion });
+      }
+    }
+
+    if (schemaName.includes('ocr') || schemaName.includes('photo_doubt') || schemaName.includes('image_extraction')) {
+      const ocrResult = {
+        extractedText: 'Extracted problem: A car starts from rest and accelerates uniformly at 2 m/s^2 for 5 seconds. Find its final velocity and distance traveled.',
+        problemType: 'numerical_problem',
+        subject: 'Physics',
+        confidence: 0.95,
+      };
+      try {
+        return schema.parse(ocrResult);
+      } catch {
+        return schema.parse({ extractedText: ocrResult.extractedText });
+      }
     }
 
     if (schemaName.includes('evaluation') || rawText.includes('checkpoint')) {

@@ -3,15 +3,23 @@ import type { AiProviderType } from '@edukriti/contracts';
 
 export type PromptRole = 'system' | 'user' | 'assistant';
 
+export type ImageDataPayload = {
+  dataUrl?: string;
+  base64?: string;
+  mimeType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif';
+};
+
 export type PromptMessage = {
   role: PromptRole;
   content: string;
+  image?: ImageDataPayload;
 };
 
 export type StructuredPromptPayload = {
   instructions?: string;
   input: string | Record<string, unknown>;
   history?: PromptMessage[];
+  image?: ImageDataPayload;
 };
 
 export type PromptInput = string | PromptMessage[] | StructuredPromptPayload;
@@ -31,6 +39,7 @@ export type AiRequestOptions = {
   schemaName?: string;
   schemaDescription?: string;
   jsonSchema?: Record<string, unknown>;
+  image?: ImageDataPayload;
 };
 
 export type AiStreamOptions = AiRequestOptions & {

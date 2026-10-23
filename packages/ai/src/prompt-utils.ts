@@ -36,7 +36,11 @@ export function normalizePrompt(input: PromptInput): {
   for (const h of history) {
     messages.push(h);
   }
-  messages.push({ role: 'user', content: inputStr });
+  const userMessage: PromptMessage = { role: 'user', content: inputStr };
+  if (payload.image) {
+    userMessage.image = payload.image;
+  }
+  messages.push(userMessage);
 
   return {
     instructions,
