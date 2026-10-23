@@ -298,6 +298,15 @@ export function TutorConversationPanel({
     }
   };
 
+  const findPrecedingQuestion = (index: number): string => {
+    for (let i = index - 1; i >= 0; i--) {
+      if (messages[i]?.role === 'user') {
+        return messages[i]!.content;
+      }
+    }
+    return '';
+  };
+
   const lastAssistantMessage = messages
     .slice()
     .reverse()
@@ -421,7 +430,7 @@ export function TutorConversationPanel({
             </div>
           </div>
         ) : (
-          messages.map((msg) => (
+          messages.map((msg, idx) => (
             <div
               key={msg.id}
               className={`flex flex-col ${
@@ -539,14 +548,23 @@ export function TutorConversationPanel({
                         </span>
                       </button>
 
-                      <a
-                        href={`/lessons/new?topic=${encodeURIComponent(
-                          msg.content.slice(0, 60),
-                        )}&language=${language}`}
-                        className="inline-flex items-center gap-1 rounded bg-sky-400/20 px-2 py-0.5 text-sky-300 hover:bg-sky-400/30 transition"
-                      >
-                        Make Lesson <ChevronRight className="size-3" />
-                      </a>
+                      {(() => {
+                        const userQ = findPrecedingQuestion(idx);
+                        const lessonTopic =
+                          msg.response.citations?.[0]?.title ||
+                          (userQ ? userQ.slice(0, 75) : msg.content.slice(0, 60));
+                        return (
+                          <a
+                            href={`/lessons/new?topic=${encodeURIComponent(
+                              lessonTopic,
+                            )}&language=${language}`}
+                            title="Generate a full interactive lesson on this topic"
+                            className="inline-flex items-center gap-1 rounded bg-sky-400/20 px-2 py-0.5 text-sky-300 hover:bg-sky-400/30 transition"
+                          >
+                            Make Lesson <ChevronRight className="size-3" />
+                          </a>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
