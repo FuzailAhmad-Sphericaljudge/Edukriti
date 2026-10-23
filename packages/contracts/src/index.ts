@@ -179,11 +179,11 @@ export const tutorRequestSchema = z.object({
   lessonId: identifierSchema.optional(),
   question: z.string().trim().min(1).max(3000),
   currentSegmentId: identifierSchema.optional(),
-  history: z.array(tutorTurnSchema).max(20).default([]),
+  history: z.array(tutorTurnSchema).max(20).optional().default([]),
   intent: tutorIntentSchema.optional(),
-  style: tutorPedagogicalStyleSchema.default('default'),
-  level: tutorLearnerLevelSchema.default('high_school'),
-  language: teachingLanguageSchema.default('english'),
+  style: tutorPedagogicalStyleSchema.optional().default('default'),
+  level: tutorLearnerLevelSchema.optional().default('high_school'),
+  language: teachingLanguageSchema.optional().default('english'),
   image: tutorImageAttachmentSchema.optional(),
   clientRequestId: z.string().optional(),
 });
@@ -343,6 +343,8 @@ export const aiHealthResponseSchema = z.object({
 });
 
 export type LearnerProfile = z.infer<typeof learnerProfileSchema>;
+export type TeachingLanguage = z.infer<typeof teachingLanguageSchema>;
+export type Citation = z.infer<typeof citationSchema>;
 export type LearningSource = z.infer<typeof learningSourceSchema>;
 export type SourceIngestionResponse = z.infer<typeof sourceIngestionResponseSchema>;
 export type RetrievalRequest = z.infer<typeof retrievalRequestSchema>;
@@ -357,7 +359,8 @@ export type TutorLearnerLevel = z.infer<typeof tutorLearnerLevelSchema>;
 export type TutorNumericStep = z.infer<typeof tutorNumericStepSchema>;
 export type TutorMathVerification = z.infer<typeof tutorMathVerificationSchema>;
 export type TutorImageAttachment = z.infer<typeof tutorImageAttachmentSchema>;
-export type TutorRequest = z.infer<typeof tutorRequestSchema>;
+export type TutorRequest = z.input<typeof tutorRequestSchema>;
+export type TutorRequestOutput = z.output<typeof tutorRequestSchema>;
 export type TutorResponse = z.infer<typeof tutorResponseSchema>;
 export type TutorStreamEvent = z.infer<typeof tutorStreamEventSchema>;
 export type TutorNote = z.infer<typeof tutorNoteSchema>;

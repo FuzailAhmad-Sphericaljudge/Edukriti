@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ShareLessonButton } from '@/components/share-lesson-button';
 import { VoiceInputButton } from '@/components/voice-input-button';
+import { MarkdownMath } from '@/components/tutor/markdown-math';
 
 type Segment = LessonPlan['segments'][number];
 type PlayerState = 'idle' | 'speaking' | 'paused' | 'finished';
@@ -753,9 +754,12 @@ export function LessonClassroom({
                           </span>
                         )}
                       </div>
-                      <p className="mt-3 whitespace-pre-line text-sm leading-6 text-white/80">
-                        {exchange.response.answer}
-                      </p>
+                      <div className="mt-3 text-sm leading-6 text-white/90">
+                        <MarkdownMath
+                          content={exchange.response.answer}
+                          citations={exchange.response.citations}
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => speakText(exchange.response.answer)}

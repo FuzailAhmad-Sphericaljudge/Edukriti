@@ -5,6 +5,7 @@ import type {
   AiRequestOptions,
   AiStreamOptions,
   PromptInput,
+  PromptMessage,
   SchemaValidator,
   TokenUsage,
 } from './types.ts';

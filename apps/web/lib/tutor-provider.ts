@@ -321,7 +321,8 @@ export async function answerTutorQuestion(
   }
 
   // 7. Multi-turn Memory Summary
-  const summary = buildConversationSummary(request.history);
+  const historyList = request.history ?? [];
+  const summary = buildConversationSummary(historyList);
 
   // 8. AI Provider Invocation
   const aiProvider = createAiProvider({
@@ -363,7 +364,7 @@ You are Aarohi, Edukriti's brilliant, warm, patient, and encouraging AI study co
         language,
         conversationSummary: summary,
         retrievedContext: kbResult.chunks.map((c) => `[${c.topic}]: ${c.text}`).join('\n\n'),
-        history: request.history.slice(-4),
+        history: historyList.slice(-4),
       };
 
       if (plan) {
