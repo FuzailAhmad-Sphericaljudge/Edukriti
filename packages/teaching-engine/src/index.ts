@@ -19,6 +19,7 @@ import {
 import type { AiProvider } from '@edukriti/ai';
 import { z } from 'zod';
 import {
+  CONCEPT_KNOWLEDGE_GRAPH,
   resolveConceptGraph,
   buildSpokenStyleNarration,
   buildCheckpointRubric,
@@ -447,10 +448,34 @@ export function evaluateAssessmentAnswer(
   attemptId: string,
   attemptedAt = new Date().toISOString(),
 ): AssessmentAttemptResponse {
+  const matchedNode = Object.values(CONCEPT_KNOWLEDGE_GRAPH).find((n) =>
+    question.targetConcept.toLowerCase().includes(n.id.replace(/_/g, ' ')) ||
+    n.conceptName.toLowerCase().includes(question.targetConcept.toLowerCase()) ||
+    question.targetConcept.toLowerCase().includes(n.conceptName.toLowerCase())
+  );
+
+  const questionRubric = question.expectedAnswer
+    ? {
+        checkpointId: question.id,
+        targetConcept: question.targetConcept,
+        keyIdeas: [
+          question.expectedAnswer,
+          `Accurately explains ${question.targetConcept}`,
+        ],
+        commonMisconceptions: matchedNode?.commonMisconceptions ?? [],
+        passingCriteria: `Student must articulate the core mechanism: ${question.expectedAnswer}`,
+      }
+    : undefined;
+
   const semanticEvaluation =
     question.type === 'short_answer'
       ? evaluateCheckpointRubric(
-          { id: question.id, targetConcept: question.targetConcept, language: plan.language },
+          {
+            id: question.id,
+            targetConcept: question.targetConcept,
+            language: plan.language,
+            rubric: questionRubric,
+          },
           learnerResponse,
         )
       : null;

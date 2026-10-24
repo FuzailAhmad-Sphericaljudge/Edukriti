@@ -171,7 +171,15 @@ export const CONCEPT_KNOWLEDGE_GRAPH: Record<string, ConceptNode> = {
     commonMisconceptions: [
       {
         misconception: 'Increasing voltage will increase resistance according to R = V / I.',
-        triggerPatterns: ['increasing voltage increases resistance', 'resistance depends on voltage', 'r changes with v'],
+        triggerPatterns: [
+          'increasing voltage increases resistance',
+          'increase voltage, the resistance increases',
+          'resistance increases because',
+          'resistance increases with',
+          'voltage increases resistance',
+          'resistance depends on voltage',
+          'r changes with v',
+        ],
         explanationCorrection: 'For ohmic conductors at constant temperature, resistance R is an intrinsic physical property determined by material resistivity, length, and cross-sectional area (R = rho * L / A), not by applied voltage.',
         recommendedStrategy: 'visual_walkthrough',
       },

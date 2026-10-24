@@ -733,6 +733,68 @@ test('verify attempt-3 adaptive reteaching escalates to simpler prerequisite con
   assert.ok(adapt3.remediationAction.includes('Newton’s First Law & Inertia'));
 });
 
+test('verify assessment answer evaluation scores key ideas and identifies misconceptions', () => {
+  const plan = buildDeterministicLessonPlan({
+    ...request,
+    topic: 'Electricity and Ohm Law',
+    language: 'english',
+    durationMinutes: 20,
+  });
+
+  const shortAnswerQuestion = {
+    id: 'q-short-1',
+    type: 'short_answer' as const,
+    prompt: 'Explain what happens to current through a resistor if voltage is increased.',
+    expectedAnswer: 'Current increases proportionally because I = V / R with constant resistance.',
+    targetConcept: 'Ohm’s Law & Electrical Resistance',
+  };
+
+  // 1. Correct short answer with key ideas
+  const correctEval = evaluateAssessmentAnswer(
+    plan,
+    shortAnswerQuestion,
+    'Current is directly proportional to voltage and inversely to resistance, so current increases.',
+    '550e8400-e29b-41d4-a716-446655440010',
+  );
+  assert.equal(correctEval.isCorrect, true);
+  assert.deepEqual(correctEval.understoodConcepts, ['Ohm’s Law & Electrical Resistance']);
+  assert.deepEqual(correctEval.weakConcepts, []);
+  assert.equal(correctEval.misconception, null);
+  assert.ok(correctEval.feedback.includes('Correct'));
+
+  // 2. Short answer with known misconception
+  const misconceptionEval = evaluateAssessmentAnswer(
+    plan,
+    shortAnswerQuestion,
+    'When voltage is increased, the electrical resistance increases as well.',
+    '550e8400-e29b-41d4-a716-446655440011',
+  );
+  assert.equal(misconceptionEval.isCorrect, false);
+  assert.deepEqual(misconceptionEval.weakConcepts, ['Ohm’s Law & Electrical Resistance']);
+  assert.ok(misconceptionEval.misconception);
+  assert.ok(misconceptionEval.feedback.includes('misconception') || misconceptionEval.feedback.includes('resistance'));
+
+  // 3. MCQ question with wrong choice
+  const mcqQuestion = {
+    id: 'q-mcq-1',
+    type: 'mcq' as const,
+    prompt: 'Which unit measures electrical current?',
+    choices: [
+      { id: 'a', text: 'Amperes (A)' },
+      { id: 'b', text: 'Volts (V)' },
+      { id: 'c', text: 'Ohms (Ω)' },
+    ],
+    expectedAnswer: 'a',
+    targetConcept: 'Electric Charge & Current Flow',
+  };
+
+  const wrongMcq = evaluateAssessmentAnswer(plan, mcqQuestion, 'b', '550e8400-e29b-41d4-a716-446655440012');
+  assert.equal(wrongMcq.isCorrect, false);
+  assert.deepEqual(wrongMcq.weakConcepts, ['Electric Charge & Current Flow']);
+  assert.ok(wrongMcq.feedback.includes('(a)'));
+});
+
+
 
 
 

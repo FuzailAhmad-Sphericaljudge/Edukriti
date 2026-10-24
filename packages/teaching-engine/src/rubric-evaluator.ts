@@ -141,15 +141,14 @@ export function evaluateCheckpointRubric(
     const isTriggered = mis.triggerPatterns.some((pattern) => {
       const lowerPat = pattern.toLowerCase();
       if (lowerResponse.includes(lowerPat)) return true;
-      // Also check if stemmed words of the trigger pattern exist in the response
+      // Also check if stemmed words of the trigger pattern appear in sequence within a proximate window
       const patWords = lowerPat.split(/\s+/).filter((w) => w.length >= 4);
-      return (
-        patWords.length >= 2 &&
-        patWords.every((w) => {
-          const stem = w.replace(/(ing|es|s|ed)$/, '');
-          return lowerResponse.includes(stem);
-        })
-      );
+      if (patWords.length >= 2) {
+        const stems = patWords.map((w) => w.replace(/(ing|es|s|ed)$/, ''));
+        const reg1 = new RegExp(stems.join('.{0,40}'), 'i');
+        if (reg1.test(lowerResponse)) return true;
+      }
+      return false;
     });
 
     if (isTriggered) {
