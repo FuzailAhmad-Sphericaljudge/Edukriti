@@ -9,6 +9,9 @@ import {
   getTemplatesByConcept,
   generateParametricQuestion,
   getParametricMetrics,
+  getImportedQuestions,
+  getImportedDatasetMetrics,
+  getImportedQuestionsByConcept,
   SeededRng,
 } from './index.ts';
 
@@ -129,3 +132,43 @@ test('getParametricMetrics computes accurate registry numbers without hardcoded 
     `Total combinations estimate was ${metrics.totalCombinationsEstimate}, expected > 50,000`,
   );
 });
+
+test('imported openly licensed question datasets conform to Zod schema and licensing requirements', () => {
+  const imported = getImportedQuestions();
+  assert.ok(imported.length >= 15, `Expected at least 15 curated questions across datasets, found ${imported.length}`);
+
+  const allowedLicenses = new Set(['MIT', 'CC BY-SA 4.0', 'Apache-2.0']);
+
+  for (const q of imported) {
+    const parseResult = practiceQuestionSchema.safeParse(q);
+    assert.ok(parseResult.success, `Question ${q.id} failed validation: ${JSON.stringify(parseResult.error?.issues)}`);
+    assert.ok(allowedLicenses.has(q.license), `Question ${q.id} has unapproved license: ${q.license}`);
+    assert.ok(q.datasetId, `Question ${q.id} missing datasetId`);
+    assert.ok(q.solutionSteps.length > 0, `Question ${q.id} must have step-by-step solution`);
+    assert.ok(q.verified, `Question ${q.id} must be verified`);
+  }
+});
+
+test('getImportedDatasetMetrics computes accurate metrics from real question bank', () => {
+  const metrics = getImportedDatasetMetrics();
+  assert.equal(metrics.totalImportedQuestions, 16);
+  assert.equal(metrics.byDataset.gsm8k, 5);
+  assert.equal(metrics.byDataset.math_hendrycks, 3);
+  assert.equal(metrics.byDataset.arc, 5);
+  assert.equal(metrics.byDataset.openbookqa, 3);
+  assert.equal(metrics.verifiedCount, 16);
+  assert.equal(metrics.byLicense['MIT'], 8);
+  assert.equal(metrics.byLicense['CC BY-SA 4.0'], 5);
+  assert.equal(metrics.byLicense['Apache-2.0'], 3);
+});
+
+test('getImportedQuestionsByConcept filters questions by concept keyword', () => {
+  const ohmQuestions = getImportedQuestionsByConcept('ohms_law');
+  assert.ok(ohmQuestions.length >= 1);
+  assert.ok(ohmQuestions.some((q) => q.id === 'obqa-001'));
+
+  const newtonQuestions = getImportedQuestionsByConcept('newtons_laws');
+  assert.ok(newtonQuestions.length >= 1);
+  assert.ok(newtonQuestions.some((q) => q.id === 'arc-001'));
+});
+

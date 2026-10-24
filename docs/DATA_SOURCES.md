@@ -11,9 +11,11 @@ Edukriti strictly adheres to open licensing and public-domain resources for all 
 | **Vetted STEM Visual Simulations** | Edukriti Core Team / PhET & open-source educational simulations | CC BY 4.0 / MIT | Interactive SVG/Canvas/HTML5 simulations: Circuit Builder DC, Projectile Motion, Pendulum, Titration Lab |
 | **Vetted 3D Science Scenes** | Three.js Community / NASA 3D Resources | CC0 1.0 Public Domain / MIT | Parametric and WebGL 3D scenes: Solar System 3D, DNA Double Helix 3D, Plate Tectonics 3D |
 | **Vetted Mathematical Diagrams** | Geogebra-inspired open models / Edukriti Engine | MIT License | Fraction Strip Visualizer, Sorting Algorithms Visualizer, Ray Optics Diagram |
-| **GSM8K & MATH Datasets** | OpenAI / UC Berkeley | MIT License | Mathematical reasoning questions and distractor generation patterns |
-| **ARC Reasoning Callsets** | Allen Institute for AI (AI2) | CC BY-SA 4.0 | Multi-choice science question structures and distractors |
-| **OpenBookQA** | Allen Institute for AI (AI2) | Apache-2.0 | Elementary science question paradigms and explanation validations |
+| **GSM8K Math Dataset** | OpenAI (Cobbe et al., 2021) | MIT License | Grade-school multi-step mathematical word problems with step-by-step arithmetic verification (`https://github.com/openai/grade-school-math`) |
+| **MATH Benchmark Dataset** | UC Berkeley (Hendrycks et al., NeurIPS 2021) | MIT License | High-school & competition mathematics problems in algebra, geometry, and calculus with rigorous LaTeX proofs (`https://github.com/hendrycks/math`) |
+| **ARC Science Challenge (Easy & Challenge)** | Allen Institute for AI (Clark et al., 2018) | CC BY-SA 4.0 | Standardized science reasoning questions across physics, chemistry, and biology with distractor tagging (`https://allenai.org/data/arc`) |
+| **OpenBookQA Science Dataset** | Allen Institute for AI (Mihaylov et al., EMNLP 2018) | Apache-2.0 | Open-book science fact-retrieval questions with distractor analysis (`https://allenai.org/data/open-book-qa`) |
+| **60 Parametric STEM Generators** | Edukriti Core Team | MIT License | Deterministic seeded PRNG templates generating >82,000 unique questions with authentic distractor analysis |
 | **Google Gemini 2.5 Flash** | Google AI Studio | Google API Terms | Primary AI structured lesson generation, tutoring, and semantic evaluation |
 | **OpenAI GPT-4o-mini** | OpenAI API | OpenAI API Terms | Secondary live provider adapter for structured response evaluation |
 | **Offline Teaching Engine** | Edukriti Core Team | Apache-2.0 / MIT | Offline zero-cost deterministic fallback ensuring 100% demo uptime |
