@@ -31,6 +31,12 @@ import {
   validateVisualSelection,
   suggestVisualForTopic,
   getVettedVisualMetrics,
+  practiceQuestionSchema,
+  practiceSubmissionSchema,
+  practiceEvaluationResultSchema,
+  mockTestResultSchema,
+  questionBankStatsSchema,
+  questionReportRequestSchema,
 } from './index.ts';
 
 const validRequest = {
@@ -416,4 +422,129 @@ test('getVettedVisualMetrics computes accurate registry numbers without hardcode
   assert.ok(uniqueIds.has('circuit-builder-dc'));
   assert.ok(uniqueIds.has('projectile-motion-lab'));
   assert.ok(uniqueIds.has('acid-base-titration-lab'));
+});
+
+test('practiceQuestionSchema validates all seven question types and metadata', () => {
+  const sampleNumericQuestion = practiceQuestionSchema.parse({
+    id: 'pq-num-101',
+    type: 'numeric',
+    conceptIds: ['ohms_law'],
+    subject: 'physics',
+    grade: 'Grade 10',
+    difficulty: 'medium',
+    prompt: 'A 12V battery is connected across an 8Ω resistor. Calculate the current in amperes.',
+    expectedAnswer: 1.5,
+    tolerance: 0.05,
+    unit: 'A',
+    solutionSteps: [
+      {
+        stepNumber: 1,
+        title: 'Identify Given Quantities',
+        explanation: 'Voltage V = 12V, Resistance R = 8Ω.',
+      },
+      {
+        stepNumber: 2,
+        title: 'Apply Ohm’s Law',
+        formula: 'I = V / R',
+        explanation: 'Current equals voltage divided by resistance: 12 / 8 = 1.5 A.',
+        intermediateValue: '1.5',
+        unit: 'A',
+      },
+    ],
+    commonErrorTags: ['reciprocal_error', 'multiplied_instead_of_divided'],
+    distractorExplanations: [
+      {
+        choiceId: '96',
+        errorTag: 'multiplied_instead_of_divided',
+        explanation: 'Multiplied V and R (12 * 8 = 96) instead of dividing.',
+      },
+      {
+        choiceId: '0.67',
+        errorTag: 'reciprocal_error',
+        explanation: 'Divided R by V (8 / 12 = 0.67) instead of V by R.',
+      },
+    ],
+    source: 'Edukriti Parametric Generator: Ohm’s Law Family',
+    license: 'CC BY 4.0',
+    verified: true,
+    verifiedReason: 'Deterministic symbolic recomputation verified',
+    templateFamilyId: 'ohms_law_basic',
+    seed: 42,
+    createdAt: '2026-10-24T12:00:00.000Z',
+  });
+
+  assert.equal(sampleNumericQuestion.type, 'numeric');
+  assert.equal(sampleNumericQuestion.expectedAnswer, 1.5);
+  assert.equal(sampleNumericQuestion.verified, true);
+  assert.equal(sampleNumericQuestion.solutionSteps.length, 2);
+
+  // Validate MCQ Question
+  const sampleMcq = practiceQuestionSchema.parse({
+    id: 'pq-mcq-102',
+    type: 'mcq',
+    conceptIds: ['newtons_second_law'],
+    subject: 'physics',
+    grade: 'Grade 9',
+    difficulty: 'easy',
+    prompt: 'What happens to the acceleration of an object if the net force is doubled while mass remains constant?',
+    choices: [
+      { id: 'a', text: 'Acceleration is halved' },
+      { id: 'b', text: 'Acceleration doubles' },
+      { id: 'c', text: 'Acceleration remains unchanged' },
+      { id: 'd', text: 'Acceleration quadruples' },
+    ],
+    expectedAnswer: 'b',
+    solutionSteps: [
+      {
+        stepNumber: 1,
+        title: 'Proportionality in Newton’s Second Law',
+        formula: 'a = F / m',
+        explanation: 'Acceleration is directly proportional to net force for constant mass. Doubling F doubles a.',
+      },
+    ],
+    commonErrorTags: ['inverse_force_confusion'],
+    source: 'OpenStax Physics (CC BY 4.0)',
+    license: 'CC BY 4.0',
+    verified: true,
+    createdAt: '2026-10-24T12:00:00.000Z',
+  });
+
+  assert.equal(sampleMcq.type, 'mcq');
+  assert.equal(sampleMcq.choices?.length, 4);
+
+  // Validate Practice Submission & Evaluation Result
+  const submission = practiceSubmissionSchema.parse({
+    questionId: 'pq-num-101',
+    learnerId: 'learner-1',
+    submittedAnswer: '96',
+    timeSpentSeconds: 45,
+  });
+  assert.equal(submission.submittedAnswer, '96');
+
+  const evalResult = practiceEvaluationResultSchema.parse({
+    questionId: 'pq-num-101',
+    isCorrect: false,
+    score: 0,
+    expectedAnswer: 1.5,
+    submittedAnswer: 96,
+    explanation: 'Your answer is 96 A, but the correct answer is 1.5 A.',
+    diagnosedError: {
+      errorTag: 'multiplied_instead_of_divided',
+      whyWrong: 'You calculated V * R instead of V / R. In Ohm’s Law, I = V / R.',
+    },
+    solutionSteps: sampleNumericQuestion.solutionSteps,
+    updatedIrtTheta: -0.2,
+    recommendedNextConcept: 'ohms_law',
+  });
+  assert.equal(evalResult.isCorrect, false);
+  assert.equal(evalResult.diagnosedError?.errorTag, 'multiplied_instead_of_divided');
+
+  // Validate Question Report
+  const report = questionReportRequestSchema.parse({
+    questionId: 'pq-num-101',
+    learnerId: 'learner-1',
+    issueType: 'incorrect_explanation',
+    details: 'The solution step formula should specify units explicitly.',
+  });
+  assert.equal(report.issueType, 'incorrect_explanation');
 });

@@ -475,4 +475,178 @@ export type AssessmentAttemptResponse = z.infer<typeof assessmentAttemptResponse
 export type LearningReport = z.infer<typeof learningReportSchema>;
 export type AiHealthResponse = z.infer<typeof aiHealthResponseSchema>;
 
+// ============================================================================
+// PHASE 4: PRACTICE AT SCALE SCHEMAS & QUESTION MODELS
+// ============================================================================
+
+export const questionTypeSchema = z.enum([
+  'mcq',
+  'numeric',
+  'short',
+  'multi_select',
+  'assertion_reason',
+  'fill_blank',
+  'match',
+]);
+export type QuestionType = z.infer<typeof questionTypeSchema>;
+
+export const questionDifficultySchema = z.enum(['easy', 'medium', 'hard', 'olympiad']);
+export type QuestionDifficulty = z.infer<typeof questionDifficultySchema>;
+
+export const solutionStepSchema = z.object({
+  stepNumber: z.number().int().positive(),
+  title: z.string().min(1),
+  explanation: z.string().min(1),
+  formula: z.string().optional(),
+  intermediateValue: z.string().optional(),
+  unit: z.string().optional(),
+});
+export type SolutionStep = z.infer<typeof solutionStepSchema>;
+
+export const distractorReasonSchema = z.object({
+  choiceId: z.string().min(1),
+  errorTag: z.string().min(1),
+  explanation: z.string().min(1),
+});
+export type DistractorReason = z.infer<typeof distractorReasonSchema>;
+
+export const matchPairSchema = z.object({
+  leftId: z.string().min(1),
+  leftText: z.string().min(1),
+  rightId: z.string().min(1),
+  rightText: z.string().min(1),
+});
+export type MatchPair = z.infer<typeof matchPairSchema>;
+
+export const practiceQuestionSchema = z.object({
+  id: identifierSchema,
+  type: questionTypeSchema,
+  conceptIds: z.array(z.string().min(1)).min(1),
+  subject: z.enum(['physics', 'chemistry', 'mathematics', 'biology', 'computer_science', 'history_polity', 'general']),
+  grade: z.string().min(1),
+  difficulty: questionDifficultySchema,
+  prompt: z.string().min(1),
+  choices: z.array(z.object({
+    id: z.string().min(1),
+    text: z.string().min(1),
+  })).optional(),
+  matchPairs: z.array(matchPairSchema).optional(),
+  expectedAnswer: z.union([
+    z.string(),
+    z.array(z.string()),
+    z.number(),
+    z.record(z.string(), z.string()),
+  ]),
+  tolerance: z.number().nonnegative().optional(),
+  unit: z.string().optional(),
+  solutionSteps: z.array(solutionStepSchema).min(1),
+  commonErrorTags: z.array(z.string()).default([]),
+  distractorExplanations: z.array(distractorReasonSchema).default([]),
+  source: z.string().min(1),
+  license: z.string().min(1),
+  verified: z.boolean().default(false),
+  verifiedReason: z.string().optional(),
+  templateFamilyId: z.string().optional(),
+  seed: z.number().int().optional(),
+  createdAt: utcTimestampSchema,
+});
+export type PracticeQuestion = z.infer<typeof practiceQuestionSchema>;
+
+export const practiceSubmissionSchema = z.object({
+  questionId: identifierSchema,
+  learnerId: identifierSchema,
+  submittedAnswer: z.union([z.string(), z.array(z.string()), z.number(), z.record(z.string(), z.string())]),
+  timeSpentSeconds: z.number().nonnegative(),
+});
+export type PracticeSubmission = z.infer<typeof practiceSubmissionSchema>;
+
+export const practiceEvaluationResultSchema = z.object({
+  questionId: identifierSchema,
+  isCorrect: z.boolean(),
+  score: z.number().min(0).max(1),
+  expectedAnswer: z.union([z.string(), z.array(z.string()), z.number(), z.record(z.string(), z.string())]),
+  submittedAnswer: z.union([z.string(), z.array(z.string()), z.number(), z.record(z.string(), z.string())]),
+  explanation: z.string(),
+  diagnosedError: z.object({
+    errorTag: z.string(),
+    whyWrong: z.string(),
+  }).optional(),
+  solutionSteps: z.array(solutionStepSchema),
+  updatedIrtTheta: z.number().optional(),
+  recommendedNextConcept: z.string().optional(),
+});
+export type PracticeEvaluationResult = z.infer<typeof practiceEvaluationResultSchema>;
+
+export const mockTestRequestSchema = z.object({
+  learnerId: identifierSchema,
+  title: z.string().min(1),
+  subjects: z.array(z.string()).min(1),
+  questionCount: z.number().int().min(5).max(60).default(15),
+  durationMinutes: z.number().int().min(5).max(180).default(30),
+  difficulty: questionDifficultySchema.default('medium'),
+});
+export type MockTestRequest = z.infer<typeof mockTestRequestSchema>;
+
+export const mockTestSectionAnalysisSchema = z.object({
+  subject: z.string(),
+  totalQuestions: z.number().int().nonnegative(),
+  correctCount: z.number().int().nonnegative(),
+  accuracyPercentage: z.number().min(0).max(100),
+  averageTimeSeconds: z.number().nonnegative(),
+  weakConcepts: z.array(z.string()),
+  strongConcepts: z.array(z.string()),
+});
+export type MockTestSectionAnalysis = z.infer<typeof mockTestSectionAnalysisSchema>;
+
+export const mockTestResultSchema = z.object({
+  testId: identifierSchema,
+  learnerId: identifierSchema,
+  title: z.string(),
+  totalQuestions: z.number().int().nonnegative(),
+  correctCount: z.number().int().nonnegative(),
+  scorePercentage: z.number().min(0).max(100),
+  percentileRank: z.number().min(0).max(100),
+  totalTimeSpentSeconds: z.number().nonnegative(),
+  sectionalAnalysis: z.array(mockTestSectionAnalysisSchema),
+  weakConcepts: z.array(z.string()),
+  reviewSchedule: z.array(z.object({
+    conceptId: z.string(),
+    recommendedReviewDate: z.string(),
+    reviewReason: z.string(),
+  })),
+  completedAt: utcTimestampSchema,
+});
+export type MockTestResult = z.infer<typeof mockTestResultSchema>;
+
+export const questionBankQuerySchema = z.object({
+  subject: z.string().optional(),
+  conceptId: z.string().optional(),
+  difficulty: questionDifficultySchema.optional(),
+  type: questionTypeSchema.optional(),
+  grade: z.string().optional(),
+  verifiedOnly: z.boolean().optional().default(false),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(50).default(10),
+});
+export type QuestionBankQuery = z.infer<typeof questionBankQuerySchema>;
+
+export const questionBankStatsSchema = z.object({
+  totalQuestions: z.number().int().nonnegative(),
+  verifiedQuestions: z.number().int().nonnegative(),
+  generatorFamilyCount: z.number().int().nonnegative(),
+  estimatedParametricInstances: z.number().int().nonnegative(),
+  bySubject: z.record(z.string(), z.number()),
+  byType: z.record(z.string(), z.number()),
+  byDifficulty: z.record(z.string(), z.number()),
+});
+export type QuestionBankStats = z.infer<typeof questionBankStatsSchema>;
+
+export const questionReportRequestSchema = z.object({
+  questionId: identifierSchema,
+  learnerId: identifierSchema,
+  issueType: z.enum(['wrong_answer', 'typo', 'unclear_prompt', 'incorrect_explanation', 'other']),
+  details: z.string().min(5).max(1000),
+});
+export type QuestionReportRequest = z.infer<typeof questionReportRequestSchema>;
+
 export * from './vetted-visual-registry.ts';
