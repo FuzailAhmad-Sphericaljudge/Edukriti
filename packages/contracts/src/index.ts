@@ -554,9 +554,15 @@ export type PracticeQuestion = z.infer<typeof practiceQuestionSchema>;
 
 export const practiceSubmissionSchema = z.object({
   questionId: identifierSchema,
-  learnerId: identifierSchema,
-  submittedAnswer: z.union([z.string(), z.array(z.string()), z.number(), z.record(z.string(), z.string())]),
-  timeSpentSeconds: z.number().nonnegative(),
+  learnerId: identifierSchema.default('learner_guest'),
+  submittedAnswer: z.union([z.string(), z.array(z.string()), z.number(), z.record(z.string(), z.string())]).optional(),
+  userAnswer: z.string().optional(),
+  timeSpentSeconds: z.number().nonnegative().default(0),
+  currentTheta: z.number().optional(),
+  intervalDays: z.number().int().optional(),
+  consecutiveCorrect: z.number().int().optional(),
+}).refine((data) => data.submittedAnswer !== undefined || data.userAnswer !== undefined, {
+  message: 'Either submittedAnswer or userAnswer must be provided',
 });
 export type PracticeSubmission = z.infer<typeof practiceSubmissionSchema>;
 
@@ -574,6 +580,9 @@ export const practiceEvaluationResultSchema = z.object({
   solutionSteps: z.array(solutionStepSchema),
   updatedIrtTheta: z.number().optional(),
   recommendedNextConcept: z.string().optional(),
+  nextReviewDate: z.string().optional(),
+  intervalDays: z.number().optional(),
+  consecutiveCorrect: z.number().optional(),
 });
 export type PracticeEvaluationResult = z.infer<typeof practiceEvaluationResultSchema>;
 
