@@ -556,6 +556,43 @@ test('buildAdaptationV2 supports 5 pedagogical strategies and escalates across r
   assert.equal(adapt3?.remediationAttempt, 3);
 });
 
+test('buildAssessment generates tailored assessments for all 4 canonical topics', () => {
+  // React
+  const reactPlan = buildDeterministicLessonPlan({ ...request, topic: 'React Components and Props' });
+  const reactQuestions = buildAssessment(reactPlan);
+  assert.equal(reactQuestions.length, 3);
+  assert.ok(reactQuestions[0]?.targetConcept.includes('Props') || reactQuestions[0]?.targetConcept.includes('React'));
+
+  // AI & ML
+  const aiPlan = buildDeterministicLessonPlan({ ...request, topic: 'Artificial Intelligence and Machine Learning' });
+  const aiQuestions = buildAssessment(aiPlan);
+  assert.equal(aiQuestions.length, 3);
+  assert.ok(aiQuestions[0]?.targetConcept.includes('Training') || aiQuestions[0]?.targetConcept.includes('Learning'));
+
+  // Newton Laws
+  const newtonPlan = buildDeterministicLessonPlan({ ...request, topic: 'Newton Laws of Motion' });
+  const newtonQuestions = buildAssessment(newtonPlan);
+  assert.equal(newtonQuestions.length, 3);
+  assert.ok(newtonQuestions[0]?.targetConcept.includes('Newton'));
+
+  // Electricity
+  const electricPlan = buildDeterministicLessonPlan({ ...request, topic: 'Electricity and Ohm Law' });
+  const electricQuestions = buildAssessment(electricPlan);
+  assert.equal(electricQuestions.length, 3);
+  assert.ok(electricQuestions[0]?.targetConcept.includes('Voltage') || electricQuestions[0]?.targetConcept.includes('Ohm'));
+});
+
+test('buildAssessment prioritizes questions targeting learner weak concepts', () => {
+  const plan = buildDeterministicLessonPlan(request);
+  const regularQuestions = buildAssessment(plan);
+  const prioritizedQuestions = buildAssessment(plan, ['Resistance and Ohm’s Law']);
+
+  assert.equal(regularQuestions[0]?.targetConcept, 'Voltage as the driving force');
+  // With weak concept prioritized, Ohm's law question is placed first
+  assert.equal(prioritizedQuestions[0]?.targetConcept, 'Resistance and Ohm’s Law');
+});
+
+
 
 
 

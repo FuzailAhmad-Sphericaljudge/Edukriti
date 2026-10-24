@@ -413,108 +413,19 @@ Language: ${context.language}
   }
 }
 
-export type AssessmentQuestionDefinition = AssessmentQuestion & {
-  expectedAnswer: string;
-  targetConcept: string;
-};
-
-const aiGeneratedAssessmentSchema = z.object({
-  questions: z.array(
-    z.object({
-      type: z.enum(['mcq', 'short_answer']),
-      prompt: z.string().min(1).max(1000),
-      choices: z.array(
-        z.object({
-          id: z.string().min(1).max(12),
-          text: z.string().min(1).max(500),
-        }),
-      ).min(2).max(6).optional(),
-      expectedAnswer: z.string().min(1).max(500),
-      targetConcept: z.string().min(1).max(200),
-    }),
-  ).min(3).max(5),
-});
+export {
+  buildAssessment,
+  buildAssessmentWithAi,
+  type AssessmentQuestionDefinition,
+} from './assessment-generator.ts';
+import {
+  buildAssessment,
+  buildAssessmentWithAi,
+  type AssessmentQuestionDefinition,
+} from './assessment-generator.ts';
 
 function assessmentPrompt(language: LessonPlan['language'], english: string, hinglish: string, hindi: string) {
   return language === 'hindi' ? hindi : language === 'hinglish' ? hinglish : english;
-}
-
-export function buildAssessment(plan: LessonPlan): AssessmentQuestionDefinition[] {
-  const count = plan.durationMinutes === 60 ? 5 : 3;
-  const electricity = /electric|circuit|voltage|current|resistance|ohm/i.test(plan.title);
-  if (electricity) {
-    const definitions: AssessmentQuestionDefinition[] = [
-      { id: `${plan.id}-assessment-1`, type: 'mcq', prompt: assessmentPrompt(plan.language, 'What best describes voltage in a circuit?', 'Circuit mein voltage ko best kaise describe karenge?', 'परिपथ में वोल्टेज का सबसे अच्छा वर्णन क्या है?'), choices: [{ id: 'a', text: 'The push or potential difference that drives charge' }, { id: 'b', text: 'The amount of resistance in a wire' }, { id: 'c', text: 'The charge permanently stored in a bulb' }], expectedAnswer: 'a', targetConcept: 'Voltage as the driving force' },
-      { id: `${plan.id}-assessment-2`, type: 'mcq', prompt: assessmentPrompt(plan.language, 'If resistance increases while voltage stays constant, what happens to current?', 'Voltage same rahe aur resistance badhe, toh current ka kya hoga?', 'वोल्टेज समान रहे और प्रतिरोध बढ़े, तो धारा का क्या होगा?'), choices: [{ id: 'a', text: 'It increases' }, { id: 'b', text: 'It decreases' }, { id: 'c', text: 'It always becomes zero' }], expectedAnswer: 'b', targetConcept: 'Resistance and Ohm’s Law' },
-      { id: `${plan.id}-assessment-3`, type: 'short_answer', prompt: assessmentPrompt(plan.language, 'Explain electric current in your own words.', 'Electric current ko apne words mein explain karo.', 'विद्युत धारा को अपने शब्दों में समझाइए।'), expectedAnswer: 'flow charge circuit', targetConcept: 'Electric charge and current' },
-      { id: `${plan.id}-assessment-4`, type: 'mcq', prompt: 'Which equation represents Ohm’s Law?', choices: [{ id: 'a', text: 'V = I × R' }, { id: 'b', text: 'V = I + R' }, { id: 'c', text: 'R = V × I' }], expectedAnswer: 'a', targetConcept: 'Resistance and Ohm’s Law' },
-      { id: `${plan.id}-assessment-5`, type: 'short_answer', prompt: 'Give one everyday example of a complete electric circuit.', expectedAnswer: 'battery wire bulb switch circuit', targetConcept: 'Applying ideas to a simple circuit' },
-    ];
-    return definitions.slice(0, count).map((question) => ({ ...assessmentQuestionSchema.parse(question), expectedAnswer: question.expectedAnswer, targetConcept: question.targetConcept }));
-  }
-
-  const newton = /newton|force|motion/i.test(plan.title);
-  if (newton) {
-    const definitions: AssessmentQuestionDefinition[] = [
-      { id: `${plan.id}-assessment-1`, type: 'mcq', prompt: assessmentPrompt(plan.language, 'What does Newton’s First Law describe?', 'Newton ka First Law kya describe karta hai?', 'न्यूटन का पहला नियम क्या दर्शाता है?'), choices: [{ id: 'a', text: 'Inertia: an object resists changes to motion unless acted upon by a net force' }, { id: 'b', text: 'Force equals mass divided by acceleration' }, { id: 'c', text: 'Objects always accelerate without force' }], expectedAnswer: 'a', targetConcept: 'Newton’s First Law' },
-      { id: `${plan.id}-assessment-2`, type: 'mcq', prompt: assessmentPrompt(plan.language, 'If force is doubled while mass remains constant, what happens to acceleration?', 'Force double ho aur mass constant rahe, toh acceleration par kya asar hoga?', 'यदि बल दोगुना हो और द्रव्यमान स्थिर रहे, तो त्वरण पर क्या प्रभाव पड़ेगा?'), choices: [{ id: 'a', text: 'It doubles (F = ma)' }, { id: 'b', text: 'It is cut in half' }, { id: 'c', text: 'It remains zero' }], expectedAnswer: 'a', targetConcept: 'Newton’s Second Law' },
-      { id: `${plan.id}-assessment-3`, type: 'short_answer', prompt: assessmentPrompt(plan.language, 'Explain one everyday example of action and reaction (Newton’s Third Law).', 'Action aur reaction (Newton ke Third Law) ka ek real-world example explain karo.', 'क्रिया और प्रतिक्रिया (न्यूटन के तीसरे नियम) का एक उदाहरण समझाइए।'), expectedAnswer: 'rocket swim walk ground jump recoil boat push', targetConcept: 'Newton’s Third Law' },
-    ];
-    return definitions.slice(0, count).map((question) => ({ ...assessmentQuestionSchema.parse(question), expectedAnswer: question.expectedAnswer, targetConcept: question.targetConcept }));
-  }
-
-  return Array.from({ length: count }, (_, index) => {
-    const segment = plan.segments[index % plan.segments.length]!;
-    if (index === count - 1) return { id: `${plan.id}-assessment-${index + 1}`, type: 'short_answer' as const, prompt: `Explain ${segment.title} and give one practical example.`, expectedAnswer: segment.title, targetConcept: segment.title };
-    const distractors = plan.segments.filter((item) => item.id !== segment.id).slice(0, 2).map((item, choiceIndex) => ({ id: choiceIndex === 0 ? 'b' : 'c', text: item.objective }));
-    return { id: `${plan.id}-assessment-${index + 1}`, type: 'mcq' as const, prompt: `Which statement best explains ${segment.title}?`, choices: [{ id: 'a', text: segment.objective }, ...distractors], expectedAnswer: 'a', targetConcept: segment.title };
-  });
-}
-
-/**
- * Builds assessment questions tailored dynamically to any lesson plan using AI.
- * Falls back deterministically if provider fails or is offline.
- */
-export async function buildAssessmentWithAi(
-  provider: AiProvider,
-  plan: LessonPlan,
-): Promise<AssessmentQuestionDefinition[]> {
-  const count = plan.durationMinutes === 60 ? 5 : 3;
-  const prompt = {
-    instructions: `# Role
-You are an expert assessment designer creating a ${count}-question quiz for a lesson on "${plan.title}".
-Language: ${plan.language}
-
-# Rules
-- Build exactly ${count} questions covering the lesson segments.
-- Include a mix of MCQ (with 3-4 plausible choices labeled a, b, c, d) and 1 conceptual short-answer question.
-- Each question must specify the expectedAnswer and targetConcept.
-- Match lesson language: ${plan.language} (English / Hindi / Hinglish).`,
-    input: {
-      lessonTitle: plan.title,
-      language: plan.language,
-      segments: plan.segments.map((s) => ({ title: s.title, objective: s.objective })),
-      questionCount: count,
-    },
-  };
-
-  try {
-    const generated = await provider.generateStructured(aiGeneratedAssessmentSchema, prompt, {
-      schemaName: 'lesson_assessment',
-      schemaDescription: 'Dynamic multi-question assessment tailored to lesson content',
-    });
-
-    return generated.questions.slice(0, count).map((q, idx) => ({
-      id: `${plan.id}-assessment-${idx + 1}`,
-      type: q.type,
-      prompt: q.prompt,
-      choices: q.choices,
-      expectedAnswer: q.expectedAnswer,
-      targetConcept: q.targetConcept,
-    }));
-  } catch {
-    return buildAssessment(plan);
-  }
 }
 
 export function evaluateAssessmentAnswer(plan: LessonPlan, question: AssessmentQuestionDefinition, learnerResponse: string, attemptId: string, attemptedAt = new Date().toISOString()): AssessmentAttemptResponse {
