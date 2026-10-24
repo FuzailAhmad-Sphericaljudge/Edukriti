@@ -99,7 +99,7 @@ export function LessonSetupForm({
           <legend className="mb-3 text-sm font-bold">How should we begin?</legend>
           <div className="grid gap-3 sm:grid-cols-2">
             <button type="button" onClick={() => setMode('topic')} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${mode === 'topic' ? 'border-primary bg-primary/5' : 'hover:bg-muted/60'}`}><BookOpen className="size-5 text-primary" /><span><span className="block font-semibold">Enter a topic</span><span className="text-xs text-muted-foreground">Learn anything from the beginning</span></span></button>
-            <button type="button" onClick={() => setMode('upload')} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${mode === 'upload' ? 'border-primary bg-primary/5' : 'hover:bg-muted/60'}`}><Upload className="size-5 text-primary" /><span><span className="block font-semibold">Upload material</span><span className="text-xs text-muted-foreground">PDF or plain-text notes</span></span></button>
+            <button type="button" onClick={() => setMode('upload')} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${mode === 'upload' ? 'border-primary bg-primary/5' : 'hover:bg-muted/60'}`}><Upload className="size-5 text-primary" /><span><span className="block font-semibold">Upload material</span><span className="text-xs text-muted-foreground">PDF, DOCX, PPTX or notes</span></span></button>
           </div>
         </fieldset>
 
@@ -107,8 +107,8 @@ export function LessonSetupForm({
           <label className="block rounded-2xl border border-dashed border-primary/30 bg-primary/[0.025] p-5 text-center">
             <Upload className="mx-auto size-6 text-primary" />
             <span className="mt-2 block text-sm font-bold">Choose learning material</span>
-            <span className="mt-1 block text-xs text-muted-foreground">PDF or TXT · maximum 8 MB · up to 80 PDF pages</span>
-            <input ref={fileRef} name="file" type="file" accept="application/pdf,text/plain,.pdf,.txt" className="mx-auto mt-4 block max-w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:font-semibold file:text-primary-foreground" />
+            <span className="mt-1 block text-xs text-muted-foreground">PDF, DOCX, PPTX or TXT · maximum 8 MB · slide & page citations</span>
+            <input ref={fileRef} name="file" type="file" accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,.pdf,.docx,.pptx,.txt" className="mx-auto mt-4 block max-w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:font-semibold file:text-primary-foreground" />
           </label>
         )}
 
