@@ -310,18 +310,18 @@ export function lessonProgress(segmentIndex: number, segmentCountValue: number) 
   return Math.min(100, Math.max(0, Math.round(((segmentIndex + 1) / segmentCountValue) * 100)));
 }
 
-export {
-  evaluateCheckpointRubric,
-  buildAdaptationV2,
-  findOrBuildRubric,
-  type CheckpointContext,
-} from './rubric-evaluator.ts';
 import {
   evaluateCheckpointRubric,
   buildAdaptationV2,
   findOrBuildRubric,
   type CheckpointContext,
 } from './rubric-evaluator.ts';
+export {
+  evaluateCheckpointRubric,
+  buildAdaptationV2,
+  findOrBuildRubric,
+  type CheckpointContext,
+};
 
 export function evaluateCheckpoint(context: CheckpointContext, learnerResponse: string): ResponseEvaluation {
   return evaluateCheckpointRubric(context, learnerResponse);
@@ -425,28 +425,67 @@ Language: ${context.language}
   }
 }
 
-export {
-  buildAssessment,
-  buildAssessmentWithAi,
-  type AssessmentQuestionDefinition,
-} from './assessment-generator.ts';
 import {
   buildAssessment,
   buildAssessmentWithAi,
   type AssessmentQuestionDefinition,
 } from './assessment-generator.ts';
+export {
+  buildAssessment,
+  buildAssessmentWithAi,
+  type AssessmentQuestionDefinition,
+};
 
 function assessmentPrompt(language: LessonPlan['language'], english: string, hinglish: string, hindi: string) {
   return language === 'hindi' ? hindi : language === 'hinglish' ? hinglish : english;
 }
 
-export function evaluateAssessmentAnswer(plan: LessonPlan, question: AssessmentQuestionDefinition, learnerResponse: string, attemptId: string, attemptedAt = new Date().toISOString()): AssessmentAttemptResponse {
-  const semanticEvaluation = question.type === 'short_answer' ? evaluateCheckpoint({ id: question.id, targetConcept: question.targetConcept, language: plan.language }, learnerResponse) : null;
-  const isCorrect = question.type === 'mcq' ? learnerResponse === question.expectedAnswer : Boolean(semanticEvaluation?.isCorrect);
-  const feedback = isCorrect
-    ? assessmentPrompt(plan.language, 'Correct — that shows a clear understanding.', 'Bilkul sahi — concept clear hai.', 'सही उत्तर — अवधारणा स्पष्ट है।')
-    : semanticEvaluation?.feedback ?? assessmentPrompt(plan.language, 'Not quite. Review this concept in the lesson report.', 'Not quite. Is concept ko report mein revise karein.', 'यह सही नहीं है। रिपोर्ट में इस अवधारणा को दोहराएँ।');
-  return assessmentAttemptResponseSchema.parse({ attemptId, questionId: question.id, isCorrect, feedback, understoodConcepts: isCorrect ? [question.targetConcept] : [], weakConcepts: isCorrect ? [] : [question.targetConcept], misconception: semanticEvaluation?.misconception ?? null, attemptedAt });
+export function evaluateAssessmentAnswer(
+  plan: LessonPlan,
+  question: AssessmentQuestionDefinition,
+  learnerResponse: string,
+  attemptId: string,
+  attemptedAt = new Date().toISOString(),
+): AssessmentAttemptResponse {
+  const semanticEvaluation =
+    question.type === 'short_answer'
+      ? evaluateCheckpointRubric(
+          { id: question.id, targetConcept: question.targetConcept, language: plan.language },
+          learnerResponse,
+        )
+      : null;
+  const isCorrect =
+    question.type === 'mcq'
+      ? learnerResponse.trim().toLowerCase() === question.expectedAnswer.trim().toLowerCase()
+      : Boolean(semanticEvaluation?.isCorrect);
+  let feedback = '';
+  if (isCorrect) {
+    feedback = assessmentPrompt(
+      plan.language,
+      'Correct — that shows a clear understanding.',
+      'Bilkul sahi — concept clear hai.',
+      'सही उत्तर — अवधारणा स्पष्ट है।',
+    );
+  } else if (semanticEvaluation?.feedback) {
+    feedback = semanticEvaluation.feedback;
+  } else {
+    feedback = assessmentPrompt(
+      plan.language,
+      `Not quite. The correct answer was (${question.expectedAnswer}). Review this in your report.`,
+      `Not quite. Sahi answer (${question.expectedAnswer}) tha. Report mein isse revise karein.`,
+      `यह सही नहीं है। सही उत्तर (${question.expectedAnswer}) था। रिपोर्ट में इसे दोहराएँ।`,
+    );
+  }
+  return assessmentAttemptResponseSchema.parse({
+    attemptId,
+    questionId: question.id,
+    isCorrect,
+    feedback,
+    understoodConcepts: isCorrect ? [question.targetConcept] : [],
+    weakConcepts: isCorrect ? [] : [question.targetConcept],
+    misconception: semanticEvaluation?.misconception ?? (isCorrect ? null : `Confusion regarding ${question.targetConcept}`),
+    attemptedAt,
+  });
 }
 
 /**
@@ -483,23 +522,27 @@ export async function evaluateAssessmentAnswerWithAi(
     });
   }
 
-  // Short answer: evaluate conceptually with AI
-  const semanticEval = await evaluateCheckpointWithAi(
-    provider,
-    { id: question.id, targetConcept: question.targetConcept, language: plan.language },
-    learnerResponse,
-  );
+  // Short answer: evaluate conceptually with AI with fallback to rubric evaluation
+  try {
+    const semanticEval = await evaluateCheckpointWithAi(
+      provider,
+      { id: question.id, targetConcept: question.targetConcept, language: plan.language },
+      learnerResponse,
+    );
 
-  return assessmentAttemptResponseSchema.parse({
-    attemptId,
-    questionId: question.id,
-    isCorrect: semanticEval.isCorrect,
-    feedback: semanticEval.feedback,
-    understoodConcepts: semanticEval.isCorrect ? [question.targetConcept] : [],
-    weakConcepts: semanticEval.isCorrect ? [] : [question.targetConcept],
-    misconception: semanticEval.misconception,
-    attemptedAt,
-  });
+    return assessmentAttemptResponseSchema.parse({
+      attemptId,
+      questionId: question.id,
+      isCorrect: semanticEval.isCorrect,
+      feedback: semanticEval.feedback,
+      understoodConcepts: semanticEval.isCorrect ? [question.targetConcept] : [],
+      weakConcepts: semanticEval.isCorrect ? [] : [question.targetConcept],
+      misconception: semanticEval.misconception,
+      attemptedAt,
+    });
+  } catch {
+    return evaluateAssessmentAnswer(plan, question, learnerResponse, attemptId, attemptedAt);
+  }
 }
 
 export function buildLearningReport(plan: LessonPlan, attempts: AssessmentAttemptResponse[], completedAt = new Date().toISOString()): LearningReport {
