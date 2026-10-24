@@ -96,9 +96,18 @@ export function InteractiveVisualViewer({
 // 1. DC CIRCUIT & OHM'S LAW SIMULATOR
 // ============================================================================
 function CircuitSimulator({ initialParams }: { initialParams: Record<string, unknown> }) {
-  const [voltage, setVoltage] = useState(Number(initialParams.voltage ?? 12));
-  const [resistance, setResistance] = useState(Number(initialParams.resistance ?? 4));
+  const defaultVoltage = Number(initialParams.voltage ?? 12);
+  const defaultResistance = Number(initialParams.resistance ?? 4);
+
+  const [voltage, setVoltage] = useState(defaultVoltage);
+  const [resistance, setResistance] = useState(defaultResistance);
   const [switchClosed, setSwitchClosed] = useState(true);
+
+  const resetCircuit = () => {
+    setVoltage(defaultVoltage);
+    setResistance(defaultResistance);
+    setSwitchClosed(true);
+  };
 
   const current = switchClosed && resistance > 0 ? Number((voltage / resistance).toFixed(2)) : 0;
   const power = Number((voltage * current).toFixed(2));
@@ -203,13 +212,47 @@ function CircuitSimulator({ initialParams }: { initialParams: Record<string, unk
             className="w-32 accent-amber-400"
           />
         </div>
-        <div className="flex justify-center pt-1">
+        <div className="flex items-center justify-between pt-1">
           <button
             type="button"
             onClick={() => setSwitchClosed(!switchClosed)}
             className="rounded-lg bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-500/30"
           >
             Toggle Switch ({switchClosed ? 'Open' : 'Close'})
+          </button>
+          <button
+            type="button"
+            onClick={resetCircuit}
+            className="flex items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white"
+          >
+            <RotateCcw className="size-3" />
+            Reset
+          </button>
+        </div>
+
+        {/* Quick Presets */}
+        <div className="flex items-center gap-1.5 border-t border-white/10 pt-2 text-[10px]">
+          <span className="text-white/50">Presets:</span>
+          <button
+            type="button"
+            onClick={() => { setVoltage(12); setResistance(4); setSwitchClosed(true); }}
+            className="rounded bg-sky-400/15 px-2 py-0.5 text-sky-200 hover:bg-sky-400/25"
+          >
+            12V / 4Ω (3A)
+          </button>
+          <button
+            type="button"
+            onClick={() => { setVoltage(24); setResistance(8); setSwitchClosed(true); }}
+            className="rounded bg-amber-400/15 px-2 py-0.5 text-amber-200 hover:bg-amber-400/25"
+          >
+            24V / 8Ω (3A)
+          </button>
+          <button
+            type="button"
+            onClick={() => { setVoltage(6); setResistance(2); setSwitchClosed(true); }}
+            className="rounded bg-emerald-400/15 px-2 py-0.5 text-emerald-200 hover:bg-emerald-400/25"
+          >
+            6V / 2Ω (3A)
           </button>
         </div>
       </div>
@@ -221,8 +264,16 @@ function CircuitSimulator({ initialParams }: { initialParams: Record<string, unk
 // 2. PROJECTILE MOTION LAB
 // ============================================================================
 function ProjectileMotionLab({ initialParams }: { initialParams: Record<string, unknown> }) {
-  const [velocity, setVelocity] = useState(Number(initialParams.initialVelocity ?? 25));
-  const [angle, setAngle] = useState(Number(initialParams.launchAngle ?? 45));
+  const defaultVelocity = Number(initialParams.initialVelocity ?? 25);
+  const defaultAngle = Number(initialParams.launchAngle ?? 45);
+
+  const [velocity, setVelocity] = useState(defaultVelocity);
+  const [angle, setAngle] = useState(defaultAngle);
+
+  const resetProjectile = () => {
+    setVelocity(defaultVelocity);
+    setAngle(defaultAngle);
+  };
   const g = 9.81;
 
   const rad = (angle * Math.PI) / 180;
@@ -302,6 +353,40 @@ function ProjectileMotionLab({ initialParams }: { initialParams: Record<string, 
             onChange={(e) => setAngle(Number(e.target.value))}
             className="w-32 accent-sky-400"
           />
+        </div>
+        <div className="flex items-center justify-between border-t border-white/10 pt-2 text-[10px]">
+          <div className="flex items-center gap-1.5">
+            <span className="text-white/50">Presets:</span>
+            <button
+              type="button"
+              onClick={() => { setAngle(45); setVelocity(25); }}
+              className="rounded bg-emerald-400/15 px-2 py-0.5 text-emerald-200 hover:bg-emerald-400/25"
+            >
+              45° Max
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAngle(30); setVelocity(30); }}
+              className="rounded bg-sky-400/15 px-2 py-0.5 text-sky-200 hover:bg-sky-400/25"
+            >
+              30° Flat
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAngle(60); setVelocity(20); }}
+              className="rounded bg-amber-400/15 px-2 py-0.5 text-amber-200 hover:bg-amber-400/25"
+            >
+              60° High
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={resetProjectile}
+            className="flex items-center gap-1 rounded-lg bg-white/10 px-2 py-0.5 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white"
+          >
+            <RotateCcw className="size-3" />
+            Reset
+          </button>
         </div>
       </div>
     </div>
@@ -822,6 +907,40 @@ function TitrationLab({ initialParams }: { initialParams: Record<string, unknown
             onChange={(e) => setVolBase(Number(e.target.value))}
             className="w-32 accent-sky-400"
           />
+        </div>
+        <div className="flex items-center justify-between border-t border-white/10 pt-2 text-[10px]">
+          <div className="flex items-center gap-1.5">
+            <span className="text-white/50">Presets:</span>
+            <button
+              type="button"
+              onClick={() => setVolBase(0)}
+              className="rounded bg-red-400/15 px-2 py-0.5 text-red-200 hover:bg-red-400/25"
+            >
+              0 mL (Acidic)
+            </button>
+            <button
+              type="button"
+              onClick={() => setVolBase(25)}
+              className="rounded bg-emerald-400/15 px-2 py-0.5 text-emerald-200 hover:bg-emerald-400/25"
+            >
+              25 mL (Neutral)
+            </button>
+            <button
+              type="button"
+              onClick={() => setVolBase(50)}
+              className="rounded bg-sky-400/15 px-2 py-0.5 text-sky-200 hover:bg-sky-400/25"
+            >
+              50 mL (Basic)
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setVolBase(25)}
+            className="flex items-center gap-1 rounded-lg bg-white/10 px-2 py-0.5 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white"
+          >
+            <RotateCcw className="size-3" />
+            Reset
+          </button>
         </div>
       </div>
     </div>
