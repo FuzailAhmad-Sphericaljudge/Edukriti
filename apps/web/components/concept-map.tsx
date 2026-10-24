@@ -89,8 +89,22 @@ export function ConceptMap({
           <div className="mx-auto grid size-11 place-items-center rounded-2xl bg-indigo-600 text-white">
             <GitBranch className="size-5" />
           </div>
-          <p className="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-indigo-600">Lesson goal</p>
+          <p className="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-indigo-600">Lesson goal & Knowledge Graph</p>
           <h3 className="mt-1 font-heading text-xl font-bold">{plan.title}</h3>
+
+          {plan.prerequisiteConcepts && plan.prerequisiteConcepts.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs">
+              <span className="font-semibold text-slate-500">Prerequisites:</span>
+              {plan.prerequisiteConcepts.map((prereq) => (
+                <span
+                  key={prereq}
+                  className="rounded-md bg-white/80 px-2 py-0.5 font-medium text-slate-700 shadow-xs border border-indigo-100"
+                >
+                  {prereq.replace(/_/g, ' ')}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mx-auto h-8 w-px bg-gradient-to-b from-indigo-300 to-slate-200" />
@@ -145,10 +159,45 @@ export function ConceptMap({
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-amber-300"><Lightbulb className="size-4" /> Visual explanation</div>
             <p className="mt-2 text-sm leading-6 text-white/65">{selected.visualBrief}</p>
           </div>
+          {selected.interactive && (
+            <div className="mt-4 rounded-2xl border border-indigo-400/20 bg-indigo-500/10 p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-[0.12em] text-indigo-300">
+                  Interactive STEM Manifest
+                </span>
+                <span className="rounded-md bg-indigo-400/20 px-2 py-0.5 text-[10px] font-extrabold uppercase text-indigo-200">
+                  {selected.interactive.kind}
+                </span>
+              </div>
+              <p className="mt-1 font-mono text-xs font-semibold text-white/90">
+                {selected.interactive.id}
+              </p>
+              {selected.interactive.narrationCues.length > 0 && (
+                <p className="mt-1 text-[11px] text-white/60">
+                  {selected.interactive.narrationCues.length} audio synchronization cue{selected.interactive.narrationCues.length === 1 ? '' : 's'}
+                </p>
+              )}
+            </div>
+          )}
+
           {selected.checkpoint && (
             <div className="mt-4 rounded-2xl bg-sky-400/10 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-sky-300">Check yourself</p>
               <p className="mt-2 text-sm leading-6 text-white/75">{selected.checkpoint.prompt}</p>
+
+              {selected.checkpoint.rubric && (
+                <div className="mt-3 border-t border-white/10 pt-2 text-xs">
+                  <p className="font-semibold text-sky-200">Rubric Criteria:</p>
+                  <p className="text-white/60 text-[11px] mt-0.5">{selected.checkpoint.rubric.passingCriteria}</p>
+                  {selected.checkpoint.rubric.keyIdeas.length > 0 && (
+                    <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-[11px] text-white/70">
+                      {selected.checkpoint.rubric.keyIdeas.map((idea, i) => (
+                        <li key={i}>{idea}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
           )}
           <button
