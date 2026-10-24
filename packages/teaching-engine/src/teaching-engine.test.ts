@@ -26,7 +26,12 @@ import {
   buildStepByStepNumericalSolution,
   normalizeToSiUnits,
   GOLDEN_EVAL_SET,
+  resolveConceptGraph,
+  buildSpokenStyleNarration,
+  buildCheckpointRubric,
+  CONCEPT_KNOWLEDGE_GRAPH,
 } from './index.ts';
+import { checkpointRubricSchema } from '@edukriti/contracts';
 import type { AiProvider } from '@edukriti/ai';
 
 const request: LessonRequest = {
@@ -366,5 +371,70 @@ test('buildStepByStepNumericalSolution introduces SI unit conversion step when n
   assert.equal(sol.steps[3]?.result, '48');
   assert.equal(sol.steps[3]?.unit, 'Ω');
 });
+
+test('resolveConceptGraph returns topological prerequisite order where fundamentals precede dependent concepts', () => {
+  const nodes = resolveConceptGraph('Electric circuits and Ohm law', 4);
+  assert.ok(nodes.length >= 3);
+  const ids = nodes.map((n) => n.id);
+  // Charge must precede Ohms law
+  const chargeIdx = ids.indexOf('electric_charge');
+  const voltageIdx = ids.indexOf('voltage_potential');
+  const ohmIdx = ids.indexOf('ohms_law');
+  assert.ok(chargeIdx !== -1);
+  assert.ok(voltageIdx !== -1);
+  assert.ok(ohmIdx !== -1);
+  assert.ok(chargeIdx < ohmIdx, 'Electric charge must precede Ohm law');
+  assert.ok(voltageIdx < ohmIdx, 'Voltage must precede Ohm law');
+});
+
+test('resolveConceptGraph resolves STEM topics across physics, chemistry, biology, math, and CS', () => {
+  const physics = resolveConceptGraph('Newton laws of motion');
+  assert.ok(physics.some((n) => n.id === 'newtons_first_law'));
+
+  const chem = resolveConceptGraph('Chemical bonding and octet rule');
+  assert.ok(chem.some((n) => n.id === 'octet_rule_bonding'));
+
+  const math = resolveConceptGraph('Quadratic equations and roots');
+  assert.ok(math.some((n) => n.id === 'quadratic_discriminant'));
+
+  const bio = resolveConceptGraph('Photosynthesis in plant chloroplast');
+  assert.ok(bio.some((n) => n.id === 'photosynthesis_light_reactions'));
+
+  const cs = resolveConceptGraph('Binary search and big-o complexity');
+  assert.ok(cs.some((n) => n.id === 'binary_search_complexity'));
+});
+
+test('buildSpokenStyleNarration creates rich spoken narration in English, Hindi, and Hinglish with exam and practical variants', () => {
+  const node = CONCEPT_KNOWLEDGE_GRAPH.ohms_law;
+  assert.ok(node, 'Ohm law node must exist');
+
+  const enStandard = buildSpokenStyleNarration(node, 'english', 'standard');
+  assert.ok(enStandard.includes('Ohm’s Law'));
+  assert.ok(enStandard.includes('analogy'));
+  assert.ok(enStandard.includes('misconception') || enStandard.includes('truth'));
+
+  const hiExam = buildSpokenStyleNarration(node, 'hindi', 'exam_focused');
+  assert.ok(hiExam.includes('नमस्ते'));
+  assert.ok(hiExam.includes('परीक्षा'));
+  assert.ok(hiExam.includes('मुख्य सिद्धांत'));
+
+  const hinglishPractical = buildSpokenStyleNarration(node, 'hinglish', 'practical');
+  assert.ok(hinglishPractical.includes('Hello'));
+  assert.ok(hinglishPractical.includes('practical lab'));
+  assert.ok(hinglishPractical.includes('How it Works'));
+});
+
+test('buildCheckpointRubric creates validated rubric schema with key ideas and misconceptions', () => {
+  const node = CONCEPT_KNOWLEDGE_GRAPH.newtons_first_law;
+  assert.ok(node);
+  const rubric = buildCheckpointRubric(node, 'cp-test-newton-1');
+  const validated = checkpointRubricSchema.parse(rubric);
+  assert.equal(validated.checkpointId, 'cp-test-newton-1');
+  assert.equal(validated.targetConcept, node.conceptName);
+  assert.ok(validated.keyIdeas.length >= 2);
+  assert.ok(validated.commonMisconceptions.length >= 1);
+  assert.ok(validated.passingCriteria.length > 10);
+});
+
 
 
