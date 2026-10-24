@@ -359,6 +359,7 @@ export const lessonAdaptationSchema = z.object({
   interactive: visualInteractiveManifestSchema.optional(),
   wasEffective: z.boolean().optional(),
   remediationAttempt: z.number().int().positive().default(1),
+  remediationAction: z.string().optional(),
 });
 
 export const checkpointAttemptResponseSchema = z.object({

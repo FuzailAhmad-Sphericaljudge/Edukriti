@@ -306,17 +306,17 @@ export function buildAdaptationV2(
 
   const concept = context.targetConcept;
   const rubric = findOrBuildRubric(context);
-  const nodes = resolveConceptGraph(concept, 2);
-  const node = nodes[0];
-  let prereqNode = nodes[1];
-  if (!prereqNode && node?.prerequisites?.length) {
-    for (const pid of node.prerequisites) {
-      if (CONCEPT_KNOWLEDGE_GRAPH[pid]) {
-        prereqNode = CONCEPT_KNOWLEDGE_GRAPH[pid];
-        break;
-      }
-    }
-  }
+  const normalized = concept.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+  const directNode = Object.values(CONCEPT_KNOWLEDGE_GRAPH).find((n) => {
+    const cleanId = n.id.toLowerCase().replace(/_/g, ' ');
+    const cleanName = n.conceptName.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+    return normalized.includes(cleanId) || normalized.includes(cleanName) || cleanName.includes(normalized);
+  });
+  const nodes = resolveConceptGraph(concept, 3);
+  const node = directNode || nodes[0];
+  let prereqNode = (node?.prerequisites?.length && CONCEPT_KNOWLEDGE_GRAPH[node.prerequisites[0]])
+    ? CONCEPT_KNOWLEDGE_GRAPH[node.prerequisites[0]]
+    : nodes.find((n) => n.id !== node?.id);
 
   // Strategy selection: use nextAction from evaluation or fallback to new_analogy
   let strategy: AdaptationStrategy = (evaluation.nextAction !== 'continue' ? evaluation.nextAction : 'new_analogy') as AdaptationStrategy;

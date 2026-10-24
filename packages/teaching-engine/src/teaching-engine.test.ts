@@ -699,6 +699,41 @@ test('verifies multilingual rubric feedback in Hindi and Hinglish with key idea 
   assert.ok(hinglishMisconception.feedback.includes('Aapne sahi'));
 });
 
+test('verify attempt-3 adaptive reteaching escalates to simpler prerequisite concept and attaches prerequisite visual', () => {
+  const context = {
+    id: 'cp-newton-2',
+    targetConcept: 'Newton’s Second Law: F = m * a',
+    language: 'english' as const,
+  };
+
+  const failedEval = evaluateCheckpointRubric(
+    context,
+    'Force is an internal property stored in moving bodies that runs out over time.',
+  );
+  assert.equal(failedEval.isCorrect, false);
+
+  // Attempt 1: uses recommended remediation strategy (new_analogy)
+  const adapt1 = buildAdaptationV2(context, failedEval, 1);
+  assert.ok(adapt1);
+  assert.equal(adapt1.remediationAttempt, 1);
+  assert.equal(adapt1.strategy, 'new_analogy');
+
+  // Attempt 2: escalates to worked_example
+  const adapt2 = buildAdaptationV2(context, failedEval, 2);
+  assert.ok(adapt2);
+  assert.equal(adapt2.remediationAttempt, 2);
+  assert.equal(adapt2.strategy, 'worked_example');
+
+  // Attempt 3: escalates to simpler_prerequisite (Newton’s First Law & Inertia)
+  const adapt3 = buildAdaptationV2(context, failedEval, 3);
+  assert.ok(adapt3);
+  assert.equal(adapt3.remediationAttempt, 3);
+  assert.equal(adapt3.strategy, 'simpler_prerequisite');
+  assert.ok(adapt3.explanation.includes('Newton’s First Law & Inertia'));
+  assert.ok(adapt3.remediationAction.includes('Newton’s First Law & Inertia'));
+});
+
+
 
 
 

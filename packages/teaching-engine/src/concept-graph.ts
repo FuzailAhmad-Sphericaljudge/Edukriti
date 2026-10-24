@@ -298,6 +298,12 @@ export const CONCEPT_KNOWLEDGE_GRAPH: Record<string, ConceptNode> = {
         explanationCorrection: 'Free fall acceleration g is independent of mass: although gravitational force is larger (F = m * g), the mass resisting acceleration is equally larger (a = F / m = g).',
         recommendedStrategy: 'worked_example',
       },
+      {
+        misconception: 'Force is an internal property stored in moving bodies that runs out over time.',
+        triggerPatterns: ['force stored in', 'runs out over time', 'force is an internal property', 'moving bodies store force'],
+        explanationCorrection: 'Force is an external interaction exerted on an object that produces acceleration (F = ma), not a consumable substance stored inside it.',
+        recommendedStrategy: 'new_analogy',
+      },
     ],
     applicationCheckpoint: {
       prompt: {
