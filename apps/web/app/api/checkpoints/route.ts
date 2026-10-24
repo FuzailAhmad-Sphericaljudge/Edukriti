@@ -36,6 +36,9 @@ export async function POST(request: Request) {
     id: checkpoint.id,
     targetConcept: checkpoint.targetConcept,
     language: lesson.data.plan.language,
+    rubric: checkpoint.rubric,
+    prerequisiteConcept: lesson.data.plan.prerequisiteConcepts?.[0],
+    remediationAttempt: parsed.data.remediationAttempt ?? 1,
   };
   const evaluation = await evaluateCheckpointWithAi(aiProvider, context, parsed.data.response);
   const adaptation = await buildAdaptationWithAi(aiProvider, context, evaluation);

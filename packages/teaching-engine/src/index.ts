@@ -319,6 +319,7 @@ export {
 import {
   evaluateCheckpointRubric,
   buildAdaptationV2,
+  findOrBuildRubric,
   type CheckpointContext,
 } from './rubric-evaluator.ts';
 
@@ -327,7 +328,7 @@ export function evaluateCheckpoint(context: CheckpointContext, learnerResponse: 
 }
 
 /**
- * Evaluates a learner's checkpoint response using the AI provider.
+ * Evaluates a learner's checkpoint response using the AI provider against rubrics.
  * Analyzes semantic meaning, misconceptions, confidence, and suggests pedagogical next actions.
  * Falls back deterministically if AI provider fails or is offline.
  */
@@ -336,21 +337,29 @@ export async function evaluateCheckpointWithAi(
   context: CheckpointContext,
   learnerResponse: string,
 ): Promise<ResponseEvaluation> {
+  const rubric = findOrBuildRubric(context);
   const prompt = {
     instructions: `# Role
 You are an expert educational evaluator evaluating a student's response to an in-lesson checkpoint.
 Target concept: "${context.targetConcept}"
 Language: ${context.language}
 
+# Grading Rubric
+- Passing Criteria: ${rubric.passingCriteria}
+- Key Ideas Required: ${rubric.keyIdeas.join('; ')}
+${rubric.commonMisconceptions.length > 0 ? `- Known Misconceptions:\n${rubric.commonMisconceptions.map((m) => `  * ${m.misconception} (Recommended next action: ${m.recommendedStrategy})`).join('\n')}` : ''}
+
 # Rules
-- Evaluate conceptual understanding, not exact rote memorization.
-- Diagnose if there is a known misconception (e.g. current being consumed, confusing voltage with current, action-reaction acting on same body).
-- If the learner is confused or incorrect, write kind, constructive feedback in ${context.language} and select an appropriate nextAction ('new_analogy', 'simplify', 'new_example', 'change_visual').
+- Evaluate conceptual understanding against the rubric key ideas, not exact rote phrasing.
+- Diagnose if the learner holds a known misconception from the rubric.
+- If incorrect, write constructive feedback in ${context.language} explaining what was missed and set nextAction to the appropriate strategy ('new_analogy', 'worked_example', 'simpler_prerequisite', 'visual_walkthrough', 'interactive', 'simplify').
 - If correct, acknowledge what they understood accurately and set nextAction to 'continue'.`,
     input: {
       targetConcept: context.targetConcept,
       learnerResponse,
       language: context.language,
+      rubricKeyIdeas: rubric.keyIdeas,
+      passingCriteria: rubric.passingCriteria,
     },
   };
 
@@ -369,7 +378,7 @@ Language: ${context.language}
 }
 
 export function buildAdaptation(context: CheckpointContext, evaluation: ResponseEvaluation): LessonAdaptation | null {
-  return buildAdaptationV2(context, evaluation, 1);
+  return buildAdaptationV2(context, evaluation, context.remediationAttempt ?? 1);
 }
 
 /**
@@ -407,7 +416,10 @@ Language: ${context.language}
       schemaName: 'lesson_adaptation',
       schemaDescription: 'Adaptive re-teaching segment',
     });
-    return lessonAdaptationSchema.parse(result);
+    return lessonAdaptationSchema.parse({
+      ...result,
+      remediationAttempt: context.remediationAttempt ?? 1,
+    });
   } catch {
     return buildAdaptation(context, evaluation);
   }
