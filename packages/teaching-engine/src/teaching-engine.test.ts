@@ -653,6 +653,53 @@ test('evaluates acid-base titration and pendulum misconceptions using specialize
   assert.equal(pendulumEval.nextAction, 'interactive');
 });
 
+test('verifies multilingual rubric feedback in Hindi and Hinglish with key idea acknowledgment', () => {
+  // 1. Hindi correct
+  const hindiContext = {
+    id: 'cp-hindi-1',
+    targetConcept: 'Ohm’s Law & Electrical Resistance',
+    language: 'hindi' as const,
+  };
+  const hindiCorrect = evaluateCheckpointRubric(
+    hindiContext,
+    'Voltage is electrical pressure that drives current proportional to voltage and inversely to resistance.',
+  );
+  assert.equal(hindiCorrect.isCorrect, true);
+  assert.ok(hindiCorrect.feedback.includes('उत्कृष्ट!'));
+  assert.ok(hindiCorrect.feedback.includes('Ohm’s Law & Electrical Resistance'));
+
+  // 2. Hindi with misconception
+  const hindiMisconception = evaluateCheckpointRubric(
+    hindiContext,
+    'Increasing voltage increases electrical resistance across the resistor.',
+  );
+  assert.equal(hindiMisconception.isCorrect, false);
+  assert.ok(hindiMisconception.feedback.includes('परंतु यहाँ एक सामान्य भ्रम है'));
+
+  // 3. Hinglish correct
+  const hinglishContext = {
+    id: 'cp-hinglish-1',
+    targetConcept: 'Ohm’s Law & Electrical Resistance',
+    language: 'hinglish' as const,
+  };
+  const hinglishCorrect = evaluateCheckpointRubric(
+    hinglishContext,
+    'Current is the rate of flow of charge driven by voltage potential difference.',
+  );
+  assert.equal(hinglishCorrect.isCorrect, true);
+  assert.ok(hinglishCorrect.feedback.includes('Bilkul sahi!'));
+
+  // 4. Hinglish with misconception and partial acknowledgment
+  const hinglishMisconception = evaluateCheckpointRubric(
+    hinglishContext,
+    'Current flows due to voltage potential difference, but current gets used up along the circuit wire.',
+  );
+  assert.equal(hinglishMisconception.isCorrect, false);
+  assert.ok(hinglishMisconception.feedback.includes('Lekin yahan ek common confusion hai'));
+  assert.ok(hinglishMisconception.feedback.includes('Aapne sahi'));
+});
+
+
 
 
 
