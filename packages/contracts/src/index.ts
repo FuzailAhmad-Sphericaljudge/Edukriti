@@ -84,12 +84,56 @@ export const citationSchema = z.object({
   source: z.string().optional(),
 });
 
+export const visualManifestKindSchema = z.enum(['diagram', 'scene3d', 'sim', 'lab']);
+export type VisualManifestKind = z.infer<typeof visualManifestKindSchema>;
+
+export const narrationCueSchema = z.object({
+  atSecond: z.number().nonnegative().optional(),
+  phrase: z.string().optional(),
+  action: z.string().min(1),
+  label: z.string().optional(),
+});
+export type NarrationCue = z.infer<typeof narrationCueSchema>;
+
+export const visualInteractiveManifestSchema = z.object({
+  kind: visualManifestKindSchema,
+  id: z.string().min(1).max(128),
+  params: z.record(z.string(), z.unknown()).default({}),
+  narrationCues: z.array(narrationCueSchema).default([]),
+});
+export type VisualInteractiveManifest = z.infer<typeof visualInteractiveManifestSchema>;
+
+export const commonMisconceptionItemSchema = z.object({
+  misconception: z.string().min(1),
+  triggerPatterns: z.array(z.string()).default([]),
+  explanationCorrection: z.string().min(1),
+  recommendedStrategy: z.enum([
+    'new_analogy',
+    'worked_example',
+    'simpler_prerequisite',
+    'visual_walkthrough',
+    'interactive',
+    'simplify',
+  ]).default('new_analogy'),
+});
+export type CommonMisconceptionItem = z.infer<typeof commonMisconceptionItemSchema>;
+
+export const checkpointRubricSchema = z.object({
+  checkpointId: identifierSchema,
+  targetConcept: z.string().min(1),
+  keyIdeas: z.array(z.string().min(1)).min(1),
+  commonMisconceptions: z.array(commonMisconceptionItemSchema).default([]),
+  passingCriteria: z.string().min(1),
+});
+export type CheckpointRubric = z.infer<typeof checkpointRubricSchema>;
+
 export const checkpointSchema = z.object({
   id: identifierSchema,
   prompt: z.string().min(1),
   type: z.enum(['mcq', 'short_answer', 'explain_in_own_words', 'application']),
   choices: z.array(z.string()).min(2).max(6).optional(),
   targetConcept: z.string().min(1),
+  rubric: checkpointRubricSchema.optional(),
 });
 
 export const lessonSegmentSchema = z.object({
@@ -100,9 +144,21 @@ export const lessonSegmentSchema = z.object({
   narration: z.string().min(1),
   visualType: z.enum(['diagram', 'equation', 'graph', 'timeline', 'map', 'code', 'illustration', 'key_points']),
   visualBrief: z.string().min(1),
+  interactive: visualInteractiveManifestSchema.optional(),
   citations: z.array(citationSchema),
   checkpoint: checkpointSchema.optional(),
 });
+
+export const lessonVariantModeSchema = z.enum(['standard', 'exam_focused', 'practical']);
+export type LessonVariantMode = z.infer<typeof lessonVariantModeSchema>;
+
+export const spacedRevisionPromptSchema = z.object({
+  intervalDays: z.union([z.literal(1), z.literal(3), z.literal(7), z.literal(14)]),
+  concept: z.string().min(1),
+  prompt: z.string().min(1),
+  format: z.enum(['flashcard', 'quick_problem', 'concept_check']).default('concept_check'),
+});
+export type SpacedRevisionPrompt = z.infer<typeof spacedRevisionPromptSchema>;
 
 export const lessonPlanSchema = z.object({
   id: identifierSchema,
@@ -111,7 +167,11 @@ export const lessonPlanSchema = z.object({
   objectives: z.array(z.string().min(1)).min(1),
   language: teachingLanguageSchema,
   durationMinutes: lessonDurationSchema,
+  variantMode: lessonVariantModeSchema.default('standard'),
   segments: z.array(lessonSegmentSchema).min(1),
+  prerequisiteConcepts: z.array(z.string()).default([]),
+  conceptGraphNodes: z.array(z.string()).default([]),
+  spacedRevision: z.array(spacedRevisionPromptSchema).default([]),
   createdAt: utcTimestampSchema,
 });
 
@@ -246,6 +306,19 @@ export const tutorExportPayloadSchema = z.object({
 
 export const lessonPlanJsonSchema = z.toJSONSchema(lessonPlanSchema);
 
+export const adaptationStrategySchema = z.enum([
+  'new_analogy',
+  'worked_example',
+  'simpler_prerequisite',
+  'visual_walkthrough',
+  'interactive',
+  'simplify',
+  'new_example',
+  'change_visual',
+  'change_difficulty',
+]);
+export type AdaptationStrategy = z.infer<typeof adaptationStrategySchema>;
+
 export const responseEvaluationSchema = z.object({
   checkpointId: identifierSchema,
   isCorrect: z.boolean(),
@@ -253,7 +326,20 @@ export const responseEvaluationSchema = z.object({
   understoodConcepts: z.array(z.string()),
   misconception: z.string().nullable(),
   feedback: z.string().min(1),
-  nextAction: z.enum(['continue', 'simplify', 'new_analogy', 'new_example', 'change_visual', 'change_difficulty']),
+  nextAction: z.enum([
+    'continue',
+    'new_analogy',
+    'worked_example',
+    'simpler_prerequisite',
+    'visual_walkthrough',
+    'interactive',
+    'simplify',
+    'change_visual',
+    'change_difficulty',
+  ]),
+  rubricScore: z.number().min(0).max(100).optional(),
+  missingKeyIdeas: z.array(z.string()).default([]),
+  detectedMisconceptions: z.array(z.string()).default([]),
 });
 
 export const checkpointAttemptRequestSchema = z.object({
@@ -264,11 +350,14 @@ export const checkpointAttemptRequestSchema = z.object({
 });
 
 export const lessonAdaptationSchema = z.object({
-  strategy: z.enum(['simplify', 'new_analogy', 'new_example', 'change_visual', 'change_difficulty']),
+  strategy: adaptationStrategySchema,
   title: z.string().min(1),
   explanation: z.string().min(1),
   visualType: lessonSegmentSchema.shape.visualType,
   visualBrief: z.string().min(1),
+  interactive: visualInteractiveManifestSchema.optional(),
+  wasEffective: z.boolean().optional(),
+  remediationAttempt: z.number().int().positive().default(1),
 });
 
 export const checkpointAttemptResponseSchema = z.object({
@@ -390,3 +479,5 @@ export type AssessmentAttemptRequest = z.infer<typeof assessmentAttemptRequestSc
 export type AssessmentAttemptResponse = z.infer<typeof assessmentAttemptResponseSchema>;
 export type LearningReport = z.infer<typeof learningReportSchema>;
 export type AiHealthResponse = z.infer<typeof aiHealthResponseSchema>;
+
+export * from './vetted-visual-registry.ts';
