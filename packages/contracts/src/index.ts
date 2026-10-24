@@ -7,6 +7,8 @@ export const learnerLevelSchema = z.enum(['beginner', 'intermediate', 'advanced'
 export const teachingLanguageSchema = z.enum(['english', 'hindi', 'hinglish']);
 export const lessonDurationSchema = z.union([z.literal(5), z.literal(20), z.literal(60)]);
 export const teachingStyleSchema = z.enum(['simple_examples', 'visual', 'exam_focused', 'practical']);
+export const lessonVariantModeSchema = z.enum(['standard', 'exam_focused', 'practical']);
+export type LessonVariantMode = z.infer<typeof lessonVariantModeSchema>;
 
 export const learnerProfileSchema = z.object({
   id: identifierSchema,
@@ -69,6 +71,7 @@ export const lessonRequestSchema = z
     durationMinutes: lessonDurationSchema,
     style: teachingStyleSchema,
     goal: z.string().trim().min(2).max(1000),
+    variantMode: lessonVariantModeSchema.optional(),
   })
   .refine((value) => Boolean(value.topic || value.sourceId), {
     message: 'A topic or uploaded source is required.',
@@ -148,9 +151,6 @@ export const lessonSegmentSchema = z.object({
   citations: z.array(citationSchema),
   checkpoint: checkpointSchema.optional(),
 });
-
-export const lessonVariantModeSchema = z.enum(['standard', 'exam_focused', 'practical']);
-export type LessonVariantMode = z.infer<typeof lessonVariantModeSchema>;
 
 export const spacedRevisionPromptSchema = z.object({
   intervalDays: z.union([z.literal(1), z.literal(3), z.literal(7), z.literal(14)]),
@@ -347,6 +347,7 @@ export const checkpointAttemptRequestSchema = z.object({
   checkpointId: identifierSchema,
   response: z.string().trim().min(2).max(2000),
   clientRequestId: z.uuid(),
+  remediationAttempt: z.number().int().positive().optional().default(1),
 });
 
 export const lessonAdaptationSchema = z.object({
