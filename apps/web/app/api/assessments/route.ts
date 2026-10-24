@@ -33,7 +33,26 @@ export async function GET(request: Request) {
     openaiModel: env.OPENAI_MODEL || env.LLM_MODEL,
   });
 
-  const rawQuestions = await buildAssessmentWithAi(aiProvider, lesson.plan);
+  const searchParams = new URL(request.url).searchParams;
+  let weakConcepts = searchParams.getAll('weakConcept');
+  if (weakConcepts.length === 0 && searchParams.has('weakConcepts')) {
+    weakConcepts = (searchParams.get('weakConcepts') || '').split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  if (weakConcepts.length === 0 && lesson.plan.learnerId) {
+    const learnerRow = await env.DB.prepare('SELECT weak_concepts AS weakConceptsJson FROM learners WHERE id = ? LIMIT 1')
+      .bind(lesson.plan.learnerId)
+      .first<{ weakConceptsJson: string }>();
+    if (learnerRow?.weakConceptsJson) {
+      try {
+        const parsedJson = JSON.parse(learnerRow.weakConceptsJson);
+        if (Array.isArray(parsedJson)) weakConcepts = parsedJson;
+      } catch {
+        // ignore parse error
+      }
+    }
+  }
+
+  const rawQuestions = await buildAssessmentWithAi(aiProvider, lesson.plan, weakConcepts);
   const questions = rawQuestions.map(({ expectedAnswer: _expected, targetConcept: _concept, ...question }) => question);
   return Response.json(assessmentSchema.parse({ lessonId, questions }));
 }
