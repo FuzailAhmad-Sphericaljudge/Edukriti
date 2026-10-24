@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   visualManifestKindSchema,
   type VisualManifestKind,
+  type VisualInteractiveManifest,
 } from './index.ts';
 
 export type VettedVisualManifestEntry = {
@@ -256,7 +257,7 @@ export function suggestVisualForTopic(
   if (typeof conceptsOrPreferredId === 'string' && conceptsOrPreferredId.trim().length > 0) {
     const directMatch = findVettedVisual(conceptsOrPreferredId);
     if (directMatch) {
-      return { kind: directMatch.kind, id: directMatch.id, params: directMatch.defaultParams };
+      return { kind: directMatch.kind, id: directMatch.id, params: directMatch.defaultParams, narrationCues: [] };
     }
   }
 
@@ -268,64 +269,58 @@ export function suggestVisualForTopic(
 
   const text = `${topic} ${conceptsList.join(' ')}`.toLowerCase();
 
+  const toManifest = (id: string): VisualInteractiveManifest | undefined => {
+    const entry = findVettedVisual(id);
+    if (!entry) return undefined;
+    return { kind: entry.kind, id: entry.id, params: entry.defaultParams, narrationCues: [] };
+  };
+
   if (text.includes('circuit') || text.includes('ohm') || text.includes('resistor') || text.includes('voltage') || text.includes('current')) {
-    const entry = findVettedVisual('circuit-builder-dc')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('circuit-builder-dc');
   }
 
   if (text.includes('projectile') || text.includes('trajectory') || text.includes('angle') || text.includes('gravity') && text.includes('launch')) {
-    const entry = findVettedVisual('projectile-motion-lab')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('projectile-motion-lab');
   }
 
   if (text.includes('orbit') || text.includes('planetary') || text.includes('kepler') || text.includes('satellite')) {
-    const entry = findVettedVisual('gravity-orbital-sim')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('gravity-orbital-sim');
   }
 
   if (text.includes('pendulum') || text.includes('harmonic') || text.includes('oscillation')) {
-    const entry = findVettedVisual('pendulum-harmonic-lab')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('pendulum-harmonic-lab');
   }
 
   if (text.includes('acid') || text.includes('base') || text.includes('titration') || text.includes('ph') || text.includes('neutralization')) {
-    const entry = findVettedVisual('acid-base-titration-lab')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('acid-base-titration-lab');
   }
 
   if (text.includes('bond') || text.includes('molecule') || text.includes('covalent') || text.includes('ionic') || text.includes('lewis')) {
-    const entry = findVettedVisual('molecule-viewer-3d')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('molecule-viewer-3d');
   }
 
   if (text.includes('photosynthesis') || text.includes('chloroplast') || text.includes('calvin') || text.includes('light reaction')) {
-    const entry = findVettedVisual('photosynthesis-chloroplast-diagram')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('photosynthesis-chloroplast-diagram');
   }
 
   if (text.includes('mitosis') || text.includes('meiosis') || text.includes('cell division') || text.includes('chromosome')) {
-    const entry = findVettedVisual('cell-mitosis-interactive')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('cell-mitosis-interactive');
   }
 
   if (text.includes('dna') || text.includes('double helix') || text.includes('gene') || text.includes('heredity')) {
-    const entry = findVettedVisual('dna-double-helix-3d')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('dna-double-helix-3d');
   }
 
   if (text.includes('binary search') || text.includes('sort') || text.includes('algorithm') || text.includes('big-o')) {
-    const entry = findVettedVisual('sorting-visualizer-sim')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('sorting-visualizer-sim');
   }
 
   if (text.includes('parabola') || text.includes('quadratic') || text.includes('polynomial') || text.includes('discriminant')) {
-    const entry = findVettedVisual('quadratic-parabola-explorer')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('quadratic-parabola-explorer');
   }
 
   if (text.includes('tectonic') || text.includes('earthquake') || text.includes('volcano') || text.includes('crust')) {
-    const entry = findVettedVisual('tectonic-plates-globe-3d')!;
-    return { kind: entry.kind, id: entry.id, params: entry.defaultParams };
+    return toManifest('tectonic-plates-globe-3d');
   }
 
   return undefined;

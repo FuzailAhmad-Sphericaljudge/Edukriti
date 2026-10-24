@@ -56,7 +56,7 @@ export function parseDocxDocument(data: ArrayBuffer | Uint8Array): SourcePage[] 
   const rawParagraphs: string[] = [];
 
   // Match each <w:p> paragraph
-  const pRegex = /<w:p(?:\s[^>]*)?>(.*?)<\/w:p>/gis;
+  const pRegex = /<w:p(?:\s[^>]*)?>([\s\S]*?)<\/w:p>/gi;
   let pMatch: RegExpExecArray | null;
 
   while ((pMatch = pRegex.exec(documentXml)) !== null) {
@@ -161,7 +161,7 @@ export function parsePptxDocument(data: ArrayBuffer | Uint8Array): SourcePage[] 
     const slideXml = strFromU8(unzipped[slidePath]!);
 
     // Extract text runs inside <a:p> paragraphs or <a:t> text nodes
-    const pRegex = /<a:p(?:\s[^>]*)?>(.*?)<\/a:p>/gis;
+    const pRegex = /<a:p(?:\s[^>]*)?>([\s\S]*?)<\/a:p>/gi;
     const slideParagraphs: string[] = [];
     let pMatch: RegExpExecArray | null;
 
@@ -271,3 +271,4 @@ export function createSamplePptx(slides: string[][]): Uint8Array {
 
   return zipSync(files);
 }
+

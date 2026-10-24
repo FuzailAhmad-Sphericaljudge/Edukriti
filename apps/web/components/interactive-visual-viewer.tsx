@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { VisualInteractiveManifest } from '@edukriti/contracts';
+import type { VisualInteractiveManifest, NarrationCue } from '@edukriti/contracts';
 import {
   Activity,
   Atom,
@@ -35,7 +35,7 @@ export function InteractiveVisualViewer({
   const initialParams = interactive.params ?? {};
   const cues = interactive.narrationCues ?? [];
   const [activeCueTarget, setActiveCueTarget] = useState<string | null>(
-    cues.length > 0 ? cues[0]?.highlightTarget ?? null : null,
+    cues.length > 0 ? cues[0]?.action ?? null : null,
   );
 
   let simulatorContent: React.ReactNode = null;
@@ -106,16 +106,16 @@ export function InteractiveVisualViewer({
       <NarrationCueTimeline
         cues={cues}
         activeTarget={activeCueTarget}
-        onSelectCue={(cue) => setActiveCueTarget(cue.highlightTarget)}
+        onSelectCue={(cue) => setActiveCueTarget(cue.action)}
       />
     </div>
   );
 }
 
 interface NarrationCueTimelineProps {
-  cues?: Array<{ atSecond: number; highlightTarget: string; caption: string }>;
+  cues?: NarrationCue[];
   activeTarget?: string | null;
-  onSelectCue?: (cue: { atSecond: number; highlightTarget: string; caption: string }) => void;
+  onSelectCue?: (cue: NarrationCue) => void;
 }
 
 export function NarrationCueTimeline({ cues, activeTarget, onSelectCue }: NarrationCueTimelineProps) {
@@ -134,12 +134,15 @@ export function NarrationCueTimeline({ cues, activeTarget, onSelectCue }: Narrat
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
         {cues.map((cue, idx) => {
-          const isActive = activeTarget === cue.highlightTarget;
-          const minutes = Math.floor(cue.atSecond / 60);
-          const seconds = Math.floor(cue.atSecond % 60).toString().padStart(2, '0');
+          const atSecond = cue.atSecond ?? 0;
+          const target = cue.action;
+          const label = cue.label || cue.phrase || cue.action;
+          const isActive = activeTarget === target;
+          const minutes = Math.floor(atSecond / 60);
+          const seconds = Math.floor(atSecond % 60).toString().padStart(2, '0');
           return (
             <button
-              key={`${cue.atSecond}-${idx}`}
+              key={`${atSecond}-${idx}`}
               type="button"
               onClick={() => onSelectCue?.(cue)}
               className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-left text-xs transition-colors ${
@@ -152,7 +155,7 @@ export function NarrationCueTimeline({ cues, activeTarget, onSelectCue }: Narrat
                 {minutes}:{seconds}
               </span>
               <span className="line-clamp-1 max-w-[140px] text-[11px] font-medium">
-                {cue.caption}
+                {label}
               </span>
             </button>
           );

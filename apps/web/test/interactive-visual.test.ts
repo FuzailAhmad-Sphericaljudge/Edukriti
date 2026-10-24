@@ -45,16 +45,16 @@ test('validateVisualSelection accepts valid vetted parameters and flags invalid 
 
 test('suggestVisualForTopic returns relevant STEM interactive simulations', () => {
   const electricSim = suggestVisualForTopic('Ohm’s Law and Electrical Current');
-  assert.equal(electricSim.id, 'circuit-builder-dc');
+  assert.equal(electricSim?.id, 'circuit-builder-dc');
 
   const physicsSim = suggestVisualForTopic('Projectile Motion and Ballistics');
-  assert.equal(physicsSim.id, 'projectile-motion-lab');
+  assert.equal(physicsSim?.id, 'projectile-motion-lab');
 
   const biologySim = suggestVisualForTopic('Cell Mitosis & Chromosome Division');
-  assert.equal(biologySim.id, 'cell-mitosis-interactive');
+  assert.equal(biologySim?.id, 'cell-mitosis-interactive');
 
   const chemistrySim = suggestVisualForTopic('Acid-Base Titration & pH neutralization');
-  assert.equal(chemistrySim.id, 'acid-base-titration-lab');
+  assert.equal(chemistrySim?.id, 'acid-base-titration-lab');
 });
 
 test('verifies mathematical correctness of visual simulation presets', () => {

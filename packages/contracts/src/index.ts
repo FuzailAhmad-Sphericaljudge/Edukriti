@@ -102,22 +102,28 @@ export const visualInteractiveManifestSchema = z.object({
   kind: visualManifestKindSchema,
   id: z.string().min(1).max(128),
   params: z.record(z.string(), z.unknown()).default({}),
-  narrationCues: z.array(narrationCueSchema).default([]),
+  narrationCues: z.array(narrationCueSchema).optional().default([]),
 });
 export type VisualInteractiveManifest = z.infer<typeof visualInteractiveManifestSchema>;
+
+export const adaptationStrategySchema = z.enum([
+  'new_analogy',
+  'worked_example',
+  'simpler_prerequisite',
+  'visual_walkthrough',
+  'interactive',
+  'simplify',
+  'new_example',
+  'change_visual',
+  'change_difficulty',
+]);
+export type AdaptationStrategy = z.infer<typeof adaptationStrategySchema>;
 
 export const commonMisconceptionItemSchema = z.object({
   misconception: z.string().min(1),
   triggerPatterns: z.array(z.string()).default([]),
   explanationCorrection: z.string().min(1),
-  recommendedStrategy: z.enum([
-    'new_analogy',
-    'worked_example',
-    'simpler_prerequisite',
-    'visual_walkthrough',
-    'interactive',
-    'simplify',
-  ]).default('new_analogy'),
+  recommendedStrategy: adaptationStrategySchema.default('new_analogy'),
 });
 export type CommonMisconceptionItem = z.infer<typeof commonMisconceptionItemSchema>;
 
@@ -305,19 +311,6 @@ export const tutorExportPayloadSchema = z.object({
 });
 
 export const lessonPlanJsonSchema = z.toJSONSchema(lessonPlanSchema);
-
-export const adaptationStrategySchema = z.enum([
-  'new_analogy',
-  'worked_example',
-  'simpler_prerequisite',
-  'visual_walkthrough',
-  'interactive',
-  'simplify',
-  'new_example',
-  'change_visual',
-  'change_difficulty',
-]);
-export type AdaptationStrategy = z.infer<typeof adaptationStrategySchema>;
 
 export const responseEvaluationSchema = z.object({
   checkpointId: identifierSchema,
