@@ -32,6 +32,7 @@ import {
   CONCEPT_KNOWLEDGE_GRAPH,
   evaluateCheckpointRubric,
   buildAdaptationV2,
+  getConceptGraphMetrics,
 } from './index.ts';
 import { checkpointRubricSchema } from '@edukriti/contracts';
 import type { AiProvider } from '@edukriti/ai';
@@ -793,6 +794,50 @@ test('verify assessment answer evaluation scores key ideas and identifies miscon
   assert.deepEqual(wrongMcq.weakConcepts, ['Electric Charge & Current Flow']);
   assert.ok(wrongMcq.feedback.includes('(a)'));
 });
+
+test('getConceptGraphMetrics computes accurate curriculum and concept metrics under honest numbers rule', () => {
+  const metrics = getConceptGraphMetrics();
+
+  // Rule 4 Honest numbers: values must match the real knowledge graph
+  assert.equal(metrics.totalConcepts, 16);
+  assert.equal(metrics.conceptIds.length, 16);
+
+  // Subject distribution
+  const sumOfSubjects = Object.values(metrics.subjectCounts).reduce((acc, count) => acc + count, 0);
+  assert.equal(sumOfSubjects, metrics.totalConcepts);
+  assert.equal(metrics.subjectCounts.physics, 7);
+  assert.equal(metrics.subjectCounts.chemistry, 3);
+  assert.equal(metrics.subjectCounts.biology, 3);
+  assert.equal(metrics.subjectCounts.mathematics, 1);
+  assert.equal(metrics.subjectCounts.computer_science, 2);
+
+  // Misconceptions & checkpoints
+  assert.equal(metrics.totalMisconceptions, 19);
+  assert.equal(metrics.totalCheckpoints, 16);
+  assert.equal(metrics.totalSpacedRevisions, 33);
+
+  // Verify every node adheres to pedagogical integrity
+  for (const id of metrics.conceptIds) {
+    const node = CONCEPT_KNOWLEDGE_GRAPH[id];
+    assert.ok(node, `Node ${id} must exist in CONCEPT_KNOWLEDGE_GRAPH`);
+    assert.equal(node.id, id);
+    assert.ok(node.conceptName.length > 0);
+    assert.ok(node.analogy.english.length > 0);
+    assert.ok(node.analogy.hindi.length > 0);
+    assert.ok(node.analogy.hinglish.length > 0);
+    assert.ok(node.realWorldExample.english.length > 0);
+    assert.ok(node.commonMisconceptions.length > 0);
+    assert.ok(node.applicationCheckpoint);
+    assert.ok(node.applicationCheckpoint.keyIdeas.length >= 2);
+    assert.ok(node.applicationCheckpoint.passingCriteria.length > 0);
+    assert.ok(node.spacedRevision.length >= 2);
+
+    const rubric = buildCheckpointRubric(node, `ck-${id}`);
+    assert.equal(rubric.targetConcept, node.conceptName);
+    assert.deepEqual(rubric.keyIdeas, node.applicationCheckpoint.keyIdeas);
+  }
+});
+
 
 
 

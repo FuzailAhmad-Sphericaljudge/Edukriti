@@ -13,7 +13,7 @@ Canonical journey:
 ## Key capabilities
 
 - **Multi-Format Document Ingestion**: Native PDF, TXT, Word (.docx via Mammoth), and PowerPoint (.pptx via slide XML) parsing with page- and slide-level citations.
-- **Concept Knowledge Graph**: Directed acyclic graph of 28 curated STEM concepts with prerequisite topological sorting (foundations always precede dependent topics).
+- **Concept Knowledge Graph**: Directed acyclic graph of 16 curated STEM concepts with prerequisite topological sorting (foundations always precede dependent topics).
 - **Vetted Interactive Visual Registry**: 10 sandboxed STEM simulations, virtual labs, 3D scenes, and diagrams (Rule 3: AI selects vetted IDs and validated parameters; never writes executable code).
 - **Interactive Visual Viewer**: Real-time parameter controls, physical preset configurations, reset buttons, and audio narration cue timeline synchronization.
 - **Rubric-Based Checkpoint Grading**: Replaces regex matching with structured key ideas, common misconception diagnostics, and proximity-aware conceptual scoring.
@@ -33,11 +33,11 @@ All metrics below are computed directly from the source code and immutable regis
 | Metric | Verified Count | Source |
 | :--- | :--- | :--- |
 | **Vetted Interactive Visuals** | **10** (3 sims, 3 labs, 3 3D scenes, 1 diagram) | `packages/contracts/src/vetted-visuals.ts` |
-| **Knowledge Graph Concepts** | **28** nodes across 5 STEM disciplines | `packages/teaching-engine/src/concept-graph.ts` |
+| **Knowledge Graph Concepts** | **16** nodes across 5 STEM disciplines | `packages/teaching-engine/src/concept-graph.ts` |
 | **Document Formats Supported** | **4** (.pdf, .txt, .docx, .pptx) | `packages/rag/src/index.ts` |
 | **Adaptive Reteaching Strategies** | **5** (`new_analogy`, `worked_example`, `simpler_prerequisite`, `visual_walkthrough`, `interactive`) | `packages/teaching-engine/src/index.ts` |
 | **Ask Aarohi Benchmark Questions** | **105** multi-subject evaluated questions | `packages/teaching-engine/src/golden-eval-set.ts` |
-| **Automated Monorepo Tests** | **106 Passing Tests** (0 failing) | `npm test` across all 5 workspaces |
+| **Automated Monorepo Tests** | **107 Passing Tests** (0 failing) | `npm test` across all 5 workspaces |
 
 ## Architecture
 

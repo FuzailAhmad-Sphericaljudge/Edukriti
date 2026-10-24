@@ -43,7 +43,7 @@ Teacher Prompt / Document Upload (.pdf, .txt, .docx, .pptx)
 
 ### A. Prerequisite-First Concept Knowledge Graph (`packages/teaching-engine/src/concept-graph.ts`)
 - **Topological Sorting**: Uses Kahn's algorithm over directed acyclic concept dependencies so foundational topics (e.g., `electric-charge` before `electric-current` before `ohms-law`; `kinematics-basics` before `newtons-laws` before `projectile-motion`) are guaranteed to precede advanced concepts.
-- **28 Curated STEM Concepts**: Spans Physics, Chemistry, Biology, Mathematics, and Computer Science with real-world analogies, historical contexts, common misconceptions, and evaluation rubrics.
+- **16 Curated STEM Concepts**: Spans Physics, Chemistry, Biology, Mathematics, and Computer Science with real-world analogies, historical contexts, common misconceptions, and evaluation rubrics.
 - **Multilingual Spoken Narration**: Generates voice-optimized scripts with natural breath pauses (`...`), acoustic emphasis, and Hindi/Hinglish localization.
 
 ### B. Vetted Interactive Visual Registry & Zero-Code Sandbox (`packages/contracts/src/index.ts`)
@@ -118,18 +118,18 @@ All statistics displayed across the application and documentation are computed d
 | **Biology Visuals** | **2** | `packages/contracts/src/vetted-visuals.ts` |
 | **Astronomy & Earth Science Visuals** | **2** | `packages/contracts/src/vetted-visuals.ts` |
 | **Mathematics & CS Visuals** | **1** | `packages/contracts/src/vetted-visuals.ts` |
-| **Curriculum Knowledge Graph Concepts** | **28** | `packages/teaching-engine/src/concept-graph.ts` |
+| **Curriculum Knowledge Graph Concepts** | **16** | `packages/teaching-engine/src/concept-graph.ts` |
 | **Document File Formats Supported** | **4** (.pdf, .txt, .docx, .pptx) | `packages/rag/src/index.ts` |
-| **Monorepo Automated Test Suite** | **106 Passing Tests** | Monorepo Test Suite |
+| **Monorepo Automated Test Suite** | **107 Passing Tests** | Monorepo Test Suite |
 
 ---
 
 ## 4. Verification & Testing Summary
 
 1. `@edukriti/contracts`: 18 tests passing (vetted visual registry, parameter schemas, topic suggestions, honest metrics).
-2. `@edukriti/teaching-engine`: 40 tests passing (concept graph topological sort, spoken narration, rubrics, adaptive reteaching v2 with 5 strategies, assessment answer evaluation).
+2. `@edukriti/teaching-engine`: 41 tests passing (concept graph topological sort, spoken narration, rubrics, adaptive reteaching v2 with 5 strategies, assessment answer evaluation, computed metrics).
 3. `@edukriti/rag`: 11 tests passing (PDF, TXT, DOCX, PPTX parsing, claim verification, knowledge base retrieval).
 4. `@edukriti/ai`: 18 tests passing (GeminiProvider, OpenAIProvider, ResilientAiAdapter retry/fallback, secret sanitization).
 5. `@edukriti/web`: 24 tests passing (lesson form routing, variant modes, weak concept prioritization, tutor feedback, visual math correctness).
 
-**Total Test Count**: 106 automated tests passing across 5 packages with 0 failures.
+**Total Test Count**: 107 automated tests passing across 5 packages with 0 failures.
