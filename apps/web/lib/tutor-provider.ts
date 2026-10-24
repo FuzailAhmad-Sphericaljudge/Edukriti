@@ -274,6 +274,11 @@ function buildDeterministicTutorAnswer(
     }
   }
 
+  const visualId = detectSuggestedVisual(question);
+  if (visualId) {
+    explanation += `\n\n🔬 **Interactive 3D Model:** [Open 3D Scene in Studio](/models?scene=${visualId})`;
+  }
+
   return tutorResponseSchema.parse({
     answer: explanation,
     followUpQuestion:
@@ -298,6 +303,7 @@ function buildDeterministicTutorAnswer(
     sourceAttributionNotice: citations.length === 0 ? 'not from course material' : undefined,
     safetyPassed: true,
     extractedImageText,
+    suggestedVisualId: visualId,
   });
 }
 
@@ -305,6 +311,38 @@ function buildDeterministicTutorAnswer(
  * Main Ask Aarohi Tutor Pipeline:
  * Intent -> KB Retrieval -> Safety -> Vision -> Pedagogical Reasoning -> Math Recomputation -> Verification
  */
+function detectSuggestedVisual(text: string): string | undefined {
+  const norm = text.toLowerCase();
+  if (norm.includes('water molecule') || norm.includes('molecule') || norm.includes('chemical bond') || norm.includes('h2o') || norm.includes('co2')) {
+    return 'molecule_3d_viewer';
+  }
+  if (norm.includes('dna') || norm.includes('double helix') || norm.includes('base pair') || norm.includes('nucleotide')) {
+    return 'dna_double_helix_3d';
+  }
+  if (norm.includes('atom') || norm.includes('bohr') || norm.includes('electron shell') || norm.includes('valence electron')) {
+    return 'atom_bohr_model';
+  }
+  if (norm.includes('solar system') || norm.includes('season') || norm.includes('eclipse') || norm.includes('solstice') || norm.includes('equinox')) {
+    return 'solar_system_seasons_eclipses';
+  }
+  if (norm.includes('interference') || norm.includes('diffraction') || norm.includes('wave superposition') || norm.includes('antinode')) {
+    return 'wave_interference_3d';
+  }
+  if (norm.includes('cross section') || norm.includes('solid') || norm.includes('cylinder') || norm.includes('cone') || norm.includes('sphere volume')) {
+    return 'geometry_solids_3d';
+  }
+  if (norm.includes('projectile') || norm.includes('vector decomposition') || norm.includes('trajectory')) {
+    return 'vectors_projectile_3d';
+  }
+  if (norm.includes('crystal') || norm.includes('lattice') || norm.includes('unit cell') || norm.includes('fcc') || norm.includes('bcc')) {
+    return 'crystal_lattice_3d';
+  }
+  if (norm.includes('cell') || norm.includes('mitochondria') || norm.includes('organelle') || norm.includes('chloroplast') || norm.includes('plant cell')) {
+    return 'cell_biology_stylized';
+  }
+  return undefined;
+}
+
 export async function answerTutorQuestion(
   plan: LessonPlan | null | undefined,
   request: TutorRequest,
