@@ -436,5 +436,31 @@ test('buildCheckpointRubric creates validated rubric schema with key ideas and m
   assert.ok(validated.passingCriteria.length > 10);
 });
 
+test('buildDeterministicLessonPlan enriches lesson with concept graph nodes, interactive visual, rubrics, and spaced revision', () => {
+  const plan = buildDeterministicLessonPlan({
+    ...request,
+    topic: 'Electric circuits and Ohm law',
+    variantMode: 'practical',
+  });
+
+  assert.equal(plan.variantMode, 'practical');
+  assert.ok(plan.prerequisiteConcepts.length > 0);
+  assert.ok(plan.conceptGraphNodes.length > 0);
+  assert.ok(plan.spacedRevision.length > 0);
+
+  // Check interactive manifest attachment
+  const segmentWithVisual = plan.segments.find((s) => s.interactive);
+  assert.ok(segmentWithVisual, 'At least one segment must have interactive visual manifest');
+  assert.equal(segmentWithVisual?.interactive?.id, 'circuit-builder-dc');
+  assert.equal(segmentWithVisual?.interactive?.kind, 'sim');
+
+  // Check rubric attachment on checkpoints
+  const segmentWithCheckpoint = plan.segments.find((s) => s.checkpoint?.rubric);
+  assert.ok(segmentWithCheckpoint?.checkpoint?.rubric, 'Checkpoint must include grading rubric');
+  assert.ok(segmentWithCheckpoint.checkpoint.rubric.keyIdeas.length >= 1);
+  assert.ok(segmentWithCheckpoint.checkpoint.rubric.passingCriteria.length > 0);
+});
+
+
 
 

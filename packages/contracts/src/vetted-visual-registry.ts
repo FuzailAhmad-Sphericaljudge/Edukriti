@@ -250,9 +250,23 @@ export function validateVisualSelection(
 
 export function suggestVisualForTopic(
   topic: string,
-  concepts: string[] = [],
-): { kind: VisualManifestKind; id: string; params: Record<string, unknown> } | undefined {
-  const text = `${topic} ${concepts.join(' ')}`.toLowerCase();
+  conceptsOrPreferredId: string[] | string = [],
+): VisualInteractiveManifest | undefined {
+  // If caller passed a direct visual ID
+  if (typeof conceptsOrPreferredId === 'string' && conceptsOrPreferredId.trim().length > 0) {
+    const directMatch = findVettedVisual(conceptsOrPreferredId);
+    if (directMatch) {
+      return { kind: directMatch.kind, id: directMatch.id, params: directMatch.defaultParams };
+    }
+  }
+
+  const conceptsList = Array.isArray(conceptsOrPreferredId)
+    ? conceptsOrPreferredId
+    : typeof conceptsOrPreferredId === 'string'
+      ? [conceptsOrPreferredId]
+      : [];
+
+  const text = `${topic} ${conceptsList.join(' ')}`.toLowerCase();
 
   if (text.includes('circuit') || text.includes('ohm') || text.includes('resistor') || text.includes('voltage') || text.includes('current')) {
     const entry = findVettedVisual('circuit-builder-dc')!;

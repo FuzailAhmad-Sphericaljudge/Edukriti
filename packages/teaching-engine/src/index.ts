@@ -5,6 +5,7 @@ import {
   lessonAdaptationSchema,
   responseEvaluationSchema,
   lessonPlanSchema,
+  suggestVisualForTopic,
   type AssessmentAttemptResponse,
   type AssessmentQuestion,
   type LearningReport,
@@ -15,6 +16,12 @@ import {
 } from '@edukriti/contracts';
 import type { AiProvider } from '@edukriti/ai';
 import { z } from 'zod';
+import {
+  resolveConceptGraph,
+  buildSpokenStyleNarration,
+  buildCheckpointRubric,
+  type ConceptNode,
+} from './concept-graph.ts';
 
 export type LessonEvidence = {
   sourceId: string;
@@ -83,9 +90,16 @@ function checkpointPrompt(language: LessonRequest['language'], concept: string) 
   return `Explain in your own words: what is the main idea behind “${concept}”?`;
 }
 
-export function buildDeterministicLessonPlan(request: LessonRequest, evidence: LessonEvidence[] = [], id = crypto.randomUUID(), now = new Date().toISOString()): LessonPlan {
+export function buildDeterministicLessonPlan(
+  request: LessonRequest,
+  evidence: LessonEvidence[] = [],
+  id = crypto.randomUUID(),
+  now = new Date().toISOString(),
+): LessonPlan {
   const topic = request.topic?.trim() || evidence[0]?.text.split(/[.!?\n]/)[0]?.slice(0, 90) || 'Uploaded material';
   const count = segmentCount(request.durationMinutes);
+  const variantMode = request.variantMode ?? 'standard';
+  const graphNodes = resolveConceptGraph(topic, count);
   const concepts = conceptsFor(topic, evidence, count);
   const minutesPerSegment = request.durationMinutes / count;
 
@@ -100,23 +114,43 @@ export function buildDeterministicLessonPlan(request: LessonRequest, evidence: L
     ],
     language: request.language,
     durationMinutes: request.durationMinutes,
+    variantMode,
+    prerequisiteConcepts: graphNodes.flatMap((n) => n.prerequisites),
+    conceptGraphNodes: graphNodes.map((n) => n.id),
+    spacedRevision: graphNodes.flatMap((n) => n.spacedRevision),
     segments: concepts.map((concept, index) => {
       const source = evidence[index % Math.max(evidence.length, 1)];
+      const node = graphNodes[index];
       const hasCheckpoint = index > 0 && (index === count - 1 || index % 2 === 1);
+      const checkpointId = `${id}-checkpoint-${index + 1}`;
+
+      const narration = node
+        ? buildSpokenStyleNarration(node, request.language, variantMode)
+        : localizedNarration(request.language, request.level, concept, topic, source);
+
+      const interactive = suggestVisualForTopic(
+        concept,
+        node?.suggestedVisualId,
+      );
+
       return {
         id: `${id}-segment-${index + 1}`,
         title: concept,
         objective: index === count - 1 ? `Use and verify the learner’s understanding of ${concept}` : `Build a clear mental model of ${concept}`,
         estimatedMinutes: Number(minutesPerSegment.toFixed(1)),
-        narration: localizedNarration(request.language, request.level, concept, topic, source),
+        narration,
         visualType: visualFor(topic, concept),
         visualBrief: `Create a ${visualFor(topic, concept).replace('_', ' ')} that demonstrates ${concept} for a ${request.level} learner. Keep labels in ${request.language}.`,
+        interactive,
         citations: source ? [{ sourceId: source.sourceId, chunkId: source.chunkId, page: source.page, excerpt: source.text.slice(0, 500) }] : [],
         checkpoint: hasCheckpoint ? {
-          id: `${id}-checkpoint-${index + 1}`,
-          prompt: checkpointPrompt(request.language, concept),
-          type: 'explain_in_own_words' as const,
+          id: checkpointId,
+          prompt: node
+            ? (node.applicationCheckpoint.prompt[request.language === 'hindi' ? 'hindi' : request.language === 'hinglish' ? 'hinglish' : 'english'] || checkpointPrompt(request.language, concept))
+            : checkpointPrompt(request.language, concept),
+          type: (node?.applicationCheckpoint.type ?? 'explain_in_own_words') as 'explain_in_own_words' | 'application' | 'short_answer',
           targetConcept: concept,
+          rubric: node ? buildCheckpointRubric(node, checkpointId) : undefined,
         } : undefined,
       };
     }),
