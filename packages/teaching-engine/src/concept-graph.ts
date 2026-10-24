@@ -562,6 +562,117 @@ export const CONCEPT_KNOWLEDGE_GRAPH: Record<string, ConceptNode> = {
   },
 
   // ==========================================
+  // BIOLOGY: MITOSIS & DNA
+  // ==========================================
+  cell_division_mitosis: {
+    id: 'cell_division_mitosis',
+    conceptName: 'Cell Division & Mitosis Phases',
+    subject: 'biology',
+    prerequisites: ['photosynthesis_light_reactions'],
+    realWorldExample: {
+      english: 'Skin healing after a paper cut: basal epidermal cells dividing rapidly to replace damaged tissue.',
+      hindi: 'त्वचा पर खरोंच आने पर नई कोशिकाओं का तेजी से विभाजन होकर घाव का भरना।',
+      hinglish: 'Skin cut lagne ke baad new cells divide hokar tissue ko seamlessly heal kar deti hain.',
+    },
+    analogy: {
+      english: 'Mitosis is an ultra-precise biological copying machine that produces two genetically identical daughter cells with exact duplicate chromosomes.',
+      hindi: 'माइटोसिस एक सटीक फोटोकॉपी मशीन की तरह है जो एक कोशिका से दो हूबहू समान संतति कोशिकाएँ बनाती है।',
+      hinglish: 'Mitosis ek biological xerox machine ki tarah hai jo exact duplicate chromosomes ke sath identical daughter cells banati hai.',
+    },
+    commonMisconceptions: [
+      {
+        misconception: 'Mitosis halves chromosome number like meiosis does.',
+        triggerPatterns: ['mitosis reduces chromosomes to half', 'daughter cells have 23 chromosomes in mitosis', 'mitosis creates gametes'],
+        explanationCorrection: 'Mitosis maintains exact diploid chromosome count (2n -> 2n); chromosome reduction to haploid (n) only occurs in meiosis for sexual reproduction.',
+        recommendedStrategy: 'worked_example',
+      },
+    ],
+    applicationCheckpoint: {
+      prompt: {
+        english: 'A human somatic cell with 46 chromosomes undergoes mitosis. How many daughter cells are produced, and how many chromosomes does each daughter cell contain?',
+        hindi: 'एक मानव कायिक कोशिका (46 गुणसूत्र) में समसूत्री विभाजन (Mitosis) होता है। कितनी संतति कोशिकाएँ बनेंगी और प्रत्येक में कितने गुणसूत्र होंगे?',
+        hinglish: 'Human somatic cell (46 chromosomes) mein mitosis division hota hai. Kitni daughter cells banengi aur har cell mein kitne chromosomes honge?',
+      },
+      type: 'application',
+      keyIdeas: [
+        'Mitosis produces exactly 2 daughter cells.',
+        'Each daughter cell retains the full diploid chromosome count of 46.',
+        'Daughter cells are genetically identical clones of the parent cell.',
+      ],
+      passingCriteria: 'Student must state 2 daughter cells with 46 chromosomes each (identical diploid number).',
+    },
+    spacedRevision: [
+      {
+        intervalDays: 1,
+        concept: 'Cell Division & Mitosis Phases',
+        prompt: 'Name the four stages of mitosis in order (PMAT) and explain what happens during metaphase.',
+        format: 'flashcard',
+      },
+      {
+        intervalDays: 7,
+        concept: 'Cell Division & Mitosis Phases',
+        prompt: 'Why must chromosomes condense and align along the metaphase plate before chromatids separate?',
+        format: 'concept_check',
+      },
+    ],
+    suggestedVisualId: 'cell-mitosis-interactive',
+  },
+
+  dna_double_helix: {
+    id: 'dna_double_helix',
+    conceptName: 'DNA Double Helix & Complementary Base Pairing',
+    subject: 'biology',
+    prerequisites: ['cell_division_mitosis'],
+    realWorldExample: {
+      english: 'Forensic DNA fingerprinting identifying individuals from a single hair root through genetic code matches.',
+      hindi: 'फोरेंसिक जांच में डीएनए फिंगरप्रिंटिंग द्वारा किसी व्यक्ति की सटीक पहचान करना।',
+      hinglish: 'Forensic science mein DNA sample match karke crime scene par suspect ki accurate identification karna.',
+    },
+    analogy: {
+      english: 'DNA is a twisted spiral ladder: sugar-phosphate backbones form the sturdy outer rails, while hydrogen-bonded nitrogenous base pairs (A-T and G-C) form the specific interior steps.',
+      hindi: 'डीएनए एक घुमावदार सर्पिल सीढ़ी है: शर्करा-फॉस्फेट बाहरी रेलिंग बनाते हैं और हाइड्रोजन बंधित बेस जोड़े (A-T और G-C) सीढ़ी के डंडे बनाते हैं।',
+      hinglish: 'DNA ek twisted spiral ladder hai: sugar-phosphate backbone outer rails hai, aur A-T, G-C base pairs inner steps banate hain.',
+    },
+    commonMisconceptions: [
+      {
+        misconception: 'Adenine pairs with Guanine or Cytosine arbitrarily.',
+        triggerPatterns: ['adenine pairs with cytosine', 'bases pair randomly', 'a pairs with g'],
+        explanationCorrection: 'Base pairing is strictly dictated by hydrogen bonding: Adenine forms 2 hydrogen bonds only with Thymine (A=T), and Guanine forms 3 hydrogen bonds only with Cytosine (G≡C).',
+        recommendedStrategy: 'visual_walkthrough',
+      },
+    ],
+    applicationCheckpoint: {
+      prompt: {
+        english: 'In a double-stranded DNA sample, 28% of the nitrogenous bases are Cytosine. Determine the percentage of Guanine, Adenine, and Thymine.',
+        hindi: 'एक द्विरज्जुकीय डीएनए नमूने में 28% साइटोसिन (C) है। ग्वानिन (G), एडेनिन (A) और थायमिन (T) का प्रतिशत ज्ञात कीजिए।',
+        hinglish: 'Double-stranded DNA sample mein 28% Cytosine (C) hai. Chargaff rule apply karke Guanine, Adenine, aur Thymine ka percentage calculate karo.',
+      },
+      type: 'application',
+      keyIdeas: [
+        'By Chargaff’s rule, %Guanine = %Cytosine = 28%.',
+        'Total G + C = 56%, leaving 44% for A + T.',
+        '%Adenine = %Thymine = 44% / 2 = 22%.',
+      ],
+      passingCriteria: 'Student must calculate G = 28%, A = 22%, T = 22% using Chargaff’s complementary base pairing rules.',
+    },
+    spacedRevision: [
+      {
+        intervalDays: 1,
+        concept: 'DNA Double Helix & Complementary Base Pairing',
+        prompt: 'State Chargaff’s rules and explain how hydrogen bonding enforces base pair complementarity.',
+        format: 'concept_check',
+      },
+      {
+        intervalDays: 3,
+        concept: 'DNA Double Helix & Complementary Base Pairing',
+        prompt: 'If one strand reads 5’-A-T-G-C-C-A-3’, write the complementary antiparallel 3’-5’ sequence.',
+        format: 'quick_problem',
+      },
+    ],
+    suggestedVisualId: 'dna-double-helix-3d',
+  },
+
+  // ==========================================
   // COMPUTER SCIENCE: ALGORITHMS & COMPLEXITY
   // ==========================================
   binary_search_complexity: {
@@ -659,6 +770,16 @@ export function resolveConceptGraph(
 
   if (normalized.includes('photosynthesis') || normalized.includes('chloroplast') || normalized.includes('light reaction') || normalized.includes('plant')) {
     addNode(CONCEPT_KNOWLEDGE_GRAPH.photosynthesis_light_reactions);
+  }
+
+  if (normalized.includes('mitosis') || normalized.includes('cell division') || normalized.includes('meiosis') || normalized.includes('chromosome')) {
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.cell_division_mitosis);
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.dna_double_helix);
+  }
+
+  if (normalized.includes('dna') || normalized.includes('double helix') || normalized.includes('base pair') || normalized.includes('chargaff')) {
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.cell_division_mitosis);
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.dna_double_helix);
   }
 
   if (normalized.includes('binary search') || normalized.includes('algorithm') || normalized.includes('big-o') || normalized.includes('complexity') || normalized.includes('search')) {
