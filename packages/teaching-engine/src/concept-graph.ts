@@ -676,7 +676,7 @@ export const CONCEPT_KNOWLEDGE_GRAPH: Record<string, ConceptNode> = {
     id: 'cell_division_mitosis',
     conceptName: 'Cell Division & Mitosis Phases',
     subject: 'biology',
-    prerequisites: ['photosynthesis_light_reactions'],
+    prerequisites: [],
     realWorldExample: {
       english: 'Skin healing after a paper cut: basal epidermal cells dividing rapidly to replace damaged tissue.',
       hindi: 'त्वचा पर खरोंच आने पर नई कोशिकाओं का तेजी से विभाजन होकर घाव का भरना।',
@@ -989,7 +989,14 @@ export function resolveConceptGraph(
     addNode(CONCEPT_KNOWLEDGE_GRAPH.ionic_vs_covalent);
   }
 
-  if (normalized.includes('titrat') || normalized.includes('neutraliz') || normalized.includes('acid') || normalized.includes('base') || normalized.includes('ph')) {
+  if (
+    normalized.includes('titrat') ||
+    normalized.includes('neutraliz') ||
+    normalized.includes('acid-base') ||
+    normalized.includes('acid base') ||
+    (/\b(acid|acids|alkali|alkaline|ph)\b/.test(normalized) && !normalized.includes('amino acid') && !normalized.includes('nucleic acid')) ||
+    (/\b(base|bases)\b/.test(normalized) && !normalized.includes('base pair') && !normalized.includes('data') && !normalized.includes('dna'))
+  ) {
     addNode(CONCEPT_KNOWLEDGE_GRAPH.octet_rule_bonding);
     addNode(CONCEPT_KNOWLEDGE_GRAPH.ionic_vs_covalent);
     addNode(CONCEPT_KNOWLEDGE_GRAPH.acid_base_titration);

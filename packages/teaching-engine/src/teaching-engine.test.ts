@@ -592,6 +592,67 @@ test('buildAssessment prioritizes questions targeting learner weak concepts', ()
   assert.equal(prioritizedQuestions[0]?.targetConcept, 'Resistance and Ohm’s Law');
 });
 
+test('resolveConceptGraph resolves new biology, chemistry, physics, and CS curriculum topics', () => {
+  // Biology: Mitosis & DNA
+  const bioNodes = resolveConceptGraph('Mitosis and DNA double helix base pairing', 3);
+  assert.ok(bioNodes.length >= 2);
+  const bioIds = bioNodes.map((n) => n.id);
+  assert.ok(bioIds.includes('cell_division_mitosis'));
+  assert.ok(bioIds.includes('dna_double_helix'));
+
+  // Chemistry: Acid-Base Titration
+  const chemNodes = resolveConceptGraph('Acid-base titration and neutralization curve', 3);
+  assert.ok(chemNodes.length >= 2);
+  const chemIds = chemNodes.map((n) => n.id);
+  assert.ok(chemIds.includes('acid_base_titration'));
+  assert.equal(chemNodes.find((n) => n.id === 'acid_base_titration')?.suggestedVisualId, 'acid-base-titration-lab');
+
+  // Physics: Harmonic Motion & Pendulum
+  const pendulumNodes = resolveConceptGraph('Simple harmonic motion and pendulum oscillations', 3);
+  assert.ok(pendulumNodes.length >= 2);
+  const pendulumIds = pendulumNodes.map((n) => n.id);
+  assert.ok(pendulumIds.includes('pendulum_harmonic_motion'));
+  assert.equal(pendulumNodes.find((n) => n.id === 'pendulum_harmonic_motion')?.suggestedVisualId, 'pendulum-harmonic-lab');
+
+  // CS: Sorting Algorithms & Complexity
+  const sortNodes = resolveConceptGraph('QuickSort and MergeSort algorithmic time complexity', 2);
+  assert.ok(sortNodes.some((n) => n.id === 'sorting_algorithms_complexity' || n.id === 'binary_search_complexity'));
+
+  // Earth Science: Tectonic Plates
+  const earthNodes = resolveConceptGraph('Tectonic plate boundaries and earthquake ring of fire', 2);
+  assert.ok(earthNodes.some((n) => n.id === 'tectonic_plates_boundaries'));
+});
+
+test('evaluates acid-base titration and pendulum misconceptions using specialized rubrics', () => {
+  // Titration rubric test
+  const titrationContext = {
+    id: 'cp-titrate-1',
+    targetConcept: 'Acid-Base Titration & Neutralization',
+    language: 'english' as const,
+  };
+  const titrationEval = evaluateCheckpointRubric(
+    titrationContext,
+    'The equivalence point of all acid-base titrations is always at pH 7 because it is neutral.',
+  );
+  assert.equal(titrationEval.isCorrect, false);
+  assert.ok(titrationEval.misconception);
+  assert.equal(titrationEval.nextAction, 'worked_example');
+
+  // Pendulum rubric test
+  const pendulumContext = {
+    id: 'cp-pendulum-1',
+    targetConcept: 'Simple Harmonic Motion & The Pendulum',
+    language: 'english' as const,
+  };
+  const pendulumEval = evaluateCheckpointRubric(
+    pendulumContext,
+    'A heavier pendulum bob swings faster and has a shorter period because of gravity.',
+  );
+  assert.equal(pendulumEval.isCorrect, false);
+  assert.ok(pendulumEval.misconception);
+  assert.equal(pendulumEval.nextAction, 'interactive');
+});
+
 
 
 
