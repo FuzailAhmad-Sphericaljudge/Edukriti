@@ -159,3 +159,4 @@ export function rankChunks<T extends RankableChunk>(chunks: T[], query: string, 
 }
 
 export * from './knowledge-base.ts';
+export * from './office-parsers.ts';
