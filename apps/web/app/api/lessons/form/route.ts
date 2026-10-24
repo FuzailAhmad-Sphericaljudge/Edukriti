@@ -10,7 +10,7 @@ function value(form: FormData, name: string, fallback = '') {
 
 function setupRedirect(request: Request, form: FormData, message: string) {
   const url = new URL('/lessons/new', request.url);
-  for (const name of ['mode', 'level', 'language', 'duration', 'goal']) {
+  for (const name of ['mode', 'level', 'language', 'duration', 'goal', 'variantMode', 'variant']) {
     const current = value(form, name);
     if (current) url.searchParams.set(name, current);
   }
@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       sourceId = sourceIngestionResponseSchema.parse(uploadBody).source.id;
     }
 
+    const variantMode = (value(form, 'variantMode') || value(form, 'variant') || 'standard') as 'standard' | 'exam_focused' | 'practical';
     const lessonResponse = await createLesson(new Request(new URL('/api/lessons', request.url), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
         level: value(form, 'level', 'beginner'),
         language: value(form, 'language', 'hinglish'),
         durationMinutes: Number(value(form, 'duration', '20')),
+        variantMode,
         style: 'simple_examples',
         goal,
       }),
