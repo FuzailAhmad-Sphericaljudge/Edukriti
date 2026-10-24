@@ -12,3 +12,4 @@ export * from './datasets/arc.ts';
 export * from './datasets/openbookqa.ts';
 export * from './datasets/math-dataset.ts';
 export * from './datasets/dataset-registry.ts';
+export * from './verifier.ts';

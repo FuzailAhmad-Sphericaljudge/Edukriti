@@ -12,6 +12,11 @@ import {
   getImportedQuestions,
   getImportedDatasetMetrics,
   getImportedQuestionsByConcept,
+  verifyQuestionWithIndependentSolve,
+  verifyQuestionDeterministically,
+  compareAnswers,
+  deduplicateQuestions,
+  jaccardSimilarity,
   SeededRng,
 } from './index.ts';
 
@@ -171,4 +176,139 @@ test('getImportedQuestionsByConcept filters questions by concept keyword', () =>
   assert.ok(newtonQuestions.length >= 1);
   assert.ok(newtonQuestions.some((q) => q.id === 'arc-001'));
 });
+
+test('compareAnswers correctly matches normalized strings and numeric values within tolerance', () => {
+  assert.ok(compareAnswers('a', 'A').matches);
+  assert.ok(compareAnswers('Option B', 'b').matches);
+  assert.ok(compareAnswers('12.5 A', '12.48 A', 0.05).matches);
+  assert.ok(!compareAnswers('a', 'c').matches);
+  assert.ok(!compareAnswers('10', '25', 0.1).matches);
+});
+
+test('verifyQuestionWithIndependentSolve marks question as verified when independent solve agrees', async () => {
+  const mockQuestion: any = {
+    id: 'test-q-01',
+    type: 'mcq',
+    conceptIds: ['ohms_law'],
+    subject: 'physics',
+    grade: 'Grade 10',
+    difficulty: 'easy',
+    prompt: 'What is the SI unit of electric resistance?',
+    choices: [
+      { id: 'a', text: 'Ohm' },
+      { id: 'b', text: 'Volt' },
+      { id: 'c', text: 'Ampere' },
+      { id: 'd', text: 'Watt' },
+    ],
+    expectedAnswer: 'a',
+    solutionSteps: [{ stepNumber: 1, title: 'Definition', formula: 'R = V/I', explanation: 'Unit is Ohm.' }],
+    commonErrorTags: [],
+    source: 'Test Source',
+    license: 'MIT',
+    verified: false,
+    createdAt: '2026-10-24T12:00:00.000Z',
+  };
+
+  const mockAgreeingProvider: any = {
+    generateStructured: async () => ({
+      answer: 'a',
+      confidence: 0.98,
+      justification: 'Ohm is the standard unit of electrical resistance defined by Ohm’s Law.',
+    }),
+  };
+
+  const verified = await verifyQuestionWithIndependentSolve(mockQuestion, mockAgreeingProvider);
+  assert.equal(verified.verified, true);
+  assert.ok(verified.verifiedReason.includes('Dual independent solve agreement confirmed'));
+});
+
+test('verifyQuestionWithIndependentSolve flags question as unverified when independent solve disagrees', async () => {
+  const mockQuestion: any = {
+    id: 'test-q-02',
+    type: 'mcq',
+    conceptIds: ['ohms_law'],
+    subject: 'physics',
+    grade: 'Grade 10',
+    difficulty: 'easy',
+    prompt: 'What is the SI unit of electric resistance?',
+    choices: [
+      { id: 'a', text: 'Ohm' },
+      { id: 'b', text: 'Volt' },
+    ],
+    expectedAnswer: 'a',
+    solutionSteps: [{ stepNumber: 1, title: 'Definition', formula: 'R = V/I', explanation: 'Unit is Ohm.' }],
+    commonErrorTags: [],
+    source: 'Test Source',
+    license: 'MIT',
+    verified: true,
+    createdAt: '2026-10-24T12:00:00.000Z',
+  };
+
+  const mockDisagreeingProvider: any = {
+    generateStructured: async () => ({
+      answer: 'b',
+      confidence: 0.9,
+      justification: 'Volt is the unit of potential.',
+    }),
+  };
+
+  const flagged = await verifyQuestionWithIndependentSolve(mockQuestion, mockDisagreeingProvider);
+  assert.equal(flagged.verified, false);
+  assert.ok(flagged.verifiedReason.includes('disagreement detected'));
+});
+
+test('verifyQuestionDeterministically catches missing answer, duplicate choices, and missing steps', () => {
+  const validQ: any = {
+    id: 'valid-q',
+    type: 'mcq',
+    prompt: 'Question?',
+    choices: [{ id: 'a', text: 'One' }, { id: 'b', text: 'Two' }],
+    expectedAnswer: 'a',
+    solutionSteps: [{ stepNumber: 1, title: 'Step', explanation: 'Explain' }],
+  };
+  assert.equal(verifyQuestionDeterministically(validQ).verified, true);
+
+  const missingStepQ: any = { ...validQ, solutionSteps: [] };
+  assert.equal(verifyQuestionDeterministically(missingStepQ).verified, false);
+
+  const missingChoiceQ: any = { ...validQ, expectedAnswer: 'z' };
+  assert.equal(verifyQuestionDeterministically(missingChoiceQ).verified, false);
+
+  const duplicateChoiceQ: any = {
+    ...validQ,
+    choices: [{ id: 'a', text: 'Same' }, { id: 'b', text: 'Same' }],
+  };
+  assert.equal(verifyQuestionDeterministically(duplicateChoiceQ).verified, false);
+});
+
+test('deduplicateQuestions filters duplicate prompts and prioritizes verified instances', () => {
+  const q1: any = {
+    id: 'q1',
+    prompt: 'What is the electric current flowing through a 10 ohm resistor at 20 volts?',
+    verified: false,
+    solutionSteps: [{ stepNumber: 1, title: 'Step 1', explanation: 'Solve' }],
+  };
+
+  // Near duplicate with slight wording change
+  const q2: any = {
+    id: 'q2',
+    prompt: 'What is the electric current flowing through a 10 ohm resistor when the voltage is 20 volts?',
+    verified: true,
+    solutionSteps: [{ stepNumber: 1, title: 'Step 1', explanation: 'Solve' }, { stepNumber: 2, title: 'Step 2', explanation: 'Finish' }],
+  };
+
+  const q3: any = {
+    id: 'q3',
+    prompt: 'State the law of conservation of momentum in an isolated system.',
+    verified: true,
+    solutionSteps: [{ stepNumber: 1, title: 'Definition', explanation: 'Momentum is conserved.' }],
+  };
+
+  const deduped = deduplicateQuestions([q1, q2, q3]);
+  assert.equal(deduped.length, 2);
+  // Should keep q2 because it's verified
+  assert.ok(deduped.some((q) => q.id === 'q2'));
+  assert.ok(deduped.some((q) => q.id === 'q3'));
+});
+
 
