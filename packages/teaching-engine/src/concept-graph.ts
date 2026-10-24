@@ -330,6 +330,60 @@ export const CONCEPT_KNOWLEDGE_GRAPH: Record<string, ConceptNode> = {
     suggestedVisualId: 'projectile-motion-lab',
   },
 
+  pendulum_harmonic_motion: {
+    id: 'pendulum_harmonic_motion',
+    conceptName: 'Simple Harmonic Motion & The Pendulum',
+    subject: 'physics',
+    prerequisites: ['newtons_second_law'],
+    realWorldExample: {
+      english: 'The rhythmic tick-tock pacing of grandfather clocks and playground swings.',
+      hindi: 'दीवार घड़ी के लोलक (पेंडुलम) की नियमित टिक-टिक गति और झूले का दोलन।',
+      hinglish: 'Grandfather clock ka pendulum jo regular timekeeping ke liye periodic oscillations execute karta hai.',
+    },
+    analogy: {
+      english: 'A pendulum is an energy currency exchange: gravity converts maximum potential energy at the peak into maximum kinetic speed at the bottom, repeating forever without friction.',
+      hindi: 'लोलक ऊर्जा के निरंतर आदान-प्रदान जैसा है: उच्चतम बिंदु पर स्थितिज ऊर्जा और मध्य बिंदु पर गतिज ऊर्जा।',
+      hinglish: 'Pendulum energy conversion cycle execute karta hai: peak par potential energy, bottom par maximum kinetic energy.',
+    },
+    commonMisconceptions: [
+      {
+        misconception: 'Heavier pendulum bobs oscillate with a shorter time period.',
+        triggerPatterns: ['heavier pendulum swings faster', 'mass changes pendulum period', 'heavy bob shorter period'],
+        explanationCorrection: 'For small amplitudes, pendulum period depends solely on length and gravitational acceleration: T = 2π√(L/g). Mass cancels out completely.',
+        recommendedStrategy: 'interactive',
+      },
+    ],
+    applicationCheckpoint: {
+      prompt: {
+        english: 'A grandfather clock pendulum has its string length quadrupled (multiplied by 4). How does the period of swing T change?',
+        hindi: 'एक सरल लोलक की लंबाई 4 गुना कर दी जाती है। उसके आवर्तकाल (Period T) में क्या परिवर्तन होगा?',
+        hinglish: 'Ek simple pendulum ki length 4 guna badha di jaaye, toh uske oscillation time period T par kya asar padega?',
+      },
+      type: 'application',
+      keyIdeas: [
+        'Time period is governed by T = 2π√(L/g).',
+        'Length L is quadrupled: √(4) = 2.',
+        'The period doubles: T becomes 2 times larger.',
+      ],
+      passingCriteria: 'Student must state that the period doubles because period is proportional to the square root of length.',
+    },
+    spacedRevision: [
+      {
+        intervalDays: 1,
+        concept: 'Simple Harmonic Motion & The Pendulum',
+        prompt: 'State the formula for pendulum period T and explain why mass does not affect the swing time.',
+        format: 'concept_check',
+      },
+      {
+        intervalDays: 7,
+        concept: 'Simple Harmonic Motion & The Pendulum',
+        prompt: 'What happens to a pendulum’s period if taken to the Moon where g is 1/6th of Earth’s gravity?',
+        format: 'quick_problem',
+      },
+    ],
+    suggestedVisualId: 'pendulum-harmonic-lab',
+  },
+
   // ==========================================
   // CHEMISTRY: BONDING & STRUCTURE
   // ==========================================
@@ -439,6 +493,60 @@ export const CONCEPT_KNOWLEDGE_GRAPH: Record<string, ConceptNode> = {
       },
     ],
     suggestedVisualId: 'molecule-viewer-3d',
+  },
+
+  acid_base_titration: {
+    id: 'acid_base_titration',
+    conceptName: 'Acid-Base Titration & Neutralization',
+    subject: 'chemistry',
+    prerequisites: ['ionic_vs_covalent'],
+    realWorldExample: {
+      english: 'Taking Milk of Magnesia (Mg(OH)2) to neutralize excess stomach hydrochloric acid.',
+      hindi: 'पेट में अम्लता (Acidity) होने पर एंटासिड (Mg(OH)₂) द्वारा अतिरिक्त हाइड्रोक्लोरिक अम्ल का उदासीनीकरण।',
+      hinglish: 'Stomach acidity neutralize karne ke liye antacid tablets lena jisme hydroxide ions acid ke H+ ions ko neutralize karte hain.',
+    },
+    analogy: {
+      english: 'Titration is an exact chemical currency exchange: one mole of H⁺ ions from the acid pairs with exactly one mole of OH⁻ ions from the base to produce neutral water (H₂O) and salt.',
+      hindi: 'उदासीनीकरण रासायनिक बराबरी का विनिमय है: अम्ल का प्रत्येक H⁺ आयन क्षार के OH⁻ आयन से मिलकर जल बनाता है।',
+      hinglish: 'Titration stoichiometric balancing hai: 1 mole H+ acid exactly 1 mole OH- base ke sath combine hokar pure water banata hai.',
+    },
+    commonMisconceptions: [
+      {
+        misconception: 'The equivalence point of every acid-base titration is always at exactly pH 7.',
+        triggerPatterns: ['equivalence point always 7', 'titration always ends at pH 7', 'neutral means pH 7'],
+        explanationCorrection: 'The equivalence point is pH 7 only for strong acid-strong base titrations; weak acid-strong base equivalence points are basic (pH > 7) due to conjugate base hydrolysis.',
+        recommendedStrategy: 'worked_example',
+      },
+    ],
+    applicationCheckpoint: {
+      prompt: {
+        english: 'A student titrates 25.0 mL of 0.20 M HCl using 0.10 M NaOH. What volume of NaOH solution in mL is required to reach the equivalence point?',
+        hindi: 'एक छात्र 25.0 mL 0.20 M HCl को 0.10 M NaOH से अनुमापित करता है। तुल्यता बिंदु तक पहुँचने के लिए कितने mL NaOH की आवश्यकता होगी?',
+        hinglish: '25.0 mL of 0.20 M HCl ko neutralize karne ke liye 0.10 M NaOH ka kitna volume (mL) lagega?',
+      },
+      type: 'application',
+      keyIdeas: [
+        'Monoprotic neutralization formula: M_acid * V_acid = M_base * V_base.',
+        'Moles of HCl = 0.20 M * 25.0 mL = 5.0 millimoles.',
+        'Volume of NaOH needed = 5.0 mmol / 0.10 M = 50.0 mL.',
+      ],
+      passingCriteria: 'Student must calculate 50 mL (or 50.0 mL) using molarity and volume stoichiometry.',
+    },
+    spacedRevision: [
+      {
+        intervalDays: 1,
+        concept: 'Acid-Base Titration & Neutralization',
+        prompt: 'State the difference between the equivalence point and the endpoint of a titration.',
+        format: 'concept_check',
+      },
+      {
+        intervalDays: 7,
+        concept: 'Acid-Base Titration & Neutralization',
+        prompt: 'Why does phenolphthalein turn pink during a base titration, and what is its pH transition range?',
+        format: 'flashcard',
+      },
+    ],
+    suggestedVisualId: 'acid-base-titration-lab',
   },
 
   // ==========================================
@@ -759,9 +867,21 @@ export function resolveConceptGraph(
     addNode(CONCEPT_KNOWLEDGE_GRAPH.newtons_second_law);
   }
 
+  if (normalized.includes('pendulum') || normalized.includes('harmonic') || normalized.includes('shm') || normalized.includes('oscillation')) {
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.newtons_first_law);
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.newtons_second_law);
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.pendulum_harmonic_motion);
+  }
+
   if (normalized.includes('bond') || normalized.includes('octet') || normalized.includes('ionic') || normalized.includes('covalent') || normalized.includes('valence')) {
     addNode(CONCEPT_KNOWLEDGE_GRAPH.octet_rule_bonding);
     addNode(CONCEPT_KNOWLEDGE_GRAPH.ionic_vs_covalent);
+  }
+
+  if (normalized.includes('titrat') || normalized.includes('neutraliz') || normalized.includes('acid') || normalized.includes('base') || normalized.includes('ph')) {
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.octet_rule_bonding);
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.ionic_vs_covalent);
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.acid_base_titration);
   }
 
   if (normalized.includes('quadratic') || normalized.includes('discriminant') || normalized.includes('parabola') || normalized.includes('root')) {
