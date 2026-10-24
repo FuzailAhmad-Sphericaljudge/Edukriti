@@ -78,3 +78,4 @@ export function getParametricMetrics(): ParametricRegistryMetrics {
     familyIds: PARAMETRIC_TEMPLATES.map((t) => t.familyId),
   };
 }
+

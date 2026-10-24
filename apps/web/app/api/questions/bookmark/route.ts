@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { apiError } from '../../../../lib/api-error.ts';
-import { toggleBookmark, isBookmarked, getAllBookmarkedIds } from '../../../../lib/practice-provider.ts';
+import { toggleBookmark, getAllBookmarkedIds } from '../../../../lib/practice-provider.ts';
 
 const bookmarkRequestSchema = z.object({
   questionId: z.string().min(1),
@@ -36,3 +36,4 @@ export async function GET() {
     bookmarks: getAllBookmarkedIds(),
   });
 }
+

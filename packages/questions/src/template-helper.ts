@@ -81,3 +81,4 @@ export function calcCombinations(ranges: Record<string, ParameterRangeDef>): num
   }
   return total;
 }
+

@@ -90,7 +90,7 @@ Question Type: ${question.type}
 Subject: ${question.subject}`;
 
       const independent = await provider.generateStructured(independentSolveSchema, prompt);
-      const comparison = compareAnswers(question.expectedAnswer, independent.answer, question.tolerance);
+      const comparison = compareAnswers(String(question.expectedAnswer), independent.answer, question.tolerance);
 
       if (comparison.matches) {
         return {
@@ -134,11 +134,11 @@ export function verifyQuestionDeterministically(question: PracticeQuestion): Pra
   // 2. Choice-based checks
   if (question.choices && question.choices.length > 0) {
     const choiceIds = new Set(question.choices.map((c) => c.id.toLowerCase()));
-    const normExpected = question.expectedAnswer.toLowerCase().trim();
+    const normExpected = String(question.expectedAnswer).toLowerCase().trim();
 
     const matchesId = choiceIds.has(normExpected);
     const matchesText = question.choices.some(
-      (c) => normalizeAnswer(c.text) === normalizeAnswer(question.expectedAnswer),
+      (c) => normalizeAnswer(c.text) === normalizeAnswer(String(question.expectedAnswer)),
     );
 
     if (!matchesId && !matchesText) {

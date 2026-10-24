@@ -547,6 +547,8 @@ export const practiceQuestionSchema = z.object({
   verified: z.boolean().default(false),
   verifiedReason: z.string().optional(),
   templateFamilyId: z.string().optional(),
+  datasetId: z.string().optional(),
+  externalReferenceId: z.string().optional(),
   seed: z.number().int().optional(),
   createdAt: utcTimestampSchema,
 });
@@ -587,41 +589,58 @@ export const practiceEvaluationResultSchema = z.object({
 export type PracticeEvaluationResult = z.infer<typeof practiceEvaluationResultSchema>;
 
 export const mockTestRequestSchema = z.object({
-  learnerId: identifierSchema,
-  title: z.string().min(1),
+  learnerId: identifierSchema.default('learner_guest'),
+  title: z.string().optional(),
+  grade: z.string().optional(),
   subjects: z.array(z.string()).min(1),
-  questionCount: z.number().int().min(5).max(60).default(15),
-  durationMinutes: z.number().int().min(5).max(180).default(30),
-  difficulty: questionDifficultySchema.default('medium'),
+  questionCount: z.number().int().min(2).max(100).optional(),
+  totalQuestions: z.number().int().min(2).max(100).optional(),
+  durationMinutes: z.number().int().min(5).max(180).optional(),
+  timeLimitMinutes: z.number().int().min(5).max(180).optional(),
+  difficulty: questionDifficultySchema.optional().default('medium'),
 });
 export type MockTestRequest = z.infer<typeof mockTestRequestSchema>;
 
 export const mockTestSectionAnalysisSchema = z.object({
   subject: z.string(),
+  sectionName: z.string().optional(),
   totalQuestions: z.number().int().nonnegative(),
   correctCount: z.number().int().nonnegative(),
-  accuracyPercentage: z.number().min(0).max(100),
-  averageTimeSeconds: z.number().nonnegative(),
-  weakConcepts: z.array(z.string()),
-  strongConcepts: z.array(z.string()),
+  score: z.number().int().nonnegative().optional(),
+  maxScore: z.number().int().nonnegative().optional(),
+  percentage: z.number().optional(),
+  accuracyPercentage: z.number().min(0).max(100).optional(),
+  averageTimeSeconds: z.number().nonnegative().optional(),
+  timeSpentSeconds: z.number().nonnegative().optional(),
+  weakConcepts: z.array(z.string()).default([]),
+  strongConcepts: z.array(z.string()).default([]),
 });
 export type MockTestSectionAnalysis = z.infer<typeof mockTestSectionAnalysisSchema>;
 
 export const mockTestResultSchema = z.object({
   testId: identifierSchema,
   learnerId: identifierSchema,
-  title: z.string(),
-  totalQuestions: z.number().int().nonnegative(),
-  correctCount: z.number().int().nonnegative(),
-  scorePercentage: z.number().min(0).max(100),
-  percentileRank: z.number().min(0).max(100),
-  totalTimeSpentSeconds: z.number().nonnegative(),
+  title: z.string().optional(),
+  totalQuestions: z.number().int().nonnegative().optional(),
+  maxScore: z.number().int().nonnegative().optional(),
+  correctCount: z.number().int().nonnegative().optional(),
+  score: z.number().int().nonnegative().optional(),
+  scorePercentage: z.number().min(0).max(100).optional(),
+  percentage: z.number().min(0).max(100).optional(),
+  percentileRank: z.number().min(0).max(100).optional(),
+  percentile: z.number().min(0).max(100).optional(),
+  totalTimeSpentSeconds: z.number().nonnegative().optional(),
+  timeSpentSeconds: z.number().nonnegative().optional(),
   sectionalAnalysis: z.array(mockTestSectionAnalysisSchema),
+  evaluations: z.array(practiceEvaluationResultSchema).optional(),
   weakConcepts: z.array(z.string()),
+  strongConcepts: z.array(z.string()).default([]),
   reviewSchedule: z.array(z.object({
     conceptId: z.string(),
-    recommendedReviewDate: z.string(),
-    reviewReason: z.string(),
+    recommendedReviewDate: z.string().optional(),
+    scheduledDate: z.string().optional(),
+    reviewReason: z.string().optional(),
+    priority: z.enum(['low', 'medium', 'high']).optional(),
   })),
   completedAt: utcTimestampSchema,
 });
@@ -632,29 +651,35 @@ export const questionBankQuerySchema = z.object({
   conceptId: z.string().optional(),
   difficulty: questionDifficultySchema.optional(),
   type: questionTypeSchema.optional(),
+  questionType: questionTypeSchema.optional(),
   grade: z.string().optional(),
-  verifiedOnly: z.boolean().optional().default(false),
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(50).default(10),
+  search: z.string().optional(),
+  verifiedOnly: z.boolean().optional(),
+  page: z.number().int().min(1).optional(),
+  pageSize: z.number().int().min(1).max(50).optional(),
 });
 export type QuestionBankQuery = z.infer<typeof questionBankQuerySchema>;
 
 export const questionBankStatsSchema = z.object({
   totalQuestions: z.number().int().nonnegative(),
-  verifiedQuestions: z.number().int().nonnegative(),
-  generatorFamilyCount: z.number().int().nonnegative(),
-  estimatedParametricInstances: z.number().int().nonnegative(),
+  verifiedQuestions: z.number().int().nonnegative().optional(),
+  totalVerified: z.number().int().nonnegative().optional(),
+  generatorFamilyCount: z.number().int().nonnegative().optional(),
+  parametricTemplatesCount: z.number().int().nonnegative().optional(),
+  estimatedParametricInstances: z.number().int().nonnegative().optional(),
+  estimatedCombinations: z.number().int().nonnegative().optional(),
   bySubject: z.record(z.string(), z.number()),
-  byType: z.record(z.string(), z.number()),
+  byType: z.record(z.string(), z.number()).optional(),
   byDifficulty: z.record(z.string(), z.number()),
 });
 export type QuestionBankStats = z.infer<typeof questionBankStatsSchema>;
 
 export const questionReportRequestSchema = z.object({
   questionId: identifierSchema,
-  learnerId: identifierSchema,
-  issueType: z.enum(['wrong_answer', 'typo', 'unclear_prompt', 'incorrect_explanation', 'other']),
-  details: z.string().min(5).max(1000),
+  learnerId: identifierSchema.default('learner_guest'),
+  issueType: z.string(),
+  details: z.string().optional(),
+  description: z.string().optional(),
 });
 export type QuestionReportRequest = z.infer<typeof questionReportRequestSchema>;
 

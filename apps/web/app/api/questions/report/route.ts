@@ -11,10 +11,11 @@ export async function POST(request: Request) {
       return apiError(400, 'INVALID_REPORT_REQUEST', 'Invalid question report payload', parsed.error.issues);
     }
 
+    const details = parsed.data.description || parsed.data.details || 'Reported by student';
     const reportId = reportQuestion(
       parsed.data.questionId,
       parsed.data.issueType,
-      parsed.data.description,
+      details,
     );
 
     return Response.json({
@@ -31,3 +32,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

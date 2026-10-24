@@ -117,10 +117,12 @@ test('bookmark and report functions manage student flags', () => {
 
 test('generateMockTestAssessment and submitMockTestAssessment generate and evaluate full mock test', () => {
   const mockTest = generateMockTestAssessment({
+    learnerId: 'test_learner',
     grade: 'Grade 9',
     subjects: ['physics', 'mathematics'],
     totalQuestions: 6,
     timeLimitMinutes: 30,
+    difficulty: 'medium',
   });
 
   assert.ok(mockTest.testId.startsWith('mock-'));
@@ -131,7 +133,7 @@ test('generateMockTestAssessment and submitMockTestAssessment generate and evalu
   for (const q of mockTest.allQuestions) {
     // Answer first 2 correctly, remainder wrongly
     if (Object.keys(answers).length < 2) {
-      answers[q.id] = q.expectedAnswer;
+      answers[q.id] = String(q.expectedAnswer);
     } else {
       answers[q.id] = 'wrong_choice';
     }
@@ -139,7 +141,7 @@ test('generateMockTestAssessment and submitMockTestAssessment generate and evalu
 
   const result = submitMockTestAssessment(mockTest, answers, 600);
   assert.equal(result.score, 2);
-  assert.ok(result.percentile >= 1 && result.percentile <= 99);
+  assert.ok((result.percentile ?? 0) >= 1 && (result.percentile ?? 0) <= 99);
   assert.equal(result.sectionalAnalysis.length, 2);
   assert.ok(result.reviewSchedule.length >= 0);
 });
@@ -149,8 +151,8 @@ test('getQuestionBankStats computes honest numbers without hardcoded claims', ()
 
   assert.ok(stats.totalQuestions >= 70);
   assert.equal(stats.parametricTemplatesCount, 60);
-  assert.ok(stats.estimatedCombinations > 50_000);
-  assert.ok(stats.totalVerified > 0);
+  assert.ok((stats.estimatedCombinations ?? 0) > 50_000);
+  assert.ok((stats.totalVerified ?? 0) > 0);
   assert.ok(stats.bySubject.physics >= 20);
   assert.ok(stats.bySubject.mathematics >= 20);
 });

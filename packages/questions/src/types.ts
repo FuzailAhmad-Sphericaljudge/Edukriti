@@ -21,3 +21,4 @@ export interface ParametricTemplate {
   generate: (seed: number, rng?: SeededRng) => PracticeQuestion;
   estimateCombinations: () => number;
 }
+

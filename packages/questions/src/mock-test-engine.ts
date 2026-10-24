@@ -62,8 +62,12 @@ export function createMockTest(
   const sections: GeneratedMockTest['sections'] = [];
   const allSelectedQuestions: PracticeQuestion[] = [];
 
-  const questionsPerSubject = Math.max(2, Math.floor(request.totalQuestions / request.subjects.length));
-  const timePerSection = Math.max(5, Math.floor(request.timeLimitMinutes / request.subjects.length));
+  const qCount = request.totalQuestions || request.questionCount || 15;
+  const tMinutes = request.timeLimitMinutes || request.durationMinutes || 30;
+  const grade = request.grade || 'Grade 10';
+
+  const questionsPerSubject = Math.max(2, Math.floor(qCount / request.subjects.length));
+  const timePerSection = Math.max(5, Math.floor(tMinutes / request.subjects.length));
 
   for (const subject of request.subjects) {
     const subjectPool = candidatePool.filter((q) => q.subject.toLowerCase() === subject.toLowerCase());
@@ -83,9 +87,9 @@ export function createMockTest(
 
   return {
     testId,
-    title: request.title || `${request.grade} Comprehensive Mock Assessment`,
-    grade: request.grade,
-    totalTimeMinutes: request.timeLimitMinutes,
+    title: request.title || `${grade} Comprehensive Mock Assessment`,
+    grade,
+    totalTimeMinutes: tMinutes,
     sections,
     allQuestions: allSelectedQuestions,
     createdAt: nowIso,
@@ -113,7 +117,7 @@ export function evaluateMockTest(
 
   for (const q of test.allQuestions) {
     const studentAnswer = answers[q.id] || '';
-    const match = compareAnswers(q.expectedAnswer, studentAnswer, q.tolerance);
+    const match = compareAnswers(String(q.expectedAnswer), studentAnswer, q.tolerance);
     const isCorrect = match.matches;
 
     if (isCorrect) {
@@ -162,11 +166,15 @@ export function evaluateMockTest(
     evaluations.push({
       questionId: q.id,
       isCorrect,
+      score: isCorrect ? 1.0 : 0.0,
       expectedAnswer: q.expectedAnswer,
+      submittedAnswer: studentAnswer,
+      explanation: q.solutionSteps.map((s) => s.explanation).join(' '),
+      diagnosedError: diagnosedErrorTag
+        ? { errorTag: diagnosedErrorTag, whyWrong: errorExplanation || 'Common mistake' }
+        : undefined,
       solutionSteps: q.solutionSteps,
-      diagnosedErrorTag,
-      errorExplanation,
-      newThetaEstimate: updateLearnerTheta(0.0, q.difficulty, isCorrect),
+      updatedIrtTheta: updateLearnerTheta(0.0, q.difficulty, isCorrect),
     });
   }
 
@@ -176,11 +184,18 @@ export function evaluateMockTest(
   const sectionalAnalysis = Object.entries(sectionMetrics).map(([subject, stats]) => {
     const secPercentage = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
     return {
+      subject,
       sectionName: `${subject.charAt(0).toUpperCase() + subject.slice(1)} Section`,
       score: stats.correct,
       maxScore: stats.total,
       percentage: secPercentage,
+      totalQuestions: stats.total,
+      correctCount: stats.correct,
+      accuracyPercentage: secPercentage,
+      averageTimeSeconds: Math.round(timeSpentSeconds / Object.keys(sectionMetrics).length),
       timeSpentSeconds: Math.round(timeSpentSeconds / Object.keys(sectionMetrics).length),
+      weakConcepts: [],
+      strongConcepts: [],
     };
   });
 
@@ -213,18 +228,27 @@ export function evaluateMockTest(
     const reviewDate = new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000);
     return {
       conceptId: concept,
+      recommendedReviewDate: reviewDate.toISOString(),
       scheduledDate: reviewDate.toISOString(),
-      priority: index === 0 ? 'high' as const : 'medium' as const,
+      reviewReason: `Diagnosed weak concept in mock exam: ${concept}`,
+      priority: index === 0 ? ('high' as const) : ('medium' as const),
     };
   });
 
   return {
     testId: test.testId,
     learnerId: 'student-session',
+    title: test.title,
+    totalQuestions: maxScore,
+    correctCount: totalScore,
     score: totalScore,
     maxScore,
     percentage,
+    scorePercentage: percentage,
     percentile,
+    percentileRank: percentile,
+    totalTimeSpentSeconds: timeSpentSeconds,
+    timeSpentSeconds,
     completedAt: nowIso,
     sectionalAnalysis,
     evaluations,
@@ -233,3 +257,4 @@ export function evaluateMockTest(
     reviewSchedule,
   };
 }
+

@@ -12,7 +12,6 @@ import {
   generateParametricQuestion,
   getParametricMetrics,
   getImportedQuestions,
-  getImportedDatasetMetrics,
   compareAnswers,
   updateLearnerTheta,
   calculateNextSpacedInterval,
@@ -135,13 +134,23 @@ export function findQuestionById(id: string): PracticeQuestion | undefined {
   return undefined;
 }
 
+function formatAnswerToString(ans: unknown): string {
+  if (ans === null || ans === undefined) return '';
+  if (typeof ans === 'string') return ans;
+  if (typeof ans === 'number' || typeof ans === 'boolean') return String(ans);
+  if (Array.isArray(ans)) return ans.map((item) => formatAnswerToString(item)).join(', ');
+  if (typeof ans === 'object') return JSON.stringify(ans);
+  return '';
+}
+
 /**
  * Evaluates a student practice submission, diagnoses errors, and updates learner ability.
  */
 export function evaluateSubmission(submission: PracticeSubmission): PracticeEvaluationResult {
   const question = findQuestionById(submission.questionId);
   const nowIso = new Date().toISOString();
-  const submittedAns = String(submission.submittedAnswer ?? submission.userAnswer ?? '');
+  const rawSubmitted = submission.submittedAnswer ?? submission.userAnswer ?? '';
+  const submittedAns = formatAnswerToString(rawSubmitted);
 
   if (!question) {
     return {
@@ -159,7 +168,8 @@ export function evaluateSubmission(submission: PracticeSubmission): PracticeEval
     };
   }
 
-  const match = compareAnswers(question.expectedAnswer, submittedAns, question.tolerance);
+  const expectedStr = formatAnswerToString(question.expectedAnswer);
+  const match = compareAnswers(expectedStr, submittedAns, question.tolerance);
   const isCorrect = match.matches;
 
   let diagnosedErrorTag: string | undefined;
@@ -178,7 +188,7 @@ export function evaluateSubmission(submission: PracticeSubmission): PracticeEval
       errorExplanation = distractor.explanation;
     } else {
       diagnosedErrorTag = 'miscalculation';
-      errorExplanation = `Your answer "${submittedAns}" differed from the expected solution "${question.expectedAnswer}".`;
+      errorExplanation = `Your answer "${submittedAns}" differed from the expected solution "${expectedStr}".`;
     }
   }
 
@@ -286,9 +296,9 @@ export function submitMockTestAssessment(
   // Record this attempt into session history for future percentile calculations
   inMemoryHistoricalMockAttempts.push({
     attemptId: result.testId,
-    score: result.score,
-    totalMarks: result.maxScore,
-    percentage: result.percentage,
+    score: result.score ?? result.correctCount ?? 0,
+    totalMarks: result.maxScore ?? result.totalQuestions ?? 0,
+    percentage: result.percentage ?? result.scorePercentage ?? 0,
     completedAt: result.completedAt,
   });
 
@@ -300,7 +310,6 @@ export function submitMockTestAssessment(
  */
 export function getQuestionBankStats(): QuestionBankStats {
   const parametricMetrics = getParametricMetrics();
-  const datasetMetrics = getImportedDatasetMetrics();
 
   const bySubject: Record<string, number> = {};
   const byDifficulty: Record<string, number> = {};

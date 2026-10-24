@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { apiError } from '../../../lib/api-error.ts';
-import { submitMockTestAssessment } from '../../../lib/practice-provider.ts';
+import { apiError } from '../../../../lib/api-error.ts';
+import { submitMockTestAssessment } from '../../../../lib/practice-provider.ts';
 
 const mockTestSubmissionSchema = z.object({
   test: z.any(),
@@ -32,3 +32,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
