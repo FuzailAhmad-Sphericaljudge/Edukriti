@@ -836,6 +836,117 @@ export const CONCEPT_KNOWLEDGE_GRAPH: Record<string, ConceptNode> = {
     ],
     suggestedVisualId: 'sorting-visualizer-sim',
   },
+
+  sorting_algorithms_complexity: {
+    id: 'sorting_algorithms_complexity',
+    conceptName: 'Sorting Algorithms & Comparison Complexity',
+    subject: 'computer_science',
+    prerequisites: ['binary_search_complexity'],
+    realWorldExample: {
+      english: 'Sorting 10 million transactions in a banking database using QuickSort vs BubbleSort.',
+      hindi: 'लाखों बैंक लेन-देन को तिथि या राशि के अनुसार त्वरित सॉर्ट (QuickSort) करना।',
+      hinglish: 'E-commerce platform par 10 million products ko price low-to-high sort karna O(n log n) efficiency se.',
+    },
+    analogy: {
+      english: 'Comparing every pair of books on a shelf is quadratic O(n²); dividing the shelf into two piles, sorting each recursively, and merging them is logarithmic O(n log n).',
+      hindi: 'हर किताब की दूसरी किताब से तुलना करना O(n²) है; आधी-आधी किताबें बाँटकर मिलाना O(n log n) है।',
+      hinglish: 'Har element ko compare karna O(n²) hai; divide-and-conquer se sort karna O(n log n) efficient hai.',
+    },
+    commonMisconceptions: [
+      {
+        misconception: 'Bubble Sort is fast enough for large arrays because modern computers are so fast.',
+        triggerPatterns: ['bubble sort fast on big data', 'modern computers make bubble sort fast', 'n squared is good enough'],
+        explanationCorrection: 'For 1 million items, O(n²) requires 1,000,000,000,000 operations (hours), whereas O(n log n) takes only ~20 million operations (fraction of a second). Hardware speed cannot compensate for quadratic asymptotic growth.',
+        recommendedStrategy: 'worked_example',
+      },
+    ],
+    applicationCheckpoint: {
+      prompt: {
+        english: 'An algorithm has quadratic time complexity O(n²). If the input size n increases by a factor of 10, by what factor does the number of operations increase?',
+        hindi: 'एक एल्गोरिदम की समय जटिलता O(n²) है। यदि इनपुट आकार n 10 गुना बढ़ जाए, तो संक्रियाओं की संख्या कितने गुना बढ़ेगी?',
+        hinglish: 'Ek O(n²) sorting algorithm mein input size 10 times badha diya jaaye, toh total operations kitne factor se increase honge?',
+      },
+      type: 'application',
+      keyIdeas: [
+        'Quadratic complexity means operations grow with the square of input size n.',
+        'Factor increase = 10² = 100.',
+        'The operations increase by a factor of 100.',
+      ],
+      passingCriteria: 'Student must state that operations increase by 100 times (10 squared).',
+    },
+    spacedRevision: [
+      {
+        intervalDays: 1,
+        concept: 'Sorting Algorithms & Comparison Complexity',
+        prompt: 'Contrast the worst-case and average-case time complexities of Bubble Sort, Merge Sort, and Quick Sort.',
+        format: 'concept_check',
+      },
+      {
+        intervalDays: 7,
+        concept: 'Sorting Algorithms & Comparison Complexity',
+        prompt: 'Why is comparison-based sorting bounded by Ω(n log n) in the worst case?',
+        format: 'flashcard',
+      },
+    ],
+    suggestedVisualId: 'sorting-visualizer-sim',
+  },
+
+  // ==========================================
+  // EARTH SCIENCE & GEOPHYSICS
+  // ==========================================
+  tectonic_plates_boundaries: {
+    id: 'tectonic_plates_boundaries',
+    conceptName: 'Plate Tectonics & Continental Drift',
+    subject: 'physics',
+    prerequisites: ['newtons_first_law'],
+    realWorldExample: {
+      english: 'The Himalayas rising by approximately 5 millimeters each year as the Indian tectonic plate collides with the Eurasian plate.',
+      hindi: 'हिमालय पर्वतमाला की ऊंचाई प्रतिवर्ष 5 मिमी बढ़ना क्योंकि भारतीय प्लेट यूरेशियन प्लेट से टकरा रही है।',
+      hinglish: 'Indian plate ka Eurasian plate se collide hona jisse Himalayas ki height har saal measureable amount se grow hoti hai.',
+    },
+    analogy: {
+      english: 'Tectonic plates are like giant fractured cracked eggshells floating on a slowly convecting pot of thick boiling soup (the semi-molten asthenosphere mantle).',
+      hindi: 'टेक्टोनिक प्लेटें उबलते सूप पर तैरते हुए टूटे हुए अंडे के छिलकों जैसी हैं जो नीचे के संवहन धाराओं द्वारा गति करती हैं।',
+      hinglish: 'Tectonic plates boiling mantle par float karte huge rigid crust pieces hain jo convection currents ki wajah se drift karte hain.',
+    },
+    commonMisconceptions: [
+      {
+        misconception: 'Earthquakes and volcanic eruptions occur uniformly and randomly across the Earth.',
+        triggerPatterns: ['earthquakes happen anywhere randomly', 'no pattern to volcanoes', 'continents float on water'],
+        explanationCorrection: 'Earthquakes and volcanoes occur overwhelmingly along narrow tectonic plate boundaries (convergent, divergent, transform) due to friction and magma upwelling; plate interiors are largely seismically stable.',
+        recommendedStrategy: 'visual_walkthrough',
+      },
+    ],
+    applicationCheckpoint: {
+      prompt: {
+        english: 'Explain why the Pacific "Ring of Fire" accounts for over 75% of the world’s active volcanoes and 90% of all earthquakes.',
+        hindi: 'प्रशांत महासागर का "अग्नि वलय" (Ring of Fire) विश्व के 75% से अधिक ज्वालामुखियों और 90% भूकंपों के लिए क्यों जिम्मेदार है?',
+        hinglish: 'Pacific "Ring of Fire" mein duniya ke 75% active volcanoes aur 90% earthquakes kyu cluster hote hain?',
+      },
+      type: 'application',
+      keyIdeas: [
+        'The Pacific plate is surrounded by subduction zones at convergent boundaries.',
+        'Dense oceanic crust slides under lighter continental crust, melting into magma.',
+        'Frictional lock and sudden slip along boundaries release massive seismic shockwaves.',
+      ],
+      passingCriteria: 'Student must mention convergent plate boundaries, subduction zones, or tectonic plate collisions surrounding the Pacific basin.',
+    },
+    spacedRevision: [
+      {
+        intervalDays: 1,
+        concept: 'Plate Tectonics & Continental Drift',
+        prompt: 'Describe the three types of plate boundaries: convergent, divergent, and transform.',
+        format: 'concept_check',
+      },
+      {
+        intervalDays: 7,
+        concept: 'Plate Tectonics & Continental Drift',
+        prompt: 'How does mantle convection act as the driving engine for continental drift?',
+        format: 'flashcard',
+      },
+    ],
+    suggestedVisualId: 'tectonic-plates-globe-3d',
+  },
 };
 
 /**
@@ -904,6 +1015,16 @@ export function resolveConceptGraph(
 
   if (normalized.includes('binary search') || normalized.includes('algorithm') || normalized.includes('big-o') || normalized.includes('complexity') || normalized.includes('search')) {
     addNode(CONCEPT_KNOWLEDGE_GRAPH.binary_search_complexity);
+  }
+
+  if (normalized.includes('sort') || normalized.includes('quicksort') || normalized.includes('mergesort') || normalized.includes('bubblesort')) {
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.binary_search_complexity);
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.sorting_algorithms_complexity);
+  }
+
+  if (normalized.includes('tectonic') || normalized.includes('earthquake') || normalized.includes('volcano') || normalized.includes('plate') || normalized.includes('drift')) {
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.newtons_first_law);
+    addNode(CONCEPT_KNOWLEDGE_GRAPH.tectonic_plates_boundaries);
   }
 
   // General keyword matching against node text
