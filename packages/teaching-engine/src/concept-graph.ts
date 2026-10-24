@@ -56,7 +56,7 @@ export const CONCEPT_KNOWLEDGE_GRAPH: Record<string, ConceptNode> = {
       hinglish: 'Balloon ko sweater par rub karne se electrons transfer hona aur wall par stick ho jana.',
     },
     analogy: {
-      english: 'Electric current is like water flow rate: coulombs per second through a wire is like gallons per minute through a pipe.',
+      english: 'Electric current is like a water pipe: coulombs per second through a wire is like gallons per minute through a pipe.',
       hindi: 'विद्युत धारा एक पाइप में पानी के बहने की दर जैसी है: प्रति सेकंड बहने वाला आवेश।',
       hinglish: 'Current bilkul pipe mein paani ke flow rate jaisa hai: per second kitna charge pass ho raha hai (I = Q / t).',
     },

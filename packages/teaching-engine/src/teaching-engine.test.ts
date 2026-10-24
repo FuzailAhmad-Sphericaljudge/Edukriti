@@ -30,6 +30,8 @@ import {
   buildSpokenStyleNarration,
   buildCheckpointRubric,
   CONCEPT_KNOWLEDGE_GRAPH,
+  evaluateCheckpointRubric,
+  buildAdaptationV2,
 } from './index.ts';
 import { checkpointRubricSchema } from '@edukriti/contracts';
 import type { AiProvider } from '@edukriti/ai';
@@ -493,6 +495,67 @@ test('buildDeterministicLessonPlan enriches lesson with concept graph nodes, int
   assert.ok(segmentWithCheckpoint.checkpoint.rubric.keyIdeas.length >= 1);
   assert.ok(segmentWithCheckpoint.checkpoint.rubric.passingCriteria.length > 0);
 });
+
+test('evaluateCheckpointRubric scores key ideas and identifies common misconceptions with matching strategies', () => {
+  const context = {
+    id: 'cp-ohm-1',
+    targetConcept: 'Ohm’s Law & Electrical Resistance',
+    language: 'english' as const,
+  };
+
+  // Misconception: increasing voltage increases resistance
+  const evalMisconception = evaluateCheckpointRubric(
+    context,
+    'If you increase voltage, the resistance increases because R = V / I.',
+  );
+  assert.equal(evalMisconception.isCorrect, false);
+  assert.ok(evalMisconception.misconception);
+  assert.equal(evalMisconception.nextAction, 'visual_walkthrough');
+
+  // Correct conceptual answer
+  const evalCorrect = evaluateCheckpointRubric(
+    context,
+    'For ohmic conductors at constant temperature, resistance is an intrinsic physical property that remains constant, so doubling voltage doubles current.',
+  );
+  assert.equal(evalCorrect.isCorrect, true);
+  assert.equal(evalCorrect.nextAction, 'continue');
+  assert.ok(evalCorrect.rubricScore! >= 50);
+});
+
+test('buildAdaptationV2 supports 5 pedagogical strategies and escalates across remediation attempts', () => {
+  const context = {
+    id: 'cp-adapt-test',
+    targetConcept: 'Ohm’s Law & Electrical Resistance',
+    language: 'hinglish' as const,
+  };
+
+  const failedEval = evaluateCheckpointRubric(context, 'Increasing voltage increases resistance.');
+
+  // Attempt 1: visual walkthrough recommended by Ohm rubric
+  const adapt1 = buildAdaptationV2(context, failedEval, 1);
+  assert.ok(adapt1);
+  assert.equal(adapt1.remediationAttempt, 1);
+  assert.equal(adapt1.strategy, 'visual_walkthrough');
+
+  // Explicit strategy: worked_example
+  const evalWorked = { ...failedEval, nextAction: 'worked_example' as const };
+  const adaptWorked = buildAdaptationV2(context, evalWorked, 1);
+  assert.equal(adaptWorked?.strategy, 'worked_example');
+  assert.ok(adaptWorked?.explanation.includes('I = V / R'));
+
+  // Explicit strategy: interactive
+  const evalInteractive = { ...failedEval, nextAction: 'interactive' as const };
+  const adaptInteractive = buildAdaptationV2(context, evalInteractive, 1);
+  assert.equal(adaptInteractive?.strategy, 'interactive');
+  assert.ok(adaptInteractive?.interactive);
+  assert.equal(adaptInteractive?.interactive?.id, 'circuit-builder-dc');
+
+  // Attempt 3 escalation: reverts to simpler prerequisite (Voltage & Electric Potential)
+  const adapt3 = buildAdaptationV2(context, { ...failedEval, nextAction: 'new_analogy' as const }, 3);
+  assert.equal(adapt3?.strategy, 'simpler_prerequisite');
+  assert.equal(adapt3?.remediationAttempt, 3);
+});
+
 
 
 
