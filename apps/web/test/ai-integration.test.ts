@@ -197,6 +197,27 @@ test('streamTutorQuestion yields progressive events and complete response', asyn
   assert.ok(events.includes('complete'));
 });
 
+test('assessment generation prioritizes learner weak concepts across non-electricity topics', async () => {
+  const planResult = await generateLessonPlan(
+    { ...mockRequest, topic: 'Newton Laws of Motion' },
+    [],
+    'lesson-newton-1',
+    {},
+  );
+  assert.equal(planResult.plan.id, 'lesson-newton-1');
+
+  // Verify that the plan contains concept graph nodes and rubrics
+  assert.ok(planResult.plan.conceptGraphNodes.length > 0);
+  const segmentsWithRubrics = planResult.plan.segments.filter((s) => s.checkpoint?.rubric);
+  assert.ok(segmentsWithRubrics.length > 0);
+
+  // Check weak concepts prioritization
+  const { buildAssessment } = await import('@edukriti/teaching-engine');
+  const questionsWithWeak = buildAssessment(planResult.plan, ['newtons_second_law']);
+  assert.ok(questionsWithWeak.length >= 3);
+  assert.ok(questionsWithWeak.some((q) => q.targetConcept?.toLowerCase().includes('second') || q.prompt.toLowerCase().includes('second') || q.prompt.toLowerCase().includes('f = m') || q.prompt.toLowerCase().includes('force')));
+});
+
 test('answerTutorQuestion labels missing curriculum topics as not from course material', async () => {
   const req: TutorRequest = {
     question: 'What is the history and geographical significance of the Panama Canal?',
