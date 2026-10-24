@@ -28,6 +28,8 @@ type PracticeQuestion = {
   choices: Array<{ id: string; text: string }>;
   correctId: string;
   isWeakFocus: boolean;
+  interactive?: LessonPlan['segments'][number]['interactive'];
+  checkpoint?: LessonPlan['segments'][number]['checkpoint'];
 };
 
 function matchesConcept(title: string, weakConcepts: string[]) {
@@ -76,6 +78,8 @@ function buildQuestions(plan: LessonPlan, weakConcepts: string[]) {
       choices,
       correctId: choices.find((choice) => choice.text === segment.objective)!.id,
       isWeakFocus: matchesConcept(segment.title, weakConcepts),
+      interactive: segment.interactive,
+      checkpoint: segment.checkpoint,
     };
   });
 }
@@ -101,6 +105,8 @@ export function AdaptivePractice({
   const [supportMode, setSupportMode] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState('');
+  const [remediationAttempt, setRemediationAttempt] = useState(1);
+  const [adaptationSucceeded, setAdaptationSucceeded] = useState(false);
   const question = questions[questionIndex]!;
   const complete = completedCount === questions.length;
   const mastery = Math.round((correctCount / Math.max(questions.length, 1)) * 100);
@@ -119,9 +125,14 @@ export function AdaptivePractice({
       setCorrectCount((value) => value + 1);
       setStreak((value) => value + 1);
       setSupportMode(false);
+      if (remediationAttempt > 1) {
+        setAdaptationSucceeded(true);
+      }
     } else {
       setStreak(0);
       setSupportMode(true);
+      setRemediationAttempt((prev) => prev + 1);
+      setAdaptationSucceeded(false);
     }
   }
 
@@ -139,6 +150,8 @@ export function AdaptivePractice({
     setChecked(false);
     setRevealed(false);
     setError('');
+    setRemediationAttempt(1);
+    setAdaptationSucceeded(false);
     if (nextCompleted < questions.length) {
       setQuestionIndex((value) => value + 1);
     }
@@ -155,6 +168,8 @@ export function AdaptivePractice({
     setSupportMode(false);
     setRevealed(false);
     setError('');
+    setRemediationAttempt(1);
+    setAdaptationSucceeded(false);
   }
 
   if (complete) {
@@ -252,15 +267,44 @@ export function AdaptivePractice({
           <div className={`mt-6 rounded-2xl border p-5 ${lastCorrect ? 'border-emerald-200 bg-emerald-50 text-emerald-950' : 'border-orange-200 bg-orange-50 text-orange-950'}`}>
             <div className="flex items-center gap-2 font-bold">
               {lastCorrect ? <Check className="size-5 text-emerald-600" /> : <CircleX className="size-5 text-orange-600" />}
-              {lastCorrect ? 'Correct—difficulty will adapt up' : 'Not yet—Aarohi switched to support mode'}
+              {lastCorrect ? (adaptationSucceeded ? 'Adaptive remediation successful! Concept mastered on retry.' : 'Correct—difficulty will adapt up') : `Remediation Attempt #${remediationAttempt - 1} — Aarohi switched to adaptive re-teaching`}
             </div>
+            {!lastCorrect && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="rounded-md bg-orange-200 px-2 py-0.5 text-xs font-bold text-orange-900">
+                  {remediationAttempt <= 2
+                    ? 'Strategy: New Analogy'
+                    : remediationAttempt === 3
+                    ? 'Strategy: Worked Example'
+                    : question.interactive
+                    ? 'Strategy: Interactive Simulation'
+                    : 'Strategy: Visual Walkthrough'}
+                </span>
+                {question.interactive && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-800">
+                    <Sparkles className="size-3 text-orange-600" />
+                    Interactive: {question.interactive.id}
+                  </span>
+                )}
+              </div>
+            )}
             <p className="mt-2 text-sm leading-6 opacity-80">
               {lastCorrect
                 ? question.objective
                 : revealed
                   ? question.explanation
-                  : 'Try again with a clearer clue, or reveal the lesson explanation before moving on.'}
+                  : remediationAttempt <= 2
+                  ? 'Hint (New Analogy): Think about everyday cause-and-effect in this system. Compare what drives the change versus what resists it.'
+                  : remediationAttempt === 3
+                  ? 'Hint (Worked Example): Look at the formula and variables. Identify what remains constant and what changes proportionately.'
+                  : 'Hint (Visual Walkthrough): Inspect the visual manifest cues for this concept to track how variables interact.'}
             </p>
+            {!lastCorrect && question.checkpoint?.rubric && (
+              <div className="mt-2 border-t border-orange-200/60 pt-2 text-xs text-orange-900/80">
+                <span className="font-semibold">Grading Rubric Target: </span>
+                <span>{question.checkpoint.rubric.passingCriteria}</span>
+              </div>
+            )}
           </div>
         )}
         {error && <p role="alert" className="mt-4 text-sm font-semibold text-red-600">{error}</p>}
