@@ -5,8 +5,12 @@ Edukriti strictly adheres to open licensing and public-domain resources for all 
 | Asset / Dataset | Primary Source | License | Usage in Edukriti |
 | :--- | :--- | :--- | :--- |
 | **OpenStax Physics & Science** | OpenStax, Rice University | CC BY 4.0 | Core curriculum concepts, definitions, and prerequisite progressions |
+| **OpenStax Biology 2e & Chemistry 2e** | OpenStax, Rice University | CC BY 4.0 | Mitosis phases, DNA base pairing, acid-base stoichiometry, equilibrium concepts |
 | **Wikipedia Articles & Glossaries** | Wikimedia Foundation | CC BY-SA 4.0 | Conceptual definitions, historical context, and foundational explanations |
 | **PubChem Compound & Element Data** | NCBI / NIH | Public Domain / CC0 | Chemical formulas, physical constants, molecular properties |
+| **Vetted STEM Visual Simulations** | Edukriti Core Team / PhET & open-source educational simulations | CC BY 4.0 / MIT | Interactive SVG/Canvas/HTML5 simulations: Circuit Builder DC, Projectile Motion, Pendulum, Titration Lab |
+| **Vetted 3D Science Scenes** | Three.js Community / NASA 3D Resources | CC0 1.0 Public Domain / MIT | Parametric and WebGL 3D scenes: Solar System 3D, DNA Double Helix 3D, Plate Tectonics 3D |
+| **Vetted Mathematical Diagrams** | Geogebra-inspired open models / Edukriti Engine | MIT License | Fraction Strip Visualizer, Sorting Algorithms Visualizer, Ray Optics Diagram |
 | **GSM8K & MATH Datasets** | OpenAI / UC Berkeley | MIT License | Mathematical reasoning questions and distractor generation patterns |
 | **ARC Reasoning Callsets** | Allen Institute for AI (AI2) | CC BY-SA 4.0 | Multi-choice science question structures and distractors |
 | **OpenBookQA** | Allen Institute for AI (AI2) | Apache-2.0 | Elementary science question paradigms and explanation validations |
@@ -15,6 +19,8 @@ Edukriti strictly adheres to open licensing and public-domain resources for all 
 | **Offline Teaching Engine** | Edukriti Core Team | Apache-2.0 / MIT | Offline zero-cost deterministic fallback ensuring 100% demo uptime |
 | **Ask Aarohi 105-Question Benchmark** | Edukriti Core Team / OpenStax / Wikipedia | CC BY 4.0 / MIT | Golden evaluation set with expected key facts, intents, and numeric recomputation |
 | **Curated Multi-Subject Knowledge Base** | OpenStax (Physics, Chem, Algebra, Bio) & Wikipedia | CC BY 4.0 & CC BY-SA 4.0 | Grounded textbook facts, equations, and page-level citations [1][2] |
+| **Mammoth DOCX & PPTX XML Parsing** | Open Packaging Conventions (ISO/IEC 29500) | MIT / Open Specification | Ingesting teacher lecture slides and lesson notes into page-bounded chunks |
 | **KaTeX Math Engine** | Khan Academy | MIT License | Fast, accessible, client-side mathematical formula rendering ($...$, $$...$$) |
+| **Cognitive Spaced Repetition Intervals** | SuperMemo SM-2 & Ebbinghaus Cognitive Model | Public Domain Educational Model | Optimal review spacing (1d, 3d, 7d, 14d) scheduled in lesson manifests |
 
-All attribution notices are maintained in accordance with CC BY 4.0 and CC BY-SA 4.0 license requirements.
+All attribution notices are maintained in accordance with CC BY 4.0 and CC BY-SA 4.0 license requirements. No copyrighted publisher textbooks are scraped or redistributed.
