@@ -308,14 +308,22 @@ export function buildAdaptationV2(
   const rubric = findOrBuildRubric(context);
   const nodes = resolveConceptGraph(concept, 2);
   const node = nodes[0];
-  const prereqNode = nodes[1] || (node?.prerequisites[0] ? CONCEPT_KNOWLEDGE_GRAPH[node.prerequisites[0]] : undefined);
+  let prereqNode = nodes[1];
+  if (!prereqNode && node?.prerequisites?.length) {
+    for (const pid of node.prerequisites) {
+      if (CONCEPT_KNOWLEDGE_GRAPH[pid]) {
+        prereqNode = CONCEPT_KNOWLEDGE_GRAPH[pid];
+        break;
+      }
+    }
+  }
 
   // Strategy selection: use nextAction from evaluation or fallback to new_analogy
   let strategy: AdaptationStrategy = (evaluation.nextAction !== 'continue' ? evaluation.nextAction : 'new_analogy') as AdaptationStrategy;
-  if (attempt === 2 && strategy === 'new_analogy') {
-    strategy = 'worked_example';
-  } else if (attempt >= 3 && prereqNode) {
+  if (attempt >= 3 && prereqNode) {
     strategy = 'simpler_prerequisite';
+  } else if (attempt === 2 && strategy === 'new_analogy') {
+    strategy = 'worked_example';
   }
 
   const langKey = context.language === 'hindi' ? 'hindi' : context.language === 'hinglish' ? 'hinglish' : 'english';
@@ -338,12 +346,19 @@ export function buildAdaptationV2(
 
     case 'simpler_prerequisite':
       const prereqName = prereqNode ? prereqNode.conceptName : 'Foundational concepts';
+      const prereqAnalogy = prereqNode?.analogy?.[langKey];
+      const analogyNote = prereqAnalogy ? ` Key intuition: ${prereqAnalogy}.` : '';
+      if (prereqNode?.suggestedVisualId) {
+        replacementInteractive = suggestVisualForTopic(prereqNode.conceptName, prereqNode.suggestedVisualId);
+      }
       if (context.language === 'hindi') {
-        explanation = `इस अवधारणा को पूरी तरह समझने से पहले, आइए इसके पूर्व-आवश्यक आधार “${prereqName}” को संक्षिप्त में दोहराएं। जब तक मूल आधार स्पष्ट न हो, आगे का संबंध समझना कठिन होता है।`;
+        const hiNote = prereqAnalogy ? ` मुख्य दृष्टि: ${prereqAnalogy} ` : ' ';
+        explanation = `इस अवधारणा को पूरी तरह समझने से पहले, आइए इसके पूर्व-आवश्यक आधार “${prereqName}” को संक्षिप्त में दोहराएं।${hiNote}जब तक मूल आधार स्पष्ट न हो, आगे का संबंध समझना कठिन होता है।`;
       } else if (context.language === 'hinglish') {
-        explanation = `Is concept ko master karne se pehle, chalo iske prerequisite “${prereqName}” ko quickly recap karte hain. Ek baar base clear ho jaye toh aage sab click ho jayega.`;
+        const hingNote = prereqAnalogy ? ` Quick intuition: ${prereqAnalogy} ` : ' ';
+        explanation = `Is concept ko master karne se pehle, chalo iske prerequisite “${prereqName}” ko quickly recap karte hain.${hingNote}Ek baar base clear ho jaye toh aage sab click ho jayega.`;
       } else {
-        explanation = `Before moving ahead with this concept, let’s quickly review its foundational prerequisite: “${prereqName}”. When the core foundation is rock-solid, this relationship becomes clear.`;
+        explanation = `Before moving ahead with this concept, let’s quickly review its foundational prerequisite: “${prereqName}”.${analogyNote} When the core foundation is rock-solid, this relationship becomes clear.`;
       }
       remediationAction = `Review ${prereqName} before re-attempting this checkpoint.`;
       break;
