@@ -6,6 +6,8 @@ import {
   responseEvaluationSchema,
   lessonPlanSchema,
   suggestVisualForTopic,
+  getVettedVisualRegistry,
+  validateVisualSelection,
   type AssessmentAttemptResponse,
   type AssessmentQuestion,
   type LearningReport,
@@ -171,6 +173,15 @@ export async function generateLessonPlanWithAi(
 ): Promise<LessonPlan> {
   const count = segmentCount(request.durationMinutes);
   const topic = request.topic?.trim() || evidence[0]?.text.split(/[.!?\n]/)[0]?.slice(0, 90) || 'Uploaded material';
+  const variantMode = request.variantMode ?? 'standard';
+  const graphNodes = resolveConceptGraph(topic, count);
+  const vettedRegistry = getVettedVisualRegistry().map((v) => ({
+    id: v.id,
+    kind: v.kind,
+    title: v.title,
+    paramKeys: v.paramKeys,
+    defaultParams: v.defaultParams,
+  }));
 
   const prompt = {
     instructions: `# Role
@@ -181,18 +192,25 @@ Produce a structured lesson plan adhering strictly to the schema.
 - Match language: ${request.language} (English / Hindi / Hinglish).
 - Level: ${request.level}.
 - Duration: exactly ${request.durationMinutes} minutes with ${count} logical segments.
+- Variant Mode: ${variantMode} (standard / exam_focused / practical).
 - Style: ${request.style}.
 - Learner goal: ${request.goal}.
-- Narration should be conversational spoken teaching with natural explanations and transitions.
-- Checkpoints should check conceptual understanding rather than pure memorization.
-- Citations must strictly reference provided evidence when present.`,
+- Narration: Conversational spoken-style teaching. Integrate a real-world example, clear analogy, and address common misconceptions.
+- Visual Interactive: You must NEVER write code. For interactive segments, select ONLY an id and params from the vetted visual registry.
+- Checkpoints: Application-focused, verifying conceptual understanding. Include a grading rubric (key ideas, misconceptions, passing criteria).
+- Spaced Revision: Include 1-day, 3-day, 7-day, and 14-day spaced revision prompts tied to key concepts.
+- Citations: Strictly reference provided evidence when present.`,
     input: {
       topic,
       level: request.level,
       language: request.language,
       durationMinutes: request.durationMinutes,
+      variantMode,
       style: request.style,
       goal: request.goal,
+      prerequisiteConcepts: graphNodes.flatMap((n) => n.prerequisites),
+      suggestedConcepts: graphNodes.map((n) => n.conceptName),
+      vettedVisualRegistry: vettedRegistry,
       evidence: evidence.map((e) => ({
         sourceId: e.sourceId,
         chunkId: e.chunkId,
@@ -208,12 +226,45 @@ Produce a structured lesson plan adhering strictly to the schema.
       schemaDescription: 'Structured personalized lesson plan',
     });
 
+    // Validate interactive selections against vetted registry (enforcing Rule 3)
+    const cleanedSegments = generated.segments.map((seg, idx) => {
+      let interactive = seg.interactive;
+      if (interactive) {
+        const validation = validateVisualSelection(interactive.id, interactive.params);
+        if (validation.isValid && validation.validatedParams) {
+          interactive = {
+            ...interactive,
+            params: validation.validatedParams,
+          };
+        } else {
+          // Fall back to vetted visual suggestion or strip invalid params
+          const suggested = suggestVisualForTopic(seg.title, graphNodes[idx]?.suggestedVisualId);
+          interactive = suggested;
+        }
+      }
+      return {
+        ...seg,
+        interactive,
+      };
+    });
+
     return lessonPlanSchema.parse({
       ...generated,
       id,
       learnerId: request.learnerId,
       language: request.language,
       durationMinutes: request.durationMinutes,
+      variantMode,
+      segments: cleanedSegments,
+      prerequisiteConcepts: generated.prerequisiteConcepts?.length
+        ? generated.prerequisiteConcepts
+        : graphNodes.flatMap((n) => n.prerequisites),
+      conceptGraphNodes: generated.conceptGraphNodes?.length
+        ? generated.conceptGraphNodes
+        : graphNodes.map((n) => n.id),
+      spacedRevision: generated.spacedRevision?.length
+        ? generated.spacedRevision
+        : graphNodes.flatMap((n) => n.spacedRevision),
       createdAt: now,
     });
   } catch {

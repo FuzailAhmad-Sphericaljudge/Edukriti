@@ -157,6 +157,39 @@ test('generateLessonPlanWithAi uses AI provider and falls back to deterministic 
   assert.equal(fallbackPlan.learnerId, request.learnerId);
 });
 
+test('generateLessonPlanWithAi validates interactive visual manifests against vetted registry and sanitizes invalid params', async () => {
+  const plan = buildDeterministicLessonPlan(request, [], 'lesson', '2026-09-04T15:00:00Z');
+  // Plan with an invalid parameter value that violates Zod schema (e.g. voltage = 9999 when max is 100)
+  const aiGeneratedWithBadParams = {
+    ...plan,
+    segments: plan.segments.map((s, idx) => (idx === 0 ? {
+      ...s,
+      interactive: {
+        kind: 'sim' as const,
+        id: 'circuit-builder-dc',
+        params: { voltage: 9999, resistance: 4 }, // 9999 exceeds max 100
+      },
+    } : s)),
+  };
+
+  const mockProvider: AiProvider = {
+    name: 'gemini',
+    defaultModel: 'gemini-2.5-flash',
+    async generateStructured() {
+      return aiGeneratedWithBadParams;
+    },
+    async generateText() { return ''; },
+    async *stream() { yield ''; },
+    async embed() { return []; },
+  };
+
+  const cleanedPlan = await generateLessonPlanWithAi(mockProvider, request, []);
+  assert.ok(cleanedPlan.segments[0]?.interactive);
+  // Must fall back to safe default params
+  assert.equal(cleanedPlan.segments[0]?.interactive?.id, 'circuit-builder-dc');
+  assert.ok(Number(cleanedPlan.segments[0]?.interactive?.params.voltage) <= 100);
+});
+
 test('evaluateCheckpointWithAi evaluates response via provider and falls back on error', async () => {
   const mockProvider: AiProvider = {
     name: 'gemini',
