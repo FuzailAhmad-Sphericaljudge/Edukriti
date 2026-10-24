@@ -212,6 +212,122 @@ export const VETTED_VISUAL_REGISTRY: VettedVisualManifestEntry[] = [
     }),
     { boundaryType: 'all', showVolcanoes: true, showEarthquakes: true },
   ),
+
+  createEntry(
+    'atom_bohr_model',
+    'scene3d',
+    'Bohr Atomic Model & Quantized Electron Shells',
+    'physics',
+    'Interactive 3D procedural Bohr atom demonstrating nucleus nucleons, quantized concentric electron shells (K, L, M, N), and element valence.',
+    z.object({
+      atomicNumber: z.number().int().min(1).max(20).default(6),
+      electronSpeed: z.number().min(0).max(3).default(1),
+      showShellLabels: z.boolean().default(true),
+      showEnergyLevels: z.boolean().default(true),
+      explodedView: z.number().min(0).max(1).default(0),
+    }),
+    { atomicNumber: 6, electronSpeed: 1, showShellLabels: true, showEnergyLevels: true, explodedView: 0 },
+  ),
+
+  createEntry(
+    'solar_system_seasons_eclipses',
+    'scene3d',
+    'Solar System, Earth Seasons & Moon Eclipses',
+    'physics',
+    'Interactive 3D procedural celestial simulator displaying the Sun, Earth with realistic 23.5° axial tilt, seasonal solstices/equinoxes, and Moon phase eclipse alignments.',
+    z.object({
+      currentSeason: z.enum(['free_orbit', 'june_solstice', 'december_solstice', 'march_equinox', 'september_equinox']).default('june_solstice'),
+      axialTiltDeg: z.number().min(0).max(45).default(23.5),
+      orbitSpeed: z.number().min(0).max(3).default(1),
+      showOrbitRings: z.boolean().default(true),
+      showLightRays: z.boolean().default(true),
+      eclipseMode: z.enum(['none', 'solar_eclipse', 'lunar_eclipse']).default('none'),
+    }),
+    { currentSeason: 'june_solstice', axialTiltDeg: 23.5, orbitSpeed: 1, showOrbitRings: true, showLightRays: true, eclipseMode: 'none' },
+  ),
+
+  createEntry(
+    'wave_interference_3d',
+    'scene3d',
+    '3D Wave Superposition, Interference & Diffraction',
+    'physics',
+    'Interactive 3D procedural wave simulator showing constructive antinodes, destructive nodal planes, and variable source separation/wavelength.',
+    z.object({
+      wavelength: z.number().min(0.5).max(3.0).default(1.2),
+      sourceSeparation: z.number().min(1.0).max(6.0).default(3.0),
+      amplitude: z.number().min(0.2).max(1.5).default(0.8),
+      phaseDifferenceDeg: z.number().min(0).max(180).default(0),
+      timeStep: z.number().min(0).max(10).default(0),
+      gridResolution: z.number().int().min(10).max(40).default(20),
+    }),
+    { wavelength: 1.2, sourceSeparation: 3.0, amplitude: 0.8, phaseDifferenceDeg: 0, timeStep: 0, gridResolution: 20 },
+  ),
+
+  createEntry(
+    'geometry_solids_3d',
+    'scene3d',
+    '3D Geometry Solids, Cross-Sections & Volume',
+    'mathematics',
+    'Interactive 3D procedural solids (cube, cylinder, sphere, cone, pyramid) with dynamic cross-section slicing planes, exploded views, and volume formulas.',
+    z.object({
+      solidType: z.enum(['cube', 'cylinder', 'sphere', 'cone', 'pyramid', 'rectangular_prism']).default('cylinder'),
+      dimensionA: z.number().min(1).max(5).default(2.5),
+      dimensionB: z.number().min(1).max(6).default(3.5),
+      crossSectionPlane: z.enum(['none', 'horizontal', 'vertical', 'diagonal']).default('horizontal'),
+      sliceOffset: z.number().min(-2).max(2).default(0),
+      explodedView: z.number().min(0).max(1).default(0),
+    }),
+    { solidType: 'cylinder', dimensionA: 2.5, dimensionB: 3.5, crossSectionPlane: 'horizontal', sliceOffset: 0, explodedView: 0 },
+  ),
+
+  createEntry(
+    'vectors_projectile_3d',
+    'scene3d',
+    '3D Vector Decomposition & Projectile Kinematics',
+    'physics',
+    'Interactive 3D procedural projectile trajectory with 3D vector decomposition (vx, vy, vz), air drag, apex marker, and range calculation.',
+    z.object({
+      launchSpeed: z.number().min(5).max(30).default(18),
+      pitchAngleDeg: z.number().min(5).max(85).default(45),
+      yawAngleDeg: z.number().min(-60).max(60).default(20),
+      gravity: z.number().min(1).max(25).default(9.8),
+      airDrag: z.number().min(0).max(0.15).default(0.02),
+      showComponentVectors: z.boolean().default(true),
+      showTrajectoryTrail: z.boolean().default(true),
+    }),
+    { launchSpeed: 18, pitchAngleDeg: 45, yawAngleDeg: 20, gravity: 9.8, airDrag: 0.02, showComponentVectors: true, showTrajectoryTrail: true },
+  ),
+
+  createEntry(
+    'crystal_lattice_3d',
+    'scene3d',
+    'Solid-State Crystal Lattices & Unit Cells (SC, BCC, FCC)',
+    'chemistry',
+    'Interactive 3D solid-state chemistry lattice viewer demonstrating Simple Cubic, BCC, FCC, and Diamond unit cells with atomic packing factor and coordination numbers.',
+    z.object({
+      latticeType: z.enum(['SC', 'BCC', 'FCC', 'diamond']).default('FCC'),
+      supercellReplication: z.enum(['1x1x1', '2x2x2']).default('1x1x1'),
+      atomRadiusMode: z.enum(['ball_and_stick', 'hard_sphere']).default('ball_and_stick'),
+      latticeConstant: z.number().min(2.5).max(5.0).default(3.6),
+      explodedView: z.number().min(0).max(1).default(0),
+    }),
+    { latticeType: 'FCC', supercellReplication: '1x1x1', atomRadiusMode: 'ball_and_stick', latticeConstant: 3.6, explodedView: 0 },
+  ),
+
+  createEntry(
+    'cell_biology_stylized',
+    'scene3d',
+    'Eukaryotic Cell Anatomy & Organelle Physiology',
+    'biology',
+    'Interactive 3D procedural eukaryotic animal and plant cell demonstrating nucleus, mitochondria, chloroplasts, Golgi apparatus, and turgor cell wall.',
+    z.object({
+      cellType: z.enum(['animal', 'plant']).default('animal'),
+      cutawayView: z.boolean().default(true),
+      showOrganelleLabels: z.boolean().default(true),
+      explodedView: z.number().min(0).max(1).default(0),
+    }),
+    { cellType: 'animal', cutawayView: true, showOrganelleLabels: true, explodedView: 0 },
+  ),
 ];
 
 export function getVettedVisualRegistry(): VettedVisualManifestEntry[] {
@@ -321,6 +437,34 @@ export function suggestVisualForTopic(
 
   if (text.includes('tectonic') || text.includes('earthquake') || text.includes('volcano') || text.includes('crust')) {
     return toManifest('tectonic-plates-globe-3d');
+  }
+
+  if (text.includes('atom') || text.includes('bohr') || text.includes('electron shell')) {
+    return toManifest('atom_bohr_model');
+  }
+
+  if (text.includes('season') || text.includes('eclipse') || text.includes('solstice') || text.includes('equinox')) {
+    return toManifest('solar_system_seasons_eclipses');
+  }
+
+  if (text.includes('interference') || text.includes('diffraction') || text.includes('wave superposition')) {
+    return toManifest('wave_interference_3d');
+  }
+
+  if (text.includes('solid') || text.includes('cross section') || text.includes('cylinder') || text.includes('cube') || text.includes('cone')) {
+    return toManifest('geometry_solids_3d');
+  }
+
+  if (text.includes('vector') || (text.includes('projectile') && text.includes('3d'))) {
+    return toManifest('vectors_projectile_3d');
+  }
+
+  if (text.includes('lattice') || text.includes('crystal') || text.includes('unit cell') || text.includes('fcc') || text.includes('bcc')) {
+    return toManifest('crystal_lattice_3d');
+  }
+
+  if (text.includes('organelle') || text.includes('plant cell') || text.includes('animal cell') || text.includes('mitochondria') || text.includes('cell biology')) {
+    return toManifest('cell_biology_stylized');
   }
 
   return undefined;

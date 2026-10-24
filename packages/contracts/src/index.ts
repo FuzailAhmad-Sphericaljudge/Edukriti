@@ -271,6 +271,7 @@ export const tutorResponseSchema = z.object({
   summary: z.string().max(2000).optional(),
   extractedImageText: z.string().max(4000).optional(),
   safetyPassed: z.boolean().default(true),
+  suggestedVisualId: z.string().optional(),
 });
 
 export const tutorStreamEventSchema = z.discriminatedUnion('type', [
