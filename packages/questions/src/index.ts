@@ -13,3 +13,5 @@ export * from './datasets/openbookqa.ts';
 export * from './datasets/math-dataset.ts';
 export * from './datasets/dataset-registry.ts';
 export * from './verifier.ts';
+export * from './adaptive-selector.ts';
+export * from './mock-test-engine.ts';

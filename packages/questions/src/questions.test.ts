@@ -17,6 +17,13 @@ import {
   compareAnswers,
   deduplicateQuestions,
   jaccardSimilarity,
+  difficultyToRaschB,
+  calculateProbabilityOfSuccess,
+  updateLearnerTheta,
+  calculateNextSpacedInterval,
+  selectNextAdaptiveQuestion,
+  createMockTest,
+  evaluateMockTest,
   SeededRng,
 } from './index.ts';
 
@@ -310,5 +317,197 @@ test('deduplicateQuestions filters duplicate prompts and prioritizes verified in
   assert.ok(deduped.some((q) => q.id === 'q2'));
   assert.ok(deduped.some((q) => q.id === 'q3'));
 });
+
+test('Rasch 1-PL model and updateLearnerTheta correctly update student ability theta', () => {
+  // Test difficulty to Rasch parameter b
+  assert.equal(difficultyToRaschB('easy'), -1.0);
+  assert.equal(difficultyToRaschB('medium'), 0.0);
+  assert.equal(difficultyToRaschB('hard'), 1.2);
+
+  // Success probability increases as theta increases
+  const probLow = calculateProbabilityOfSuccess(-1.0, 0.0);
+  const probEqual = calculateProbabilityOfSuccess(0.0, 0.0);
+  const probHigh = calculateProbabilityOfSuccess(1.0, 0.0);
+
+  assert.ok(probLow < probEqual);
+  assert.ok(probEqual < probHigh);
+  assert.equal(Math.round(probEqual * 100) / 100, 0.5);
+
+  // Theta increases on correct answer, decreases on incorrect answer
+  const initialTheta = 0.0;
+  const thetaAfterCorrect = updateLearnerTheta(initialTheta, 'medium', true);
+  const thetaAfterWrong = updateLearnerTheta(initialTheta, 'medium', false);
+
+  assert.ok(thetaAfterCorrect > initialTheta, `Expected ${thetaAfterCorrect} > ${initialTheta}`);
+  assert.ok(thetaAfterWrong < initialTheta, `Expected ${thetaAfterWrong} < ${initialTheta}`);
+});
+
+test('calculateNextSpacedInterval expands on correct responses and resets on errors', () => {
+  const baseDate = '2026-10-24T12:00:00.000Z';
+
+  // First correct attempt expands to 3 days
+  const step1 = calculateNextSpacedInterval(1, 0, true, baseDate);
+  assert.equal(step1.nextIntervalDays, 3);
+  assert.equal(step1.newConsecutive, 1);
+
+  // Second correct expands to 7 days
+  const step2 = calculateNextSpacedInterval(3, 1, true, baseDate);
+  assert.equal(step2.nextIntervalDays, 7);
+  assert.equal(step2.newConsecutive, 2);
+
+  // Mistake resets to 1 day
+  const failStep = calculateNextSpacedInterval(7, 2, false, baseDate);
+  assert.equal(failStep.nextIntervalDays, 1);
+  assert.equal(failStep.newConsecutive, 0);
+});
+
+test('selectNextAdaptiveQuestion targets overdue spaced repetition and diagnosed weak concepts', () => {
+  const qOhm: any = {
+    id: 'q-ohm',
+    prompt: 'Ohm question',
+    subject: 'physics',
+    conceptIds: ['ohms_law'],
+    difficulty: 'medium',
+    verified: true,
+  };
+  const qNewton: any = {
+    id: 'q-newton',
+    prompt: 'Newton question',
+    subject: 'physics',
+    conceptIds: ['newtons_laws'],
+    difficulty: 'medium',
+    verified: true,
+  };
+  const qPhotosynthesis: any = {
+    id: 'q-photo',
+    prompt: 'Photo question',
+    subject: 'biology',
+    conceptIds: ['photosynthesis'],
+    difficulty: 'easy',
+    verified: true,
+  };
+
+  const nowIso = '2026-10-24T12:00:00.000Z';
+  const profiles: any = {
+    ohms_law: {
+      conceptId: 'ohms_law',
+      theta: 0.1,
+      nextReviewDate: '2026-10-23T12:00:00.000Z', // 1 day overdue
+    },
+    newtons_laws: {
+      conceptId: 'newtons_laws',
+      theta: 0.0,
+    },
+  };
+
+  // Ohm's law is overdue so it must be selected
+  const res1 = selectNextAdaptiveQuestion({
+    learnerProfiles: profiles,
+    candidateQuestions: [qOhm, qNewton, qPhotosynthesis],
+    nowIso,
+  });
+  assert.equal(res1.selectedQuestion.id, 'q-ohm');
+  assert.ok(res1.selectionReason.includes('Spaced repetition review due'));
+
+  // Target diagnosed weak concept
+  const res2 = selectNextAdaptiveQuestion({
+    learnerProfiles: {},
+    candidateQuestions: [qOhm, qNewton, qPhotosynthesis],
+    weakConceptIds: ['newtons_laws'],
+    nowIso,
+  });
+  assert.equal(res2.selectedQuestion.id, 'q-newton');
+  assert.ok(res2.selectionReason.includes('Targeting diagnosed weak concept'));
+});
+
+test('createMockTest generates balanced sectional test and evaluateMockTest derives real percentile', () => {
+  const sampleQuestions: any[] = [
+    {
+      id: 'mq-phy-1',
+      subject: 'physics',
+      conceptIds: ['ohms_law'],
+      difficulty: 'easy',
+      expectedAnswer: 'a',
+      tolerance: 0,
+      solutionSteps: [{ stepNumber: 1, title: 'Step', explanation: 'Solve' }],
+      distractorExplanations: [{ choiceId: 'b', errorTag: 'multiplied_instead_of_divided', explanation: 'Multiply error.' }],
+    },
+    {
+      id: 'mq-phy-2',
+      subject: 'physics',
+      conceptIds: ['kinematics'],
+      difficulty: 'medium',
+      expectedAnswer: '10',
+      tolerance: 0.1,
+      solutionSteps: [{ stepNumber: 1, title: 'Step', explanation: 'Solve' }],
+    },
+    {
+      id: 'mq-math-1',
+      subject: 'mathematics',
+      conceptIds: ['algebra_linear_equations'],
+      difficulty: 'easy',
+      expectedAnswer: 'x = 5',
+      tolerance: 0,
+      solutionSteps: [{ stepNumber: 1, title: 'Step', explanation: 'Solve' }],
+    },
+    {
+      id: 'mq-math-2',
+      subject: 'mathematics',
+      conceptIds: ['pythagoras_geometry'],
+      difficulty: 'medium',
+      expectedAnswer: 'c',
+      tolerance: 0,
+      solutionSteps: [{ stepNumber: 1, title: 'Step', explanation: 'Solve' }],
+    },
+  ];
+
+  const testManifest = createMockTest(
+    {
+      grade: 'Grade 10',
+      subjects: ['physics', 'mathematics'],
+      totalQuestions: 4,
+      timeLimitMinutes: 30,
+    },
+    sampleQuestions,
+    42,
+  );
+
+  assert.equal(testManifest.sections.length, 2);
+  assert.equal(testManifest.allQuestions.length, 4);
+
+  // Student answers mq-phy-1 correctly, mq-phy-2 wrongly with distractor 'b', mq-math-1 correctly, mq-math-2 wrongly
+  const answers = {
+    'mq-phy-1': 'a',
+    'mq-phy-2': 'b', // wrong
+    'mq-math-1': 'x = 5',
+    'mq-math-2': 'd', // wrong
+  };
+
+  const historicalAttempts = [
+    { attemptId: 'h1', score: 1, totalMarks: 4, percentage: 25, completedAt: '2026-10-20' },
+    { attemptId: 'h2', score: 2, totalMarks: 4, percentage: 50, completedAt: '2026-10-21' },
+    { attemptId: 'h3', score: 3, totalMarks: 4, percentage: 75, completedAt: '2026-10-22' },
+    { attemptId: 'h4', score: 4, totalMarks: 4, percentage: 100, completedAt: '2026-10-23' },
+  ];
+
+  const result = evaluateMockTest(testManifest, answers, 900, historicalAttempts);
+
+  assert.equal(result.score, 2);
+  assert.equal(result.maxScore, 4);
+  assert.equal(result.percentage, 50);
+
+  // Rule 4 honest percentile:
+  // Lower than score 2 is h1 (1 attempt). Equal to score 2 is h2 (1 attempt). Total 4 attempts.
+  // (1 + 0.5 * 1) / 4 = 1.5 / 4 = 37.5 -> 38%
+  assert.equal(result.percentile, 38);
+
+  // Check diagnosed error on question mq-phy-1's distractor
+  const wrongEvaluation = result.evaluations.find((e) => e.questionId === 'mq-phy-2');
+  assert.equal(wrongEvaluation?.isCorrect, false);
+
+  assert.ok(result.sectionalAnalysis.some((s) => s.sectionName.includes('Physics')));
+  assert.ok(result.sectionalAnalysis.some((s) => s.sectionName.includes('Mathematics')));
+});
+
 
 
