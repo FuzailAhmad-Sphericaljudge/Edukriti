@@ -39,6 +39,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ShareLessonButton } from '@/components/share-lesson-button';
 import { VoiceInputButton } from '@/components/voice-input-button';
 import { MarkdownMath } from '@/components/tutor/markdown-math';
+import { InteractiveVisualViewer } from '@/components/interactive-visual-viewer';
 
 type Segment = LessonPlan['segments'][number];
 type PlayerState = 'idle' | 'speaking' | 'paused' | 'finished';
@@ -53,6 +54,10 @@ const voiceSpeeds: Array<{ value: VoiceSpeed; label: string }> = [
 ];
 
 function TeachingVisual({ segment }: { segment: Segment }) {
+  if (segment.interactive) {
+    return <InteractiveVisualViewer interactive={segment.interactive} conceptTitle={segment.title} />;
+  }
+
   if (segment.visualType === 'equation') {
     const isForce = /force|newton|motion/i.test(
       `${segment.title} ${segment.visualBrief}`,

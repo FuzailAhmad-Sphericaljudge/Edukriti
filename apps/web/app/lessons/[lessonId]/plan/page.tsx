@@ -39,7 +39,15 @@ export default async function LessonPlanPage({ params }: { params: Promise<{ les
         <header className="relative overflow-hidden rounded-[30px] border border-primary/15 bg-[#eef4ff] p-7 sm:p-9">
           <div className="absolute -right-16 -top-20 size-64 rounded-full bg-primary/10 blur-3xl" />
           <div className="relative">
-            <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2"><Badge className="bg-primary text-primary-foreground">Lesson ready</Badge><Badge variant="outline" className="bg-white/60">{grounded ? 'Source grounded' : 'Topic based'}</Badge><Badge variant="outline" className="bg-white/60">{provider === 'gemini' ? 'Gemini AI plan' : provider === 'openai' ? 'OpenAI plan' : 'Offline demo plan'}</Badge></div><ShareLessonButton title={plan.title} /></div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-2">
+                <Badge className="bg-primary text-primary-foreground">Lesson ready</Badge>
+                <Badge variant="outline" className="bg-white/60">{grounded ? 'Source grounded' : 'Topic based'}</Badge>
+                <Badge variant="outline" className="bg-white/60 capitalize">{plan.variantMode ?? 'standard'} mode</Badge>
+                <Badge variant="outline" className="bg-white/60">{provider === 'gemini' ? 'Gemini AI plan' : provider === 'openai' ? 'OpenAI plan' : 'Offline demo plan'}</Badge>
+              </div>
+              <ShareLessonButton title={plan.title} />
+            </div>
             <h1 className="mt-5 max-w-3xl font-heading text-3xl font-bold leading-tight tracking-[-0.045em] sm:text-4xl">{plan.title}</h1>
             <div className="mt-5 flex flex-wrap gap-5 text-sm text-muted-foreground"><span className="flex items-center gap-2"><Clock3 className="size-4 text-primary" /> {plan.durationMinutes} minutes</span><span className="flex items-center gap-2"><BookOpen className="size-4 text-primary" /> {plan.segments.length} teaching segments</span><span className="flex items-center gap-2"><Target className="size-4 text-primary" /> {plan.objectives.length} outcomes</span></div>
           </div>
@@ -59,7 +67,32 @@ export default async function LessonPlanPage({ params }: { params: Promise<{ les
                         <div className="flex flex-wrap items-start justify-between gap-2"><div><h3 className="font-heading text-lg font-bold tracking-[-0.02em]">{segment.title}</h3><p className="mt-1 text-sm text-muted-foreground">{segment.objective}</p></div><span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">{segment.estimatedMinutes} min</span></div>
                         <p className="mt-4 rounded-xl bg-muted/70 p-4 text-sm leading-6">{segment.narration}</p>
                         <div className="mt-4 flex items-start gap-3 rounded-xl border border-dashed border-primary/20 p-3"><VisualIcon className="mt-0.5 size-4 shrink-0 text-primary" /><div><p className="text-xs font-bold capitalize text-primary">{segment.visualType.replace('_', ' ')}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{segment.visualBrief}</p></div></div>
-                        {segment.checkpoint && <div className="mt-3 flex items-start gap-3 rounded-xl bg-amber-50 p-3 text-amber-950"><Target className="mt-0.5 size-4 shrink-0" /><div><p className="text-xs font-bold uppercase tracking-wide">Understanding checkpoint</p><p className="mt-1 text-sm">{segment.checkpoint.prompt}</p></div></div>}
+                        {segment.interactive && (
+                          <div className="mt-3 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+                            <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold uppercase text-primary">Interactive {segment.interactive.kind}</span>
+                                <Badge variant="outline" className="bg-background text-[10px]">{segment.interactive.id}</Badge>
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground">Interactive simulation controls ready in classroom.</p>
+                            </div>
+                          </div>
+                        )}
+                        {segment.checkpoint && (
+                          <div className="mt-3 flex items-start gap-3 rounded-xl bg-amber-50 p-3 text-amber-950">
+                            <Target className="mt-0.5 size-4 shrink-0" />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs font-bold uppercase tracking-wide">Understanding checkpoint</p>
+                                {segment.checkpoint.rubric && (
+                                  <Badge variant="outline" className="border-amber-300 bg-white/80 text-[10px] text-amber-900">Rubric Graded</Badge>
+                                )}
+                              </div>
+                              <p className="mt-1 text-sm">{segment.checkpoint.prompt}</p>
+                            </div>
+                          </div>
+                        )}
                         {segment.citations.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{segment.citations.map((citation) => <span key={citation.chunkId} className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">Source · page {citation.page ?? '—'}</span>)}</div>}
                       </div>
                     </div>
@@ -71,6 +104,29 @@ export default async function LessonPlanPage({ params }: { params: Promise<{ les
 
           <aside className="space-y-5">
             <section className="rounded-[22px] border bg-card p-5"><p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Learning outcomes</p><ul className="mt-4 space-y-3">{plan.objectives.map((objective) => <li key={objective} className="flex gap-2 text-sm leading-5"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />{objective}</li>)}</ul></section>
+            {plan.prerequisiteConcepts && plan.prerequisiteConcepts.length > 0 && (
+              <section className="rounded-[22px] border bg-card p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Prerequisites</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {plan.prerequisiteConcepts.map((prereq) => (
+                    <span key={prereq} className="rounded-lg bg-muted px-2 py-1 text-xs font-medium text-foreground">{prereq.replace(/_/g, ' ')}</span>
+                  ))}
+                </div>
+              </section>
+            )}
+            {plan.spacedRevision && plan.spacedRevision.length > 0 && (
+              <section className="rounded-[22px] border bg-card p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Spaced Revision Schedule</p>
+                <div className="mt-3 space-y-2 text-xs">
+                  {plan.spacedRevision.slice(0, 4).map((rev, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-lg bg-muted/60 p-2">
+                      <span className="font-semibold text-primary">{rev.intervalDays}d</span>
+                      <span className="max-w-[200px] truncate text-muted-foreground">{rev.prompt}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
             <section className="sticky top-6 rounded-[22px] bg-[#15223f] p-5 text-white shadow-[0_16px_42px_rgb(21_34_63/18%)]"><Sparkles className="size-5 text-amber-300" /><h2 className="mt-4 font-heading text-xl font-bold">Ready for class</h2><p className="mt-2 text-sm leading-6 text-white/65">The teaching sequence, visuals, questions, and source evidence are prepared.</p><a href={`/lessons/${lessonId}/classroom?start=${lessonId}`} className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#15223f] transition hover:bg-sky-50">Enter AI classroom <Sparkles className="size-4" /></a></section>
             <a href={`/lessons/${lessonId}/revision`} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border bg-card px-4 text-sm font-semibold text-primary transition hover:border-primary/30 hover:bg-primary/5"><FileText className="size-4" /> Open revision studio</a>
             <a href={`/lessons/${lessonId}/practice`} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"><Target className="size-4" /> Adaptive practice</a>
