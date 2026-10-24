@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import type { VisualInteractiveManifest, NarrationCue } from '@edukriti/contracts';
+import { findSceneDefinition } from '@edukriti/visuals';
+import { Model3DStage } from './visuals/model-3d-stage';
 import {
   Activity,
   Atom,
@@ -40,7 +42,10 @@ export function InteractiveVisualViewer({
 
   let simulatorContent: React.ReactNode = null;
 
-  if (id === 'circuit-builder-dc') {
+  const registered3DScene = findSceneDefinition(id);
+  if (registered3DScene) {
+    simulatorContent = <Model3DStage scene={registered3DScene} initialParams={initialParams} />;
+  } else if (id === 'circuit-builder-dc') {
     simulatorContent = <CircuitSimulator initialParams={initialParams} />;
   } else if (id === 'projectile-motion-lab') {
     simulatorContent = <ProjectileMotionLab initialParams={initialParams} />;
