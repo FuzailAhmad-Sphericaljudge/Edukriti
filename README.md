@@ -27,6 +27,7 @@ Canonical journey:
 - **Rasch / Elo Adaptive Selector**: Zone of Proximal Development ($P \in [0.55, 0.75]$) item matching and cognitive spaced repetition scheduling.
 - **Sectional Mock Test Arena**: Full-length timed exams with sectional analysis and authentic empirical percentile scoring.
 - **Dual-Solve Verification & Open Benchmarks**: Automatic independent second solve and semantic deduplication over open benchmarks (GSM8K, MATH, ARC, OpenBookQA).
+- **Procedural 3D Teaching Models (`@edukriti/visuals`)**: 9 pure procedural Three.js/React Three Fiber teaching scenes (Bohr atom, PubChem molecule viewer, solar system with seasons/eclipses, wave interference surface, 3D geometry solids with cutting planes, 3D vectors & ballistic projectile, Watson-Crick DNA double helix, crystal lattices SC/BCC/FCC/Diamond, and stylized plant/animal cells) with measurement tools (distance, angle), exploded views, teacher narration sync, quiz-on-the-model, and automatic interactive 2D SVG fallback.
 - **Deterministic Numerical Solver**: Safe arithmetic and SI unit normalization verifying mathematical formulas with zero unvetted code execution.
 - **100% Offline Uptime**: High-quality deterministic fallback ensures all lessons, simulations, rubrics, and assessments run offline with zero API keys.
 
@@ -36,7 +37,8 @@ All metrics below are computed directly from the source code and immutable regis
 
 | Metric | Verified Count | Source |
 | :--- | :--- | :--- |
-| **Vetted Interactive Visuals** | **10** (3 sims, 3 labs, 3 3D scenes, 1 diagram) | `packages/contracts/src/vetted-visuals.ts` |
+| **Procedural 3D Teaching Scenes** | **9** procedural models with interactive controls | `packages/visuals/src/registry.ts` |
+| **Vetted Interactive Visuals** | **19** (3 sims, 3 labs, 10 3D scenes, 3 diagrams) | `packages/contracts/src/vetted-visual-registry.ts` |
 | **Knowledge Graph Concepts** | **16** nodes across 5 STEM disciplines | `packages/teaching-engine/src/concept-graph.ts` |
 | **Document Formats Supported** | **4** (.pdf, .txt, .docx, .pptx) | `packages/rag/src/index.ts` |
 | **Adaptive Reteaching Strategies** | **5** (`new_analogy`, `worked_example`, `simpler_prerequisite`, `visual_walkthrough`, `interactive`) | `packages/teaching-engine/src/index.ts` |
@@ -44,7 +46,7 @@ All metrics below are computed directly from the source code and immutable regis
 | **Estimated Unique Problems** | **82,075+** computed combinations from parameter ranges | `packages/questions/src/registry.ts` |
 | **Imported Benchmark Items** | **16** verified items (GSM8K, MATH, ARC, OpenBookQA) | `packages/questions/src/datasets/dataset-registry.ts` |
 | **Ask Aarohi Benchmark Questions** | **105** multi-subject evaluated questions | `packages/teaching-engine/src/golden-eval-set.ts` |
-| **Automated Monorepo Tests** | **125 Passing Tests** (0 failing) | `npm test` across all 5 workspaces |
+| **Automated Monorepo Tests** | **135 Passing Tests** (0 failing) | `npm test` across all 6 workspaces |
 
 ## Architecture
 
@@ -70,6 +72,8 @@ The application uses a Node.js 24 npm-workspace monorepo, strict TypeScript, Vin
 - `packages/rag`: Normalizes untrusted document text (.pdf, .txt, .docx, .pptx), creates bounded overlapping page chunks, and ranks evidence with page-level citations.
 - `packages/teaching-engine`: Generates prerequisite-first lesson plans, spoken narration, rubrics, adaptive re-teaching v2, weak-concept assessments, and numerical solutions across any topic.
 - `packages/contracts`: Strict Zod runtime schemas, vetted visual registry, honest metrics calculations, and API contracts.
+- `packages/questions`: 60 seeded PRNG parametric numerical generators (82,075+ instances), Rasch 1-PL adaptive selection, spaced repetition, open benchmark datasets, and sectional mock test engine.
+- `packages/visuals`: 9 pure procedural 3D teaching scenes with Three.js/Fiber/Drei, interactive WebGL 2D fallback, dynamic Zod param schemas, measurement tools, and teacher narration sync.
 - A deterministic teaching provider keeps the complete demo functional without paid APIs, ensuring 100% offline uptime for hackathon judging.
 - System health and real-time latency can be inspected at the `/admin/status` diagnostic dashboard.
 
