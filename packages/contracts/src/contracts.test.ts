@@ -30,6 +30,7 @@ import {
   findVettedVisual,
   validateVisualSelection,
   suggestVisualForTopic,
+  getVettedVisualMetrics,
 } from './index.ts';
 
 const validRequest = {
@@ -392,4 +393,27 @@ test('lessonRequestSchema validates variantMode and checkpointAttemptRequestSche
     remediationAttempt: 3,
   });
   assert.equal(attemptEscalated.remediationAttempt, 3);
+});
+
+test('getVettedVisualMetrics computes accurate registry numbers without hardcoded claims', () => {
+  const registry = getVettedVisualRegistry();
+  const metrics = getVettedVisualMetrics();
+
+  // Rule 4 Honest numbers: metrics must be derived from real registry
+  assert.equal(metrics.totalInteractiveSimulations, registry.length);
+  assert.ok(metrics.totalInteractiveSimulations >= 10);
+  assert.equal(
+    metrics.simCount + metrics.labCount + metrics.scene3dCount + metrics.diagramCount,
+    metrics.totalInteractiveSimulations,
+  );
+
+  const totalFromSubjects = Object.values(metrics.subjectCounts).reduce((acc, count) => acc + count, 0);
+  assert.equal(totalFromSubjects, metrics.totalInteractiveSimulations);
+
+  assert.equal(metrics.availableIds.length, metrics.totalInteractiveSimulations);
+  const uniqueIds = new Set(metrics.availableIds);
+  assert.equal(uniqueIds.size, metrics.totalInteractiveSimulations);
+  assert.ok(uniqueIds.has('circuit-builder-dc'));
+  assert.ok(uniqueIds.has('projectile-motion-lab'));
+  assert.ok(uniqueIds.has('acid-base-titration-lab'));
 });
