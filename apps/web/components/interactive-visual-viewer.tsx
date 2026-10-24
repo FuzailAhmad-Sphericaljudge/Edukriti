@@ -33,61 +33,131 @@ export function InteractiveVisualViewer({
 
   const id = interactive.id;
   const initialParams = interactive.params ?? {};
+  const cues = interactive.narrationCues ?? [];
+  const [activeCueTarget, setActiveCueTarget] = useState<string | null>(
+    cues.length > 0 ? cues[0]?.highlightTarget ?? null : null,
+  );
+
+  let simulatorContent: React.ReactNode = null;
 
   if (id === 'circuit-builder-dc') {
-    return <CircuitSimulator initialParams={initialParams} />;
-  }
-
-  if (id === 'projectile-motion-lab') {
-    return <ProjectileMotionLab initialParams={initialParams} />;
-  }
-
-  if (id === 'gravity-orbital-sim') {
-    return <GravityOrbitalSim initialParams={initialParams} />;
-  }
-
-  if (id === 'pendulum-harmonic-lab') {
-    return <PendulumHarmonicLab initialParams={initialParams} />;
-  }
-
-  if (id === 'quadratic-parabola-explorer') {
-    return <QuadraticParabolaExplorer initialParams={initialParams} />;
-  }
-
-  if (id === 'photosynthesis-chloroplast-diagram') {
-    return <PhotosynthesisExplorer initialParams={initialParams} />;
-  }
-
-  if (id === 'sorting-visualizer-sim') {
-    return <SortingVisualizerSim initialParams={initialParams} />;
-  }
-
-  if (id === 'molecule-viewer-3d' || id === 'dna-double-helix-3d') {
-    return <MolecularStructureViewer id={id} initialParams={initialParams} />;
-  }
-
-  if (id === 'cell-mitosis-interactive') {
-    return <CellMitosisViewer initialParams={initialParams} />;
-  }
-
-  if (id === 'acid-base-titration-lab') {
-    return <TitrationLab initialParams={initialParams} />;
-  }
-
-  if (id === 'tectonic-plates-globe-3d') {
-    return <TectonicPlatesViewer initialParams={initialParams} />;
+    simulatorContent = <CircuitSimulator initialParams={initialParams} />;
+  } else if (id === 'projectile-motion-lab') {
+    simulatorContent = <ProjectileMotionLab initialParams={initialParams} />;
+  } else if (id === 'gravity-orbital-sim') {
+    simulatorContent = <GravityOrbitalSim initialParams={initialParams} />;
+  } else if (id === 'pendulum-harmonic-lab') {
+    simulatorContent = <PendulumHarmonicLab initialParams={initialParams} />;
+  } else if (id === 'quadratic-parabola-explorer') {
+    simulatorContent = <QuadraticParabolaExplorer initialParams={initialParams} />;
+  } else if (id === 'photosynthesis-chloroplast-diagram') {
+    simulatorContent = <PhotosynthesisExplorer initialParams={initialParams} />;
+  } else if (id === 'sorting-visualizer-sim') {
+    simulatorContent = <SortingVisualizerSim initialParams={initialParams} />;
+  } else if (id === 'molecule-viewer-3d' || id === 'dna-double-helix-3d') {
+    simulatorContent = <MolecularStructureViewer id={id} initialParams={initialParams} />;
+  } else if (id === 'cell-mitosis-interactive') {
+    simulatorContent = <CellMitosisViewer initialParams={initialParams} />;
+  } else if (id === 'acid-base-titration-lab') {
+    simulatorContent = <TitrationLab initialParams={initialParams} />;
+  } else if (id === 'tectonic-plates-globe-3d') {
+    simulatorContent = <TectonicPlatesViewer initialParams={initialParams} />;
+  } else {
+    simulatorContent = (
+      <div className="flex flex-col items-center justify-center p-6 text-center text-white">
+        <Sparkles className="size-8 text-amber-300" />
+        <span className="mt-2 text-xs font-bold uppercase tracking-wider text-sky-300">
+          Interactive {interactive.kind}
+        </span>
+        <h4 className="mt-1 font-heading text-lg font-bold">{interactive.id}</h4>
+        <p className="mt-2 text-xs text-white/70">
+          Vetted STEM simulation active with verified parameter preset.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 text-center text-white">
-      <Sparkles className="size-8 text-amber-300" />
-      <span className="mt-2 text-xs font-bold uppercase tracking-wider text-sky-300">
-        Interactive {interactive.kind}
-      </span>
-      <h4 className="mt-1 font-heading text-lg font-bold">{interactive.id}</h4>
-      <p className="mt-2 text-xs text-white/70">
-        Vetted STEM simulation active with verified parameter preset.
-      </p>
+    <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl bg-slate-900 shadow-xl">
+      {/* Vetted Guard & Sync Header */}
+      <div className="flex items-center justify-between border-b border-white/10 bg-slate-950/60 px-4 py-2 text-[11px] text-white/80">
+        <div className="flex items-center gap-2">
+          <span className="flex size-2 rounded-full bg-emerald-400" />
+          <span className="font-semibold uppercase tracking-wider text-sky-200">
+            {interactive.kind} · {interactive.id}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+            Zod Guarded
+          </span>
+          <span className="rounded bg-sky-500/20 px-2 py-0.5 text-[10px] font-medium text-sky-200">
+            Audio Synced
+          </span>
+        </div>
+      </div>
+
+      {/* Simulator canvas */}
+      <div className="flex-1 overflow-auto">
+        {simulatorContent}
+      </div>
+
+      {/* Narration Cue Timeline */}
+      <NarrationCueTimeline
+        cues={cues}
+        activeTarget={activeCueTarget}
+        onSelectCue={(cue) => setActiveCueTarget(cue.highlightTarget)}
+      />
+    </div>
+  );
+}
+
+interface NarrationCueTimelineProps {
+  cues?: Array<{ atSecond: number; highlightTarget: string; caption: string }>;
+  activeTarget?: string | null;
+  onSelectCue?: (cue: { atSecond: number; highlightTarget: string; caption: string }) => void;
+}
+
+export function NarrationCueTimeline({ cues, activeTarget, onSelectCue }: NarrationCueTimelineProps) {
+  if (!cues || cues.length === 0) return null;
+
+  return (
+    <div className="border-t border-white/10 bg-slate-950/70 p-2.5">
+      <div className="flex items-center justify-between pb-1.5 text-[10px] text-white/60">
+        <span className="flex items-center gap-1 font-semibold uppercase tracking-wider text-sky-300">
+          <Sparkles className="size-3 text-sky-400" />
+          Narration Cue Timeline
+        </span>
+        <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-[9px] font-medium text-sky-200">
+          Audio Synced
+        </span>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+        {cues.map((cue, idx) => {
+          const isActive = activeTarget === cue.highlightTarget;
+          const minutes = Math.floor(cue.atSecond / 60);
+          const seconds = Math.floor(cue.atSecond % 60).toString().padStart(2, '0');
+          return (
+            <button
+              key={`${cue.atSecond}-${idx}`}
+              type="button"
+              onClick={() => onSelectCue?.(cue)}
+              className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-left text-xs transition-colors ${
+                isActive
+                  ? 'border-sky-400 bg-sky-500/25 text-white shadow-[0_0_10px_rgba(56,189,248,0.3)]'
+                  : 'border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <span className="font-mono text-[10px] font-bold text-sky-300">
+                {minutes}:{seconds}
+              </span>
+              <span className="line-clamp-1 max-w-[140px] text-[11px] font-medium">
+                {cue.caption}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
