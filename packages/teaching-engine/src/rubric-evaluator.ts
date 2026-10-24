@@ -83,14 +83,18 @@ function buildLocalizedFeedback(
   misconceptionText?: string | null,
   keyIdeasPresent: string[] = [],
 ): string {
+  const acknowledgedPart = keyIdeasPresent.length > 0 ? keyIdeasPresent[0] : null;
+
   if (language === 'hindi') {
     if (isCorrect) {
       return `उत्कृष्ट! आपने “${concept}” का सिद्धांत सही रूप से समझाया है।`;
     }
     if (misconceptionText) {
-      return `अच्छी कोशिश! परंतु यहाँ एक सामान्य भ्रम है: “${misconceptionText}”। आइए इसे एक नए उदाहरण से स्पष्ट करते हैं।`;
+      const partialNotice = acknowledgedPart ? `आपने सही पहचाना कि “${acknowledgedPart}”। ` : '';
+      return `${partialNotice}परंतु यहाँ एक सामान्य भ्रम है: “${misconceptionText}”। आइए इसे एक नए उदाहरण से स्पष्ट करते हैं।`;
     }
-    return `अच्छी कोशिश! आपके उत्तर में “${concept}” के मुख्य संबंध अभी पूरी तरह स्पष्ट नहीं हैं। आइए इसे चरण-दर-चरण दोहराएं।`;
+    const partialNotice = acknowledgedPart ? `आपने सही पहचाना कि “${acknowledgedPart}”। ` : 'अच्छी कोशिश! ';
+    return `${partialNotice}आपके उत्तर में “${concept}” के मुख्य संबंध अभी पूरी तरह स्पष्ट नहीं हैं। आइए इसे चरण-दर-चरण दोहराएं।`;
   }
 
   if (language === 'hinglish') {
@@ -98,9 +102,11 @@ function buildLocalizedFeedback(
       return `Bilkul sahi! Aapne “${concept}” ka core principle accurately pakad liya.`;
     }
     if (misconceptionText) {
-      return `Good attempt! Lekin yahan ek common confusion hai: “${misconceptionText}”. Let's clarify this with a new visual analogy.`;
+      const partialNotice = acknowledgedPart ? `Aapne sahi point pakda ki “${acknowledgedPart}”. ` : 'Good attempt! ';
+      return `${partialNotice}Lekin yahan ek common confusion hai: “${misconceptionText}”. Let's clarify this with a new visual analogy.`;
     }
-    return `Good attempt! “${concept}” ka main relationship abhi complete nahi lag raha. Chalo isse ek simpler angle se samjhte hain.`;
+    const partialNotice = acknowledgedPart ? `Aapne sahi note kiya ki “${acknowledgedPart}”. ` : 'Good attempt! ';
+    return `${partialNotice}“${concept}” ka main relationship abhi complete nahi lag raha. Chalo isse ek simpler angle se samjhte hain.`;
   }
 
   // English
@@ -108,9 +114,11 @@ function buildLocalizedFeedback(
     return `Excellent! You clearly captured the essential principles of “${concept}”.`;
   }
   if (misconceptionText) {
-    return `Good effort! However, there is a common misconception here: “${misconceptionText}”. Let’s revisit this with a fresh perspective.`;
+    const partialNotice = acknowledgedPart ? `You correctly recognized that “${acknowledgedPart}”. ` : 'Good effort! ';
+    return `${partialNotice}However, there is a common misconception here: “${misconceptionText}”. Let’s revisit this with a fresh perspective.`;
   }
-  return `Good try! Your response does not yet connect the defining cause-and-effect relationship in “${concept}”. Let's walk through it together.`;
+  const partialNotice = acknowledgedPart ? `You correctly noted that “${acknowledgedPart}”. ` : 'Good try! ';
+  return `${partialNotice}Your response does not yet connect the defining cause-and-effect relationship in “${concept}”. Let's walk through it together.`;
 }
 
 /**
