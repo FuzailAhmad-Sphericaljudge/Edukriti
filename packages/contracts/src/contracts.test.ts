@@ -360,3 +360,36 @@ test('vetted visual registry validates parameters and rejects unknown IDs', () =
   const orbitSug = suggestVisualForTopic('Kepler laws of planetary orbit');
   assert.equal(orbitSug?.id, 'gravity-orbital-sim');
 });
+
+test('lessonRequestSchema validates variantMode and checkpointAttemptRequestSchema supports remediationAttempt', () => {
+  // variantMode in lessonRequestSchema
+  const standardReq = lessonRequestSchema.parse({ ...validRequest, variantMode: 'standard' });
+  assert.equal(standardReq.variantMode, 'standard');
+
+  const examReq = lessonRequestSchema.parse({ ...validRequest, variantMode: 'exam_focused' });
+  assert.equal(examReq.variantMode, 'exam_focused');
+
+  const practicalReq = lessonRequestSchema.parse({ ...validRequest, variantMode: 'practical' });
+  assert.equal(practicalReq.variantMode, 'practical');
+
+  const defaultReq = lessonRequestSchema.parse(validRequest);
+  assert.equal(defaultReq.variantMode, undefined);
+
+  // remediationAttempt in checkpointAttemptRequestSchema
+  const attemptDefault = checkpointAttemptRequestSchema.parse({
+    lessonId: 'lesson-1',
+    checkpointId: 'cp-1',
+    response: 'Increasing the voltage increases current.',
+    clientRequestId: '550e8400-e29b-41d4-a716-446655440000',
+  });
+  assert.equal(attemptDefault.remediationAttempt, 1);
+
+  const attemptEscalated = checkpointAttemptRequestSchema.parse({
+    lessonId: 'lesson-1',
+    checkpointId: 'cp-1',
+    response: 'Still confused about resistance.',
+    clientRequestId: '550e8400-e29b-41d4-a716-446655440001',
+    remediationAttempt: 3,
+  });
+  assert.equal(attemptEscalated.remediationAttempt, 3);
+});
