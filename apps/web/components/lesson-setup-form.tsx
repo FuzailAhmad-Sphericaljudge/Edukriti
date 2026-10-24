@@ -1,7 +1,7 @@
 'use client';
 
 import type { LessonPlanGenerationResponse, RetrievalResponse, SourceIngestionResponse } from '@edukriti/contracts';
-import { BookOpen, Check, Clock3, FileSearch, Languages, LoaderCircle, Sparkles, Upload } from 'lucide-react';
+import { BookOpen, Check, Clock3, FileSearch, GraduationCap, Languages, LoaderCircle, Sparkles, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 
@@ -13,6 +13,7 @@ export function LessonSetupForm({
   initialLevel,
   initialLanguage,
   initialDuration,
+  initialVariantMode = 'standard',
   initialGoal,
   initialError,
 }: {
@@ -20,6 +21,7 @@ export function LessonSetupForm({
   initialLevel: string;
   initialLanguage: string;
   initialDuration: string;
+  initialVariantMode?: string;
   initialGoal: string;
   initialError: string;
 }) {
@@ -75,6 +77,7 @@ export function LessonSetupForm({
           level: String(data.get('level')),
           language: String(data.get('language')),
           durationMinutes: Number(data.get('duration')),
+          variantMode: String(data.get('variantMode') || 'standard'),
           style: 'simple_examples',
           goal: String(data.get('goal')),
         }),
@@ -114,10 +117,11 @@ export function LessonSetupForm({
 
         <label className="block"><span className="mb-2 block text-sm font-bold">Topic or learning goal</span><textarea name="goal" required rows={3} defaultValue={initialGoal} className="w-full rounded-2xl border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary/15" placeholder="Example: Teach me electricity using simple everyday examples" /></label>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <label><span className="mb-2 flex items-center gap-2 text-sm font-bold"><GraduationCap className="size-4 text-primary" /> Lesson Mode</span><select name="variantMode" defaultValue={initialVariantMode} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="standard">Standard (Intuition & Analogies)</option><option value="exam_focused">Exam Focused (Formulas & Scoring)</option><option value="practical">Practical Lab (Hands-on Experiments)</option></select></label>
           <label><span className="mb-2 flex items-center gap-2 text-sm font-bold"><BookOpen className="size-4 text-primary" /> Level</span><select name="level" defaultValue={initialLevel} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label>
           <label><span className="mb-2 flex items-center gap-2 text-sm font-bold"><Languages className="size-4 text-primary" /> Language</span><select name="language" defaultValue={initialLanguage} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="english">English</option><option value="hindi">Hindi</option><option value="hinglish">Hinglish</option></select></label>
-          <label><span className="mb-2 flex items-center gap-2 text-sm font-bold"><Clock3 className="size-4 text-primary" /> Time</span><select name="duration" defaultValue={initialDuration} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="5">5 minutes</option><option value="20">20 minutes</option><option value="60">60 minutes</option></select></label>
+          <label><span className="mb-2 flex items-center gap-2 text-sm font-bold"><Clock3 className="size-4 text-primary" /> Duration</span><select name="duration" defaultValue={initialDuration} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="5">5 minutes (Sprint · 2 concepts)</option><option value="20">20 minutes (Standard · 4 concepts)</option><option value="60">60 minutes (Deep Dive · 6 concepts)</option></select></label>
         </div>
 
         {error && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
