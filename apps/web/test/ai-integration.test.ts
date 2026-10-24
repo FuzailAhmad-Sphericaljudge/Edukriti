@@ -26,6 +26,30 @@ test('generateLessonPlan returns deterministic fallback when no API keys are pro
   assert.match(result.plan.title, /Newton/i);
 });
 
+test('generateLessonPlan supports exam-focused and practical variant modes with duration scaling', async () => {
+  // 5-minute practical lab lesson
+  const practicalResult = await generateLessonPlan(
+    { ...mockRequest, durationMinutes: 5, variantMode: 'practical' },
+    [],
+    'lesson-prac-5',
+    {},
+  );
+  assert.equal(practicalResult.plan.variantMode, 'practical');
+  assert.equal(practicalResult.plan.segments.length, 2);
+  assert.match(practicalResult.plan.segments[0].narration, /practical|lab|observ|measure|experiment/i);
+
+  // 60-minute exam-focused lesson
+  const examResult = await generateLessonPlan(
+    { ...mockRequest, durationMinutes: 60, variantMode: 'exam_focused' },
+    [],
+    'lesson-exam-60',
+    {},
+  );
+  assert.equal(examResult.plan.variantMode, 'exam_focused');
+  assert.equal(examResult.plan.segments.length, 6);
+  assert.match(examResult.plan.segments[0].narration, /exam|formula|mark|scoring|examiner/i);
+});
+
 test('answerTutorQuestion answers student question using fallback when offline', async () => {
   const planResult = await generateLessonPlan(mockRequest, [], 'lesson-123', {});
   const tutorReq: TutorRequest = {
