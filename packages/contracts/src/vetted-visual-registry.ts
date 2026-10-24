@@ -330,3 +330,40 @@ export function suggestVisualForTopic(
 
   return undefined;
 }
+
+export type VettedVisualMetrics = {
+  totalInteractiveSimulations: number;
+  simCount: number;
+  labCount: number;
+  scene3dCount: number;
+  diagramCount: number;
+  subjectCounts: Record<string, number>;
+  availableIds: string[];
+};
+
+/**
+ * Computes honest real-time metrics across all vetted STEM simulations.
+ * Used to ensure honest counts throughout the UI and documentation without hardcoding.
+ */
+export function getVettedVisualMetrics(): VettedVisualMetrics {
+  const registry = getVettedVisualRegistry();
+  const simCount = registry.filter((e) => e.kind === 'sim').length;
+  const labCount = registry.filter((e) => e.kind === 'lab').length;
+  const scene3dCount = registry.filter((e) => e.kind === 'scene3d').length;
+  const diagramCount = registry.filter((e) => e.kind === 'diagram').length;
+
+  const subjectCounts: Record<string, number> = {};
+  for (const entry of registry) {
+    subjectCounts[entry.subject] = (subjectCounts[entry.subject] ?? 0) + 1;
+  }
+
+  return {
+    totalInteractiveSimulations: registry.length,
+    simCount,
+    labCount,
+    scene3dCount,
+    diagramCount,
+    subjectCounts,
+    availableIds: registry.map((e) => e.id),
+  };
+}

@@ -23,8 +23,14 @@ import {
   resolveConceptGraph,
   buildSpokenStyleNarration,
   buildCheckpointRubric,
+  getConceptGraphMetrics,
+  type ConceptGraphMetrics,
   type ConceptNode,
 } from './concept-graph.ts';
+export {
+  getConceptGraphMetrics,
+  type ConceptGraphMetrics,
+};
 
 export type LessonEvidence = {
   sourceId: string;

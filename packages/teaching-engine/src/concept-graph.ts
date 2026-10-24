@@ -1191,3 +1191,40 @@ export function buildCheckpointRubric(
     passingCriteria: node.applicationCheckpoint.passingCriteria,
   };
 }
+
+export type ConceptGraphMetrics = {
+  totalConcepts: number;
+  subjectCounts: Record<string, number>;
+  totalMisconceptions: number;
+  totalCheckpoints: number;
+  totalSpacedRevisions: number;
+  conceptIds: string[];
+};
+
+/**
+ * Computes honest real-time metrics across all curriculum concept graph nodes.
+ * Used to ensure honest counts throughout the UI and documentation without hardcoding.
+ */
+export function getConceptGraphMetrics(): ConceptGraphMetrics {
+  const nodes = Object.values(CONCEPT_KNOWLEDGE_GRAPH);
+  const subjectCounts: Record<string, number> = {};
+  let totalMisconceptions = 0;
+  let totalCheckpoints = 0;
+  let totalSpacedRevisions = 0;
+
+  for (const node of nodes) {
+    subjectCounts[node.subject] = (subjectCounts[node.subject] ?? 0) + 1;
+    totalMisconceptions += node.commonMisconceptions.length;
+    if (node.applicationCheckpoint) totalCheckpoints += 1;
+    totalSpacedRevisions += node.spacedRevision.length;
+  }
+
+  return {
+    totalConcepts: nodes.length,
+    subjectCounts,
+    totalMisconceptions,
+    totalCheckpoints,
+    totalSpacedRevisions,
+    conceptIds: nodes.map((n) => n.id),
+  };
+}
