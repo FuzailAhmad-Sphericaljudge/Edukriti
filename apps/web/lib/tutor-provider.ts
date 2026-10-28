@@ -279,6 +279,11 @@ function buildDeterministicTutorAnswer(
     explanation += `\n\n🔬 **Interactive 3D Model:** [Open 3D Scene in Studio](/models?scene=${visualId})`;
   }
 
+  const labId = detectSuggestedLab(question);
+  if (labId) {
+    explanation += `\n\n🧪 **Interactive Virtual Lab:** [Launch Experiment in Lab Station](/labs/${labId})`;
+  }
+
   return tutorResponseSchema.parse({
     answer: explanation,
     followUpQuestion:
@@ -304,6 +309,7 @@ function buildDeterministicTutorAnswer(
     safetyPassed: true,
     extractedImageText,
     suggestedVisualId: visualId,
+    suggestedLabId: labId,
   });
 }
 
@@ -339,6 +345,44 @@ function detectSuggestedVisual(text: string): string | undefined {
   }
   if (norm.includes('cell') || norm.includes('mitochondria') || norm.includes('organelle') || norm.includes('chloroplast') || norm.includes('plant cell')) {
     return 'cell_biology_stylized';
+  }
+  return undefined;
+}
+
+export function detectSuggestedLab(text: string): string | undefined {
+  const norm = text.toLowerCase();
+  if (norm.includes("ohm's law") || norm.includes('ohms law') || norm.includes('v-i graph') || norm.includes('verify ohm')) {
+    return 'ohms_law';
+  }
+  if (norm.includes('series') && (norm.includes('parallel') || norm.includes('resistor'))) {
+    return 'series_parallel_resistors';
+  }
+  if (norm.includes('pendulum') || norm.includes('find g') || norm.includes('acceleration due to gravity') || norm.includes('l-t^2')) {
+    return 'simple_pendulum';
+  }
+  if (norm.includes('projectile motion') || norm.includes('ballistic') || norm.includes('horizontal range')) {
+    return 'projectile_motion';
+  }
+  if (norm.includes('convex lens') || norm.includes('u-v method') || norm.includes('focal length of lens')) {
+    return 'convex_lens_uv';
+  }
+  if (norm.includes('titration') || norm.includes('phenolphthalein') || norm.includes('molarity of hcl') || norm.includes('acid base')) {
+    return 'acid_base_titration';
+  }
+  if (norm.includes('archimedes') || norm.includes('buoyant force') || norm.includes('density of solid') || norm.includes('loss of weight in water')) {
+    return 'density_archimedes';
+  }
+  if (norm.includes('vernier') || norm.includes('screw gauge') || norm.includes('zero error') || norm.includes('least count')) {
+    return 'vernier_screw_gauge';
+  }
+  if (norm.includes('ph of') || norm.includes('universal indicator') || norm.includes('ph meter') || norm.includes('ph common solutions')) {
+    return 'ph_common_solutions';
+  }
+  if (norm.includes('refraction') || norm.includes('glass slab') || norm.includes('lateral displacement') || norm.includes("snell's law")) {
+    return 'refraction_glass_slab';
+  }
+  if (norm.includes('specific heat') || norm.includes('calorimeter') || norm.includes('method of mixtures')) {
+    return 'specific_heat';
   }
   return undefined;
 }
@@ -551,6 +595,8 @@ You are Aarohi, Edukriti's brilliant, warm, patient, and encouraging AI study co
         summary: summary || undefined,
         extractedImageText,
         safetyPassed: !hasInjectionRisk,
+        suggestedVisualId: detectSuggestedVisual(activeQuestion),
+        suggestedLabId: detectSuggestedLab(activeQuestion),
       });
     } catch {
       // Fall through to deterministic fallback on error

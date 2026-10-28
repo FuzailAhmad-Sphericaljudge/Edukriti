@@ -19,6 +19,7 @@
     "@base-ui/react": "1.7.0",
     "@edukriti/ai": "*",
     "@edukriti/contracts": "*",
+    "@edukriti/lab": "*",
     "@edukriti/questions": "*",
     "@edukriti/rag": "*",
     "@edukriti/teaching-engine": "*",
